@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1e1b17">
+<title>Swiss Hotel — Resepsiyon</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:#f8f4ee; --parchment:#ede8df; --border:#ddd7cc; --warm:#c8b99a;
+  --gold:#9a7c3f; --gold2:#c4a55a; --dark:#1e1b17; --charcoal:#2e2a24;
+  --text:#3a3530; --muted:#7a7268; --white:#fff;
+  --green:#3a6b4a; --green-bg:#eaf2ed;
+  --red:#9b2020; --red-bg:#faeaea;
+  --blue:#1e3d6b; --blue-bg:#eaeff7;
+  --orange:#8a4e10; --orange-bg:#fdf0e0;
+  --purple:#6b3a7a; --purple-bg:#f0eaf5;
+  --shadow:0 2px 20px rgba(30,27,23,.08);
+  --shadow-lg:0 8px 40px rgba(30,27,23,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;font-size:14px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:radial-gradient(circle at 1px 1px,rgba(154,124,63,.06) 1px,transparent 0);background-size:32px 32px;pointer-events:none;}
+
+/* HEADER */
+header{background:var(--dark);position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.header-top{height:3px;background:linear-gradient(90deg,transparent,var(--gold2),var(--gold),var(--gold2),transparent);}
+.header-inner{max-width:1400px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:14px;flex-shrink:0;}
+.logo span{color:var(--gold2);}
+.header-center{display:flex;align-items:center;gap:8px;}
+.header-date{color:rgba(255,255,255,.4);font-size:12px;letter-spacing:.5px;}
+.header-time{color:var(--gold2);font-size:14px;font-weight:600;letter-spacing:1px;font-variant-numeric:tabular-nums;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.sync-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.35);}
+.sync-indicator .dot{width:6px;height:6px;border-radius:50%;background:#555;transition:background .3s;}
+.sync-indicator.ok .dot{background:var(--green);}
+.sync-indicator.ok{color:rgba(255,255,255,.5);}
+.user-badge{background:rgba(255,255,255,.06);border:1px solid rgba(196,165,90,.2);padding:5px 12px;font-size:11px;color:var(--gold2);letter-spacing:1px;text-transform:uppercase;}
+.btn-logout{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-logout:hover{border-color:var(--red);color:#ff6b6b;}
+
+/* NAV */
+nav{background:var(--charcoal);border-bottom:1px solid rgba(196,165,90,.15);position:sticky;top:60px;z-index:100;}
+.nav-inner{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;overflow-x:auto;}
+.nav-tab{padding:13px 20px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;user-select:none;}
+.nav-tab:hover{color:rgba(255,255,255,.7);}
+.nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold2);}
+
+/* TOAST */
+#toast{position:fixed;top:80px;right:20px;z-index:9999;background:var(--charcoal);color:var(--cream);padding:12px 20px;font-size:13px;border-left:3px solid var(--gold2);box-shadow:var(--shadow-lg);opacity:0;transform:translateX(20px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.show{opacity:1;transform:translateX(0);}
+#toast.success{border-left-color:var(--green);}
+#toast.error{border-left-color:var(--red);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--white);border:1px solid var(--border);padding:32px 36px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);animation:modalIn .25s ease;position:relative;max-height:90vh;overflow-y:auto;}
+.modal::before{content:'';position:absolute;top:8px;left:8px;right:8px;bottom:8px;border:1px solid var(--parchment);pointer-events:none;}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--dark);margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);padding:10px 13px;font-family:'Jost',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;border-radius:0;-webkit-appearance:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--gold);background:var(--white);}
+.form-group input[readonly]{background:var(--parchment);color:var(--muted);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.modal-actions{display:flex;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border);justify-content:flex-end;}
+.info-box{background:var(--parchment);border:1px solid var(--border);padding:12px 14px;margin-bottom:16px;}
+.info-box .ib-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.info-box .ib-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--gold);}
+.info-box .ib-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.musteri-bulundu{background:var(--green-bg);border:1px solid rgba(58,107,74,.2);padding:12px 14px;margin-bottom:16px;display:none;}
+.musteri-bulundu .mb-ad{font-weight:600;font-size:14px;color:var(--green);}
+.musteri-bulundu .mb-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.separator{height:1px;background:var(--border);margin:20px 0;}
+.section-mini-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--dark);margin-bottom:14px;}
+
+/* BUTTONS */
+.btn{border:none;padding:10px 22px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--dark);color:var(--gold2);border:1px solid var(--dark);}
+.btn-primary:hover{background:var(--charcoal);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--parchment);}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(155,32,32,.2);}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(58,107,74,.2);}
+.btn-warning{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(138,78,16,.2);}
+.btn-sm{padding:6px 12px;font-size:10px;}
+.btn-full{width:100%;justify-content:center;}
+
+/* CONTENT */
+.content{max-width:1400px;margin:0 auto;padding:24px;position:relative;z-index:1;}
+.page{display:none;}
+.page.active{display:block;}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.section-head h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--dark);}
+.section-head h2 em{color:var(--gold);font-style:italic;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-blue{background:var(--blue-bg);color:var(--blue);}
+.badge-gold{background:#f5edd8;color:var(--gold);}
+.badge-gray{background:#f0ede8;color:var(--muted);}
+.badge-orange{background:var(--orange-bg);color:var(--orange);}
+.badge-purple{background:var(--purple-bg);color:var(--purple);}
+.amount-pos{color:var(--green);font-weight:600;}
+.amount-neg{color:var(--red);font-weight:600;}
+
+/* ── ODALAR SAYFASI ── */
+.rooms-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--white);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.dolu::before{background:var(--red);}
+.stat-card.bos::before{background:var(--green);}
+.stat-card.temizlik::before{background:var(--gold2);}
+.stat-card.rezerve::before{background:var(--blue);}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.stat-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--dark);line-height:1;}
+
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.room-card{background:var(--white);border:1px solid var(--border);padding:18px 14px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow);}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--border);}
+.room-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.room-card:active{transform:scale(.97);}
+.room-card.dolu{background:#fff8f7;}
+.room-card.dolu::before{background:var(--red);}
+.room-card.bos::before{background:var(--green);}
+.room-card.temizlik{background:#fdf8ee;}
+.room-card.temizlik::before{background:var(--gold2);}
+.room-card.rezerve{background:#f0f3fa;}
+.room-card.rezerve::before{background:var(--blue);}
+.room-no{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--dark);margin-bottom:5px;}
+.room-status-text{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;}
+.dolu .room-status-text{color:var(--red);}
+.bos .room-status-text{color:var(--green);}
+.temizlik .room-status-text{color:var(--gold);}
+.rezerve .room-status-text{color:var(--blue);}
+.room-guest{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-info{font-size:10px;color:var(--warm);margin-top:3px;}
+.room-price{font-size:11px;color:var(--gold);font-weight:600;margin-top:3px;}
+
+/* ── REZERVASYONLAR ── */
+.table-card{background:var(--white);border:1px solid var(--border);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
+.table-header{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--parchment);flex-wrap:wrap;gap:8px;}
+.table-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--dark);}
+.filter-row{padding:10px 22px;border-bottom:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;background:var(--cream);}
+.filter-row select,.filter-row input{border:1px solid var(--border);padding:7px 11px;font-family:'Jost',sans-serif;font-size:12px;color:var(--text);background:var(--white);outline:none;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 16px;text-align:left;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:var(--cream);border-bottom:1px solid var(--border);}
+tbody tr{border-bottom:1px solid rgba(212,205,194,.4);transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--parchment);}
+tbody td{padding:12px 16px;font-size:13px;}
+.empty-row td{text-align:center;padding:48px;color:var(--muted);font-style:italic;font-family:'Cormorant Garamond',serif;font-size:16px;}
+.total-row{padding:9px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);background:var(--cream);}
+
+/* ── MASRAF ── */
+.masraf-ozet{background:var(--white);border:1px solid var(--border);padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow);display:flex;gap:32px;align-items:center;flex-wrap:wrap;}
+.masraf-total{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;color:var(--red);}
+
+/* ── FOLIO (ODA HESABI) ── */
+.folio-modal .modal{max-width:680px;}
+.folio-header{background:var(--dark);color:#fff;padding:16px 20px;margin:-32px -36px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.folio-oda{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--gold2);}
+.folio-misafir{font-size:13px;color:rgba(255,255,255,.7);}
+.folio-items{margin-bottom:20px;}
+.folio-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.folio-item:last-child{border-bottom:none;}
+.folio-item-name{font-size:13px;color:var(--text);}
+.folio-item-meta{font-size:11px;color:var(--muted);}
+.folio-item-tutar{font-weight:600;color:var(--text);}
+.folio-toplam{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:2px solid var(--border);margin-top:8px;}
+.folio-toplam-label{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--dark);}
+.folio-toplam-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold);}
+
+/* CHECKOUT MODAL */
+.checkout-summary{background:var(--parchment);border:1px solid var(--border);padding:16px;margin-bottom:20px;}
+
+/* RESPONSIVE */
+@media(max-width:900px){.rooms-stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px){
+  .header-inner{padding:0 14px;}
+  .nav-inner{padding:0 14px;}
+  .content{padding:16px 14px;}
+  .modal{padding:22px 18px;}
+  .folio-header{margin:-22px -18px 20px;}
+  .form-row,.form-row-3{grid-template-columns:1fr;}
+  .rooms-stats{grid-template-columns:1fr 1fr;}
+  .rooms-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:480px){.rooms-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- CHECK-IN MODAL -->
+<div class="modal-overlay" id="checkinModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title" id="checkinTitle">Check-in — Oda</div>
+
+    <!-- TC Arama -->
+    <div class="section-mini-title">Misafir Bilgileri</div>
+    <div class="form-group" style="display:flex;gap:8px">
+      <div style="flex:1">
+        <label>TC Kimlik No</label>
+        <input type="text" id="ci_tc" placeholder="11 haneli TC kimlik" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-ghost" onclick="tcTemizle()">Temizle</button>
+      </div>
+    </div>
+    <div class="musteri-bulundu" id="musteriBulundu">
+      <div class="mb-ad" id="mb-ad"></div>
+      <div class="mb-meta" id="mb-meta"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label>Ad Soyad *</label><input type="text" id="ci_ad" placeholder="Ad Soyad"></div>
+      <div class="form-group"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
+      <div class="form-group"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
+    </div>
+
+    <div class="separator"></div>
+    <div class="section-mini-title">Konaklama Bilgileri</div>
+
+    <div class="form-row">
+      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()"></div>
+      <div class="form-group"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" placeholder="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
+    </div>
+    <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="Giriş tarihi ve gece sayısından hesaplanır"></div>
+    <input type="hidden" id="ci_cikis">
+
+    <div class="form-row-3">
+      <div class="form-group"><label>Yetişkin *</label><input type="number" id="ci_yetiskin" min="1" value="1" inputmode="numeric"></div>
+      <div class="form-group"><label>Çocuk</label><input type="number" id="ci_cocuk" min="0" value="0" inputmode="numeric"></div>
+      <div class="form-group"><label>Toplam Kişi</label><input type="text" id="ci_toplam_kisi" readonly></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label>Kaynak</label>
+        <select id="ci_kaynak">
+          <option value="walk-in">Walk-in (Kapıdan)</option>
+          <option value="telefon">Telefon</option>
+          <option value="booking">Booking.com</option>
+          <option value="airbnb">Airbnb</option>
+          <option value="expedia">Expedia</option>
+          <option value="website">Otel Websitesi</option>
+          <option value="ajans">Acente / Ajans</option>
+          <option value="diger">Diğer</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ödeme Türü</label>
+        <select id="ci_odeme">
+          <option value="nakit">Nakit</option>
+          <option value="kart">Kredi / Banka Kartı</option>
+          <option value="havale">Havale / EFT</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group"><label>Fiyat Tipi</label>
+      <select id="ci_fiyat_tip" onchange="fiyatTipGuncelle()"></select>
+    </div>
+    <div class="info-box" id="ci_fiyat_info">
+      <div class="ib-label">Gecelik Ücret</div>
+      <div class="ib-val" id="ci_fiyat_val">—</div>
+      <div class="ib-sub" id="ci_fiyat_toplam_sub"></div>
+      <input type="hidden" id="ci_fiyat">
+    </div>
+
+    <div class="form-group"><label>Giriş Saati (Otomatik)</label><input type="text" id="ci_saat" readonly></div>
+    <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('checkinModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveCheckin()">✓ Check-in Yap</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay folio-modal" id="checkoutModal">
+  <div class="modal" style="max-width:600px">
+    <div class="folio-header">
+      <div>
+        <div class="folio-oda" id="co_baslik">Oda</div>
+        <div class="folio-misafir" id="co_misafir"></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase">Check-out</div>
+        <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:2px" id="co_tarih"></div>
+      </div>
+    </div>
+
+    <div class="section-mini-title">Hesap Özeti</div>
+    <div class="folio-items" id="co_items"></div>
+    <div class="folio-toplam">
+      <div class="folio-toplam-label">Ödenecek Toplam</div>
+      <div class="folio-toplam-val" id="co_toplam"></div>
+    </div>
+
+    <div class="separator"></div>
+    <div class="form-group"><label>Ödeme Türü</label>
+      <select id="co_odeme">
+        <option value="nakit">Nakit</option>
+        <option value="kart">Kredi / Banka Kartı</option>
+        <option value="havale">Havale / EFT</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('checkoutModal')">Vazgeç</button>
+      <button class="btn btn-warning" onclick="printFolio()">🖨 Fatura Yazdır</button>
+      <button class="btn btn-primary" onclick="saveCheckout()">✓ Check-out & Öde</button>
+    </div>
+  </div>
+</div>
+
+<!-- MASRAF EKLE MODAL -->
+<div class="modal-overlay" id="masrafModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="masrafTitle">Oda Masrafı</div>
+    <input type="hidden" id="masraf_oda_no">
+    <div class="form-group">
+      <label>Tutar (₺) *</label>
+      <input type="number" id="masraf_tutar" placeholder="0,00" inputmode="decimal" style="font-size:20px;font-weight:600;text-align:center;">
+    </div>
+    <div class="form-group">
+      <label>Açıklama *</label>
+      <input type="text" id="masraf_aciklama" placeholder="Örn: Su, Havlu, Kahvaltı...">
+    </div>
+    <div class="form-group">
+      <label>Kategori</label>
+      <select id="masraf_kategori">
+        <option value="yiyecek">Yiyecek / İçecek</option>
+        <option value="minibar">Minibar</option>
+        <option value="servis">Oda Servisi</option>
+        <option value="camasir">Çamaşır</option>
+        <option value="telefon">Telefon</option>
+        <option value="ekipman">Ekipman Kiralama</option>
+        <option value="diger">Diğer</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('masrafModal')">Vazgeç</button>
+      <button class="btn btn-primary btn-full" onclick="saveMasraf()">Odaya Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- REZERVASYON MODAL -->
+<div class="modal-overlay" id="rezervModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Rezervasyon Ekle</div>
+    <div class="form-row">
+      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()"></div>
+      <div class="form-group"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
+    </div>
+    <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly></div>
+    <input type="hidden" id="rev_cikis">
+    <div class="form-row">
+      <div class="form-group"><label>Oda No *</label>
+        <select id="rev_oda" onchange="revOdaSecildi()"><option value="">— Seç —</option></select>
+      </div>
+      <div class="form-group"><label>Kaynak</label>
+        <select id="rev_kaynak">
+          <option value="walk-in">Walk-in</option><option value="telefon">Telefon</option>
+          <option value="booking">Booking.com</option><option value="airbnb">Airbnb</option>
+          <option value="expedia">Expedia</option><option value="website">Website</option>
+          <option value="ajans">Ajans</option><option value="diger">Diğer</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>TC Kimlik No</label><input type="text" id="rev_tc" maxlength="11" inputmode="numeric" oninput="revTcAra(this.value)"></div>
+    <div class="musteri-bulundu" id="revMusteriBulundu">
+      <div class="mb-ad" id="rev_mb_ad"></div>
+      <div class="mb-meta" id="rev_mb_meta"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+      <div class="form-group"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Yetişkin</label><input type="number" id="rev_yetiskin" min="1" value="1"></div>
+      <div class="form-group"><label>Çocuk</label><input type="number" id="rev_cocuk" min="0" value="0"></div>
+    </div>
+    <div class="form-group"><label>Fiyat Tipi</label>
+      <select id="rev_fiyat_tip" onchange="revFiyatGuncelle()"></select>
+    </div>
+    <div class="info-box" id="rev_fiyat_info" style="display:none">
+      <div class="ib-label">Gecelik Ücret</div>
+      <div class="ib-val" id="rev_fiyat_val">—</div>
+      <div class="ib-sub" id="rev_fiyat_toplam_sub"></div>
+    </div>
+    <input type="hidden" id="rev_fiyat">
+    <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
+    <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('rezervModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveRezervasyon()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- DURUM MODAL (Temizlik vs.) -->
+<div class="modal-overlay" id="durumModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title" id="durumTitle">Oda Durumu</div>
+    <input type="hidden" id="durum_oda_no">
+    <div class="form-group"><label>Durum</label>
+      <select id="durum_select">
+        <option value="bos">Boş</option>
+        <option value="temizlik">Temizlikte</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('durumModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveDurum()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- FATURA PRINT -->
+<div id="printArea" style="display:none">
+  <style>
+    @media print {
+      body > *:not(#printArea){display:none!important;}
+      #printArea{display:block!important;}
+    }
+  </style>
+  <div style="font-family:'Jost',sans-serif;padding:48px;max-width:640px;margin:0 auto">
+    <div style="text-align:center;border-bottom:2px solid #1e1b17;padding-bottom:24px;margin-bottom:28px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;letter-spacing:5px;color:#1e1b17">SWISS HOTEL</div>
+      <div style="font-size:11px;letter-spacing:4px;color:#7a7268;margin-top:6px">MİSAFİR FATURASI</div>
+    </div>
+    <div id="printContent"></div>
+    <div style="border-top:1px solid #ddd7cc;margin-top:36px;padding-top:16px;font-size:11px;color:#7a7268;text-align:center;letter-spacing:1px">
+      Swiss Hotel · Teşekkür ederiz, tekrar bekleriz
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-top"></div>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      Swiss <span>Hotel</span>
+    </div>
+    <div class="header-center">
+      <div class="header-date" id="headerDate"></div>
+      <div style="width:1px;height:14px;background:rgba(255,255,255,.15);margin:0 4px"></div>
+      <div class="header-time" id="headerTime"></div>
+    </div>
+    <div class="header-right">
+      <div class="sync-indicator" id="syncEl"><span class="dot"></span><span id="syncLabel">Bağlanıyor</span></div>
+      <div class="user-badge">◎ Resepsiyonist</div>
+      <button class="btn-logout" onclick="doLogout()">Çıkış</button>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-tab active" id="tab-odalar" onclick="showPage('odalar',this)">🛏 Odalar</div>
+    <div class="nav-tab" id="tab-rezervasyonlar" onclick="showPage('rezervasyonlar',this)">📅 Rezervasyonlar</div>
+    <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">📋 Masraflar</div>
+  </div>
+</nav>
+
+<div class="content">
+
+<!-- ODALAR SAYFASI -->
+<div class="page active" id="page-odalar">
+  <div class="section-head">
+    <h2>Oda <em>Durumları</em></h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="openModal('rezervModal')">+ Rezervasyon</button>
+    </div>
+  </div>
+
+  <!-- İstatistikler -->
+  <div class="rooms-stats">
+    <div class="stat-card dolu">
+      <div class="stat-label">Dolu</div>
+      <div class="stat-value" id="stat-dolu">—</div>
+    </div>
+    <div class="stat-card bos">
+      <div class="stat-label">Boş</div>
+      <div class="stat-value" id="stat-bos">—</div>
+    </div>
+    <div class="stat-card temizlik">
+      <div class="stat-label">Temizlik</div>
+      <div class="stat-value" id="stat-temizlik">—</div>
+    </div>
+    <div class="stat-card rezerve">
+      <div class="stat-label">Rezervasyon</div>
+      <div class="stat-value" id="stat-rezerve">—</div>
+    </div>
+  </div>
+
+  <!-- Oda kartları -->
+  <div class="rooms-grid" id="roomsGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-style:italic;font-family:'Cormorant Garamond',serif">Yükleniyor...</div>
+  </div>
+</div>
+
+<!-- REZERVASYONLAR SAYFASI -->
+<div class="page" id="page-rezervasyonlar">
+  <div class="section-head">
+    <h2>Rezervasyon <em>Listesi</em></h2>
+    <button class="btn btn-primary" onclick="openModal('rezervModal')">+ Rezervasyon Ekle</button>
+  </div>
+
+  <div class="table-card">
+    <div class="filter-row">
+      <select id="rev-filter-durum" onchange="renderRezervasyonlar()">
+        <option value="">Tüm Durumlar</option>
+        <option value="bekliyor">Bekliyor</option>
+        <option value="aktif">Aktif</option>
+        <option value="tamamlandi">Tamamlandı</option>
+        <option value="iptal">İptal</option>
+      </select>
+      <select id="rev-filter-oda" onchange="renderRezervasyonlar()">
+        <option value="">Tüm Odalar</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Giriş</th><th>Çıkış</th><th>Gece</th><th>Oda</th>
+          <th>Misafir</th><th>TC</th><th>Kişi</th><th>Kaynak</th>
+          <th>Fiyat</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="rezervBody"><tr class="empty-row"><td colspan="11">Yükleniyor...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MASRAFLAR SAYFASI -->
+<div class="page" id="page-masraflar">
+  <div class="section-head">
+    <h2>Oda <em>Masrafları</em></h2>
+    <div style="font-size:13px;color:var(--muted)">Misafire ait oda masrafları burada listelenir</div>
+  </div>
+
+  <div class="filter-row" style="background:var(--white);border:1px solid var(--border);padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap">
+    <select id="masraf-filter-oda" onchange="renderMasraflar()" style="border:1px solid var(--border);padding:8px 11px;font-family:'Jost',sans-serif;font-size:12px;outline:none">
+      <option value="">Tüm Odalar</option>
+    </select>
+    <select id="masraf-filter-durum" onchange="renderMasraflar()" style="border:1px solid var(--border);padding:8px 11px;font-family:'Jost',sans-serif;font-size:12px;outline:none">
+      <option value="acik">Açık (Ödenmemiş)</option>
+      <option value="odendi">Ödenmiş</option>
+      <option value="">Tümü</option>
+    </select>
+  </div>
+
+  <div class="table-card">
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Tarih/Saat</th><th>Oda</th><th>Misafir</th>
+          <th>Kategori</th><th>Açıklama</th><th>Tutar</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="masrafBody"><tr class="empty-row"><td colspan="8">Yükleniyor...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="total-row" id="masrafToplam"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, setDoc, getDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
+  authDomain:"swiss-hotel-64451.firebaseapp.com",
+  projectId:"swiss-hotel-64451",
+  storageBucket:"swiss-hotel-64451.firebasestorage.app",
+  messagingSenderId:"1051421740248",
+  appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
+});
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// Auth kontrolü
+onAuthStateChanged(auth, user => {
+  if (!user) window.location.href = 'index.html';
+});
+
+// Global veri
+window._O = {}; window._F = {}; window._R = []; window._M = [];
+let currentCheckinOda = null;
+let currentCheckoutOda = null;
+
+// ── YARDIMCI ──
+const fmt = n => Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ₺';
+const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const nowISO = () => new Date().toISOString();
+const timeStr = iso => iso ? new Date(iso).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+const dateStr = iso => iso ? new Date(iso).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}) : '—';
+const addDays = (dateStr, days) => {
+  const d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate()+days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const geceSayisi = (g,c) => g&&c ? Math.max(1,Math.round((new Date(c)-new Date(g))/(864e5))) : 0;
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className='', 3200);
+}
+
+function syncStatus(ok) {
+  const el = document.getElementById('syncEl');
+  el.className = 'sync-indicator' + (ok?' ok':'');
+  document.getElementById('syncLabel').textContent = ok ? 'Bağlı' : 'Bağlantı Yok';
+}
+
+// Saat
+function updateTime() {
+  const now = new Date();
+  document.getElementById('headerTime').textContent = now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+}
+updateTime(); setInterval(updateTime, 1000);
+
+// ── FİYAT ──
+function getTipAd(no) { return window._F?.tipAdlar?.[no] || `Tip ${no}`; }
+function getOdaFiyat(odaNo, tip) { return Number(window._F?.odalar?.['oda'+odaNo]?.[tip]) || 0; }
+
+async function loadFiyatlar() {
+  try {
+    const snap = await getDoc(doc(db,'meta','fiyatlar2'));
+    if (snap.exists()) window._F = snap.data();
+    else {
+      window._F = {tipAdlar:{1:'Standart',2:'Hafta Sonu',3:'Sezon',4:'İndirimli'},odalar:{}};
+      for(let i=1;i<=12;i++) window._F.odalar['oda'+i]={1:0,2:0,3:0,4:0};
+    }
+  } catch(e) {}
+}
+
+// ── ODALAR ──
+async function initOdalar() {
+  const snap = await getDoc(doc(db,'meta','odalar'));
+  if (!snap.exists()) {
+    const o = {};
+    for(let i=1;i<=12;i++) o['oda'+i]={durum:'bos',misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:''};
+    await setDoc(doc(db,'meta','odalar'),o);
+    window._O = o;
+  } else window._O = snap.data();
+  renderOdalar();
+}
+
+onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
+  window._R = s.docs.map(d=>({id:d.id,...d.data()}));
+  renderRezervasyonlar(); renderOdalar(); syncStatus(true);
+}, () => syncStatus(false));
+
+onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), s => {
+  window._M = s.docs.map(d=>({id:d.id,...d.data()}));
+  renderMasraflar();
+});
+
+// ── RENDER ODALAR ──
+window.renderOdalar = function() {
+  const grid = document.getElementById('roomsGrid');
+  const todayStr = today();
+  let dolu=0, bos=0, temizlik=0, rezerve=0;
+
+  grid.innerHTML = '';
+  for(let i=1;i<=12;i++) {
+    const o = window._O['oda'+i] || {durum:'bos'};
+    // Bugün aktif rezervasyon var mı?
+    const aktifRev = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
+    const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
+
+    let durum = o.durum;
+    if(durum==='dolu') dolu++;
+    else if(durum==='temizlik') temizlik++;
+    else if(aktifRev) { durum='dolu'; dolu++; }
+    else if(bekleyenRev) { rezerve++; }
+    else bos++;
+
+    const div = document.createElement('div');
+    div.className = `room-card ${durum}${bekleyenRev&&durum==='bos'?' rezerve':''}`;
+
+    let icerik = `<div class="room-no">${i}</div>`;
+    icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':bekleyenRev?'Rezerveli':'Boş'}</div>`;
+    if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
+    if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
+    if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
+    if(bekleyenRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bekleyenRev.misafir||'—'}</div><div class="room-info">${bekleyenRev.giris}</div>`;
+
+    div.innerHTML = icerik;
+    div.onclick = () => odaKliklandi(i);
+    grid.appendChild(div);
+  }
+
+  document.getElementById('stat-dolu').textContent = dolu;
+  document.getElementById('stat-bos').textContent = bos;
+  document.getElementById('stat-temizlik').textContent = temizlik;
+  document.getElementById('stat-rezerve').textContent = rezerve;
+};
+
+// Oda tıklandığında ne yapılacağına karar ver
+window.odaKliklandi = function(no) {
+  const o = window._O['oda'+no] || {durum:'bos'};
+  const todayStr = today();
+  const aktifRev = window._R.find(r => Number(r.odaNo)===no && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
+
+  if (o.durum === 'dolu') {
+    // Check-out veya masraf ekle
+    openCheckoutMenu(no);
+  } else if (aktifRev) {
+    // Rezervasyondan check-in
+    checkindenRezervasyon(aktifRev);
+  } else {
+    // Check-in
+    openCheckin(no);
+  }
+};
+
+// ── CHECK-IN ──
+window.openCheckin = function(no) {
+  currentCheckinOda = no;
+  document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
+  // Temizle
+  ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ci_giris').value = today();
+  document.getElementById('ci_gece').value = 1;
+  document.getElementById('ci_yetiskin').value = 1;
+  document.getElementById('ci_cocuk').value = 0;
+  document.getElementById('ci_kaynak').value = 'walk-in';
+  document.getElementById('ci_odeme').value = 'nakit';
+  document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
+  document.getElementById('musteriBulundu').style.display = 'none';
+
+  // Fiyat tipi doldur
+  const sel = document.getElementById('ci_fiyat_tip');
+  sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}">${getTipAd(t)} — ${getOdaFiyat(no,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  fiyatTipGuncelle();
+  hesaplaKonaklama();
+  kisilerGuncelle();
+
+  openModal('checkinModal');
+};
+
+window.hesaplaKonaklama = function() {
+  const giris = document.getElementById('ci_giris').value;
+  const gece  = parseInt(document.getElementById('ci_gece').value) || 1;
+  if(giris) {
+    const cikis = addDays(giris, gece);
+    document.getElementById('ci_cikis').value = cikis;
+    document.getElementById('ci_cikis_goster').value = cikis + ` (${gece} gece)`;
+  }
+  fiyatTipGuncelle();
+};
+
+window.kisilerGuncelle = function() {
+  const y = parseInt(document.getElementById('ci_yetiskin')?.value)||1;
+  const c = parseInt(document.getElementById('ci_cocuk')?.value)||0;
+  const topEl = document.getElementById('ci_toplam_kisi');
+  if(topEl) topEl.value = `${y+c} kişi (${y} yetişkin${c>0?`, ${c} çocuk`:''})`;
+};
+
+document.getElementById('ci_yetiskin')?.addEventListener('input', kisilerGuncelle);
+document.getElementById('ci_cocuk')?.addEventListener('input', kisilerGuncelle);
+
+window.fiyatTipGuncelle = function() {
+  const no   = currentCheckinOda;
+  const tip  = Number(document.getElementById('ci_fiyat_tip')?.value)||1;
+  const gece = parseInt(document.getElementById('ci_gece')?.value)||1;
+  const fiyat = getOdaFiyat(no, tip);
+  const toplam = fiyat * gece;
+  document.getElementById('ci_fiyat').value = fiyat;
+  document.getElementById('ci_fiyat_val').textContent = fiyat.toLocaleString('tr-TR') + ' ₺';
+  document.getElementById('ci_fiyat_toplam_sub').textContent = `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)}`;
+};
+
+// TC Arama
+window.tcAra = async function(tc) {
+  if(tc.length !== 11) { document.getElementById('musteriBulundu').style.display='none'; return; }
+  try {
+    const q = query(collection(db,'musteriler'), where('tc','==',tc));
+    const snap = await getDocs(q);
+    if(!snap.empty) {
+      const m = snap.docs[0].data();
+      document.getElementById('ci_ad').value = m.ad || '';
+      document.getElementById('ci_tel').value = m.tel || '';
+      document.getElementById('ci_email').value = m.email || '';
+      document.getElementById('ci_plaka').value = m.plaka || '';
+      document.getElementById('mb-ad').textContent = `${m.ad} — Kayıtlı Müşteri`;
+      document.getElementById('mb-meta').textContent = `${m.konaklamaSayisi||0} kez konaklamış · Son: ${m.sonKonaklama||'—'}`;
+      document.getElementById('musteriBulundu').style.display = 'block';
+    } else {
+      document.getElementById('musteriBulundu').style.display = 'none';
+    }
+  } catch(e) {}
+};
+
+window.tcTemizle = function() {
+  document.getElementById('ci_tc').value='';
+  document.getElementById('musteriBulundu').style.display='none';
+};
+
+window.saveCheckin = async function() {
+  const no     = currentCheckinOda;
+  const tc     = document.getElementById('ci_tc').value.trim();
+  const ad     = document.getElementById('ci_ad').value.trim();
+  const tel    = document.getElementById('ci_tel').value.trim();
+  const email  = document.getElementById('ci_email').value.trim();
+  const plaka  = document.getElementById('ci_plaka').value.trim().toUpperCase();
+  const giris  = document.getElementById('ci_giris').value;
+  const cikis  = document.getElementById('ci_cikis').value;
+  const gece   = parseInt(document.getElementById('ci_gece').value)||1;
+  const yetiskin = parseInt(document.getElementById('ci_yetiskin').value)||1;
+  const cocuk  = parseInt(document.getElementById('ci_cocuk').value)||0;
+  const kaynak = document.getElementById('ci_kaynak').value;
+  const odeme  = document.getElementById('ci_odeme').value;
+  const fiyatTip = Number(document.getElementById('ci_fiyat_tip').value)||1;
+  const fiyat  = Number(document.getElementById('ci_fiyat').value)||0;
+  const not_   = document.getElementById('ci_not').value;
+  const now    = nowISO();
+
+  if(!ad) { toast('Misafir adı zorunlu','error'); return; }
+  if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
+
+  const girisSaati = new Date().toLocaleTimeString('tr-TR');
+  const toplam = gece * fiyat;
+
+  // Oda güncelle
+  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,odemeTuru:odeme,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,guncelleme:now};
+  await setDoc(doc(db,'meta','odalar'), window._O);
+
+  // Gelir kaydı
+  if(toplam > 0) {
+    await addDoc(collection(db,'gelirler'),{
+      tarih:giris, tutar:toplam, odaNo:String(no),
+      odemeTuru:odeme, misafir:ad, tc, kaynak,
+      fiyatTip, fiyatTipAd:getTipAd(fiyatTip),
+      girisSaati, yetiskin, cocuk,
+      aciklama:`Oda ${no} · ${gece} gece · ${getTipAd(fiyatTip)} · ${kaynak}`,
+      kayitTarih:now
+    });
+  }
+
+  // Müşteri kaydını güncelle / oluştur
+  if(tc) {
+    const mq = query(collection(db,'musteriler'), where('tc','==',tc));
+    const msnap = await getDocs(mq);
+    if(msnap.empty) {
+      await addDoc(collection(db,'musteriler'),{tc,ad,tel,email,plaka,konaklamaSayisi:1,sonKonaklama:giris,ilkKayit:now});
+    } else {
+      const mref = msnap.docs[0].ref;
+      const mdata = msnap.docs[0].data();
+      await updateDoc(mref,{ad,tel,email,plaka,konaklamaSayisi:(mdata.konaklamaSayisi||0)+1,sonKonaklama:giris});
+    }
+  }
+
+  renderOdalar();
+  closeModal('checkinModal');
+  toast(`Oda ${no} — Check-in ✓ ${toplam>0?fmt(toplam)+' gelir kaydedildi':''}`, 'success');
+};
+
+// Rezervasyondan check-in
+window.checkindenRezervasyon = function(rev) {
+  currentCheckinOda = rev.odaNo;
+  document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} (Rezervasyon)`;
+  document.getElementById('ci_tc').value = rev.tc || '';
+  document.getElementById('ci_ad').value = rev.misafir || '';
+  document.getElementById('ci_tel').value = rev.tel || '';
+  document.getElementById('ci_email').value = rev.email || '';
+  document.getElementById('ci_giris').value = rev.giris || today();
+  document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
+  document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
+  document.getElementById('ci_yetiskin').value = rev.yetiskin || 1;
+  document.getElementById('ci_cocuk').value = rev.cocuk || 0;
+  document.getElementById('ci_not').value = rev.not || '';
+  document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
+  document.getElementById('musteriBulundu').style.display = 'none';
+
+  const gece = geceSayisi(rev.giris, rev.cikis);
+  document.getElementById('ci_gece').value = gece;
+
+  const sel = document.getElementById('ci_fiyat_tip');
+  sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==(rev.fiyatTip||1)?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+
+  hesaplaKonaklama();
+  kisilerGuncelle();
+  openModal('checkinModal');
+};
+
+// ── CHECK-OUT MENÜSÜ ──
+window.openCheckoutMenu = function(no) {
+  const o = window._O['oda'+no];
+  if(!o || o.durum !== 'dolu') { openDurumModal(no); return; }
+
+  // Odanın açık masrafları
+  const odaMasraflari = window._M.filter(m => String(m.odaNo)===String(no) && m.durum==='acik');
+  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const gece = geceSayisi(o.giris, o.cikis);
+  const konaklama = gece * (o.fiyat||0);
+  const genel = konaklama + masrafToplam;
+
+  currentCheckoutOda = no;
+  document.getElementById('co_baslik').textContent = `Oda ${no}`;
+  document.getElementById('co_misafir').textContent = o.misafir || '—';
+  document.getElementById('co_tarih').textContent = dateStr(nowISO());
+
+  // Folio items
+  let items = '';
+  items += `<div class="folio-item"><div><div class="folio-item-name">Konaklama — ${gece} gece</div><div class="folio-item-meta">${o.giris} → ${o.cikis} · ${getTipAd(o.fiyatTip||1)}</div></div><div class="folio-item-tutar">${fmt(konaklama)}</div></div>`;
+  odaMasraflari.forEach(m => {
+    items += `<div class="folio-item"><div><div class="folio-item-name">${m.aciklama||'—'}</div><div class="folio-item-meta">${m.kategori||'—'} · ${timeStr(m.kayitTarih)}</div></div><div class="folio-item-tutar">${fmt(m.tutar)}</div></div>`;
+  });
+  document.getElementById('co_items').innerHTML = items;
+  document.getElementById('co_toplam').textContent = fmt(genel);
+
+  openModal('checkoutModal');
+};
+
+window.saveCheckout = async function() {
+  const no = currentCheckoutOda;
+  const o  = window._O['oda'+no];
+  if(!o) return;
+
+  const odeme  = document.getElementById('co_odeme').value;
+  const gece   = geceSayisi(o.giris, o.cikis);
+  const now    = nowISO();
+  const odaMasraflari = window._M.filter(m=>String(m.odaNo)===String(no)&&m.durum==='acik');
+  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+
+  // Masrafları ödenmiş işaretle
+  for(const m of odaMasraflari) {
+    await updateDoc(doc(db,'odaMasraflari',m.id),{durum:'odendi',odemeZamani:now});
+    // Muhasebe kaydı
+    await addDoc(collection(db,'gelirler'),{
+      tarih:today(), tutar:Number(m.tutar), odaNo:String(no),
+      odemeTuru:odeme, misafir:o.misafir, tc:o.tc||'',
+      kaynak:'oda-masrafi',
+      aciklama:`Oda ${no} Masraf · ${m.aciklama}`,
+      kayitTarih:now
+    });
+  }
+
+  // Odayı temizliğe al
+  window._O['oda'+no] = {durum:'temizlik',misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:now};
+  await setDoc(doc(db,'meta','odalar'), window._O);
+
+  renderOdalar();
+  closeModal('checkoutModal');
+  toast(`Oda ${no} check-out ✓`, 'success');
+};
+
+// ── MASRAF ──
+window.openMasrafModal = function(no) {
+  const o = window._O['oda'+no];
+  if(!o||o.durum!=='dolu') { toast('Sadece dolu odalara masraf eklenebilir','error'); return; }
+  document.getElementById('masrafTitle').textContent = `Oda ${no} — Masraf Ekle`;
+  document.getElementById('masraf_oda_no').value = no;
+  document.getElementById('masraf_tutar').value = '';
+  document.getElementById('masraf_aciklama').value = '';
+  document.getElementById('masraf_kategori').value = 'yiyecek';
+  closeModal('checkoutModal');
+  openModal('masrafModal');
+};
+
+window.saveMasraf = async function() {
+  const no       = document.getElementById('masraf_oda_no').value;
+  const tutar    = document.getElementById('masraf_tutar').value;
+  const aciklama = document.getElementById('masraf_aciklama').value.trim();
+  const kategori = document.getElementById('masraf_kategori').value;
+  if(!tutar||!aciklama) { toast('Tutar ve açıklama zorunlu','error'); return; }
+  const o = window._O['oda'+no];
+  await addDoc(collection(db,'odaMasraflari'),{
+    odaNo:String(no), misafir:o?.misafir||'—', tc:o?.tc||'',
+    tutar:Number(tutar), aciklama, kategori, durum:'acik',
+    kayitTarih:nowISO()
+  });
+  closeModal('masrafModal');
+  toast(`Oda ${no} — Masraf eklendi ✓`,'success');
+};
+
+// ── FOLIO PRINT ──
+window.printFolio = function() {
+  const no = currentCheckoutOda;
+  const o  = window._O['oda'+no];
+  if(!o) return;
+
+  const gece = geceSayisi(o.giris, o.cikis);
+  const konaklama = gece * (o.fiyat||0);
+  const odaMasraflari = window._M.filter(m=>String(m.odaNo)===String(no)&&m.durum==='acik');
+  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const genel = konaklama + masrafToplam;
+
+  const rows = [
+    ['Fatura Tarihi', dateStr(nowISO())],
+    ['Oda No', no],
+    ['Misafir', o.misafir||'—'],
+    ['TC Kimlik', o.tc||'—'],
+    ['Giriş Tarihi', o.giris||'—'],
+    ['Giriş Saati', o.girisSaati||'—'],
+    ['Çıkış Tarihi', o.cikis||'—'],
+    ['Konaklama', `${gece} gece`],
+    ['Fiyat Tipi', getTipAd(o.fiyatTip||1)],
+    ['Gecelik Ücret', fmt(o.fiyat||0)],
+    ['Konaklama Tutarı', fmt(konaklama)],
+  ];
+
+  let masrafRows = '';
+  odaMasraflari.forEach(m => {
+    masrafRows += `<tr style="border-bottom:1px solid #ddd7cc"><td style="padding:8px 0;color:#7a7268">${m.aciklama}</td><td style="padding:8px 0;font-weight:500;text-align:right">${fmt(m.tutar)}</td></tr>`;
+  });
+
+  document.getElementById('printContent').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+      ${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #ddd7cc"><td style="padding:9px 0;color:#7a7268;width:45%">${k}</td><td style="padding:9px 0;font-weight:500">${v}</td></tr>`).join('')}
+    </table>
+    ${masrafRows?`<div style="font-weight:600;font-size:13px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd7cc">Ek Masraflar</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${masrafRows}</table>`:'' }
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:2px solid #1e1b17">
+      <span style="font-weight:700;font-size:16px">TOPLAM</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:#9a7c3f">${fmt(genel)}</span>
+    </div>
+  `;
+  window.print();
+};
+
+// ── DURUM MODAL ──
+window.openDurumModal = function(no) {
+  const o = window._O['oda'+no]||{durum:'bos'};
+  document.getElementById('durumTitle').textContent = `Oda ${no} — Durum`;
+  document.getElementById('durum_oda_no').value = no;
+  document.getElementById('durum_select').value = o.durum === 'dolu' ? 'bos' : o.durum;
+  openModal('durumModal');
+};
+
+window.saveDurum = async function() {
+  const no    = document.getElementById('durum_oda_no').value;
+  const durum = document.getElementById('durum_select').value;
+  const now   = nowISO();
+  window._O['oda'+no] = {...(window._O['oda'+no]||{}), durum, guncelleme:now};
+  if(durum==='bos'||durum==='temizlik') {
+    window._O['oda'+no] = {durum,misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:now};
+  }
+  await setDoc(doc(db,'meta','odalar'), window._O);
+  renderOdalar();
+  closeModal('durumModal');
+  toast(`Oda ${no} güncellendi ✓`, 'success');
+};
+
+// ── REZERVASYONLAR ──
+window.revHesapla = function() {
+  const giris = document.getElementById('rev_giris').value;
+  const gece  = parseInt(document.getElementById('rev_gece').value)||1;
+  if(giris) {
+    const cikis = addDays(giris, gece);
+    document.getElementById('rev_cikis').value = cikis;
+    document.getElementById('rev_cikis_goster').value = cikis + ` (${gece} gece)`;
+  }
+  revCarpısmaKontrol();
+  revFiyatGuncelle();
+};
+
+window.revOdaSecildi = function() {
+  const odaNo = document.getElementById('rev_oda').value;
+  if(!odaNo) return;
+  const sel = document.getElementById('rev_fiyat_tip');
+  sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}">${getTipAd(t)} — ${getOdaFiyat(odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  revFiyatGuncelle();
+  revCarpısmaKontrol();
+};
+
+window.revFiyatGuncelle = function() {
+  const odaNo = document.getElementById('rev_oda').value;
+  const tip   = Number(document.getElementById('rev_fiyat_tip').value)||1;
+  const gece  = parseInt(document.getElementById('rev_gece').value)||1;
+  const fiyat = getOdaFiyat(odaNo, tip);
+  document.getElementById('rev_fiyat').value = fiyat;
+  const infoEl = document.getElementById('rev_fiyat_info');
+  if(odaNo && fiyat>0) {
+    infoEl.style.display='block';
+    document.getElementById('rev_fiyat_val').textContent = fiyat.toLocaleString('tr-TR')+' ₺';
+    document.getElementById('rev_fiyat_toplam_sub').textContent = `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(gece*fiyat)}`;
+  } else infoEl.style.display='none';
+};
+
+window.revCarpısmaKontrol = function() {
+  const giris  = document.getElementById('rev_giris').value;
+  const cikis  = document.getElementById('rev_cikis').value;
+  const odaNo  = document.getElementById('rev_oda').value;
+  const carpEl = document.getElementById('rev_carpısma');
+  if(giris&&cikis&&odaNo) {
+    const carpisan = window._R.find(r=>Number(r.odaNo)===Number(odaNo)&&r.giris<cikis&&r.cikis>giris&&r.durum!=='iptal');
+    carpEl.style.display = carpisan ? 'block' : 'none';
+  } else carpEl.style.display='none';
+};
+
+window.revTcAra = async function(tc) {
+  if(tc.length!==11) { document.getElementById('revMusteriBulundu').style.display='none'; return; }
+  const q = query(collection(db,'musteriler'), where('tc','==',tc));
+  const snap = await getDocs(q);
+  if(!snap.empty) {
+    const m = snap.docs[0].data();
+    document.getElementById('rev_ad').value = m.ad||'';
+    document.getElementById('rev_tel').value = m.tel||'';
+    document.getElementById('rev_mb_ad').textContent = `${m.ad} — Kayıtlı Müşteri`;
+    document.getElementById('rev_mb_meta').textContent = `${m.konaklamaSayisi||0} kez konaklamış`;
+    document.getElementById('revMusteriBulundu').style.display = 'block';
+  } else document.getElementById('revMusteriBulundu').style.display='none';
+};
+
+window.saveRezervasyon = async function() {
+  const giris   = document.getElementById('rev_giris').value;
+  const cikis   = document.getElementById('rev_cikis').value;
+  const gece    = parseInt(document.getElementById('rev_gece').value)||1;
+  const odaNo   = document.getElementById('rev_oda').value;
+  const tc      = document.getElementById('rev_tc').value.trim();
+  const ad      = document.getElementById('rev_ad').value.trim();
+  const tel     = document.getElementById('rev_tel').value.trim();
+  const yetiskin= parseInt(document.getElementById('rev_yetiskin').value)||1;
+  const cocuk   = parseInt(document.getElementById('rev_cocuk').value)||0;
+  const kaynak  = document.getElementById('rev_kaynak').value;
+  const fiyatTip= Number(document.getElementById('rev_fiyat_tip').value)||1;
+  const fiyat   = Number(document.getElementById('rev_fiyat').value)||0;
+  const not_    = document.getElementById('rev_not').value;
+  const now     = nowISO();
+
+  if(!giris||!cikis||!odaNo||!ad) { toast('Zorunlu alanları doldurun','error'); return; }
+  const carpisan = window._R.find(r=>Number(r.odaNo)===Number(odaNo)&&r.giris<cikis&&r.cikis>giris&&r.durum!=='iptal');
+  if(carpisan) { toast(`Oda ${odaNo} bu tarihlerde dolu!`,'error'); return; }
+
+  await addDoc(collection(db,'rezervasyonlar'),{
+    giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
+    yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
+    fiyat,durum:'bekliyor',not:not_,kayitTarih:now
+  });
+
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('rev_oda').value='';
+  document.getElementById('rev_cikis_goster').value='';
+  document.getElementById('rev_carpısma').style.display='none';
+  document.getElementById('rev_fiyat_info').style.display='none';
+  closeModal('rezervModal');
+  toast('Rezervasyon kaydedildi ✓','success');
+};
+
+window.renderRezervasyonlar = function() {
+  const fd = document.getElementById('rev-filter-durum')?.value||'';
+  const fo = document.getElementById('rev-filter-oda')?.value||'';
+  const todayStr = today();
+
+  const withDurum = window._R.map(r=>{
+    let durum = r.durum||'bekliyor';
+    if(durum!=='iptal'){
+      if(r.cikis&&r.cikis<todayStr) durum='tamamlandi';
+      else if(r.giris&&r.giris<=todayStr) durum='aktif';
+      else durum='bekliyor';
+    }
+    return{...r,_durum:durum};
+  });
+
+  let d = withDurum;
+  if(fd) d=d.filter(r=>r._durum===fd);
+  if(fo) d=d.filter(r=>String(r.odaNo)===String(fo));
+
+  const odaSel = document.getElementById('rev-filter-oda');
+  if(odaSel&&odaSel.children.length<=1) for(let i=1;i<=12;i++) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
+
+  const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red'};
+  const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal'};
+
+  document.getElementById('rezervBody').innerHTML = d.length ? d.map(r=>`
+    <tr>
+      <td>${r.giris||'—'}</td>
+      <td>${r.cikis||'—'}</td>
+      <td>${r.gece||geceSayisi(r.giris,r.cikis)||'—'}</td>
+      <td>Oda ${r.odaNo}</td>
+      <td>${r.misafir||'—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.tc||'—'}</td>
+      <td style="font-size:11px">${(r.yetiskin||1)+(r.cocuk||0)} kişi</td>
+      <td>${r.kaynak?`<span class="badge badge-blue">${r.kaynak}</span>`:'—'}</td>
+      <td class="amount-pos">${r.fiyat?fmt(r.fiyat)+'/gece':'—'}</td>
+      <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
+      <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
+        ${r._durum==='bekliyor'?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
+        ${r._durum!=='iptal'&&r._durum!=='tamamlandi'?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
+      </td>
+    </tr>`).join('')
+  : '<tr class="empty-row"><td colspan="11">Rezervasyon bulunamadı</td></tr>';
+};
+
+window.iptalRezervasyon = async function(id) {
+  if(!confirm('Rezervasyon iptal edilsin mi?')) return;
+  await deleteDoc(doc(db,'rezervasyonlar',id));
+  toast('Rezervasyon iptal edildi','success');
+};
+
+// ── MASRAF LİSTESİ ──
+window.renderMasraflar = function() {
+  const fo = document.getElementById('masraf-filter-oda')?.value||'';
+  const fd = document.getElementById('masraf-filter-durum')?.value||'acik';
+  let d = window._M;
+  if(fo) d=d.filter(m=>String(m.odaNo)===String(fo));
+  if(fd) d=d.filter(m=>m.durum===fd);
+
+  const odaSel = document.getElementById('masraf-filter-oda');
+  if(odaSel&&odaSel.children.length<=1) for(let i=1;i<=12;i++) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
+
+  document.getElementById('masrafBody').innerHTML = d.length ? d.map(m=>`
+    <tr>
+      <td style="font-size:12px">${timeStr(m.kayitTarih)}</td>
+      <td>Oda ${m.odaNo}</td>
+      <td>${m.misafir||'—'}</td>
+      <td><span class="badge badge-orange">${m.kategori||'—'}</span></td>
+      <td>${m.aciklama||'—'}</td>
+      <td class="amount-neg">−${fmt(m.tutar)}</td>
+      <td><span class="badge ${m.durum==='acik'?'badge-red':'badge-green'}">${m.durum==='acik'?'Açık':'Ödendi'}</span></td>
+      <td>
+        ${m.durum==='acik'?`<button class="btn btn-warning btn-sm" onclick="openMasrafModal(${m.odaNo})">+ Ekle</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deleteMasraf('${m.id}')">Sil</button>
+      </td>
+    </tr>`).join('')
+  : '<tr class="empty-row"><td colspan="8">Masraf kaydı yok</td></tr>';
+
+  const top = d.reduce((a,b)=>a+Number(b.tutar||0),0);
+  document.getElementById('masrafToplam').textContent = d.length ? `${d.length} kayıt · Toplam: ${fmt(top)}` : '';
+};
+
+window.deleteMasraf = async function(id) {
+  if(!confirm('Masraf silinsin mi?')) return;
+  await deleteDoc(doc(db,'odaMasraflari',id));
+  toast('Masraf silindi','success');
+};
+
+// ── MODAL & SAYFA ──
+window.openModal = function(id) {
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll(`#${id} input[type=date]`).forEach(inp=>{if(!inp.value)inp.value=today();});
+};
+window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');}));
+
+window.showPage = function(id, tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  tab.classList.add('active');
+};
+
+// Rezervasyon oda select
+const revOdaSel = document.getElementById('rev_oda');
+for(let i=1;i<=12;i++) revOdaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
+
+// Logout
+window.doLogout = async function() {
+  if(!confirm('Çıkış yapılsın mı?')) return;
+  await signOut(auth);
+  window.location.href = 'index.html';
+};
+
+// Başlat
+await loadFiyatlar();
+await initOdalar();
+</script>
+</body>
+</html>
