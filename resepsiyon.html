@@ -694,7 +694,8 @@ function updateTime() {
 updateTime(); setInterval(updateTime, 1000);
 
 // ── FİYAT ──
-function getTipAd(no) { return window._F?.tipAdlar?.[no] || `Tip ${no}`; }
+const TIP_ADLAR = {1:'Hafta İçi', 2:'Hafta Sonu', 3:'Sezon', 4:'İndirimli'};
+function getTipAd(no) { return TIP_ADLAR[no] || `Tip ${no}`; }
 function getOdaFiyat(odaNo, tip) { return Number(window._F?.odalar?.['oda'+odaNo]?.[tip]) || 0; }
 
 async function loadFiyatlar() {
