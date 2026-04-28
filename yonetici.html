@@ -187,6 +187,116 @@ tbody td{padding:11px 16px;font-size:13px;}
 
 <div id="toast"></div>
 
+<!-- ODA ÖZELLİKLERİ DÜZENLE MODAL -->
+<div class="modal-overlay" id="odaOzelModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title" id="odaOzelModalTitle">Oda Özellikleri</div>
+    <input type="hidden" id="ozel_oda_no">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Oda Adı / Etiketi</label>
+        <input type="text" id="ozel_ad" placeholder="örn: Deniz Manzaralı, Aile Odası...">
+      </div>
+      <div class="form-group">
+        <label>Kat</label>
+        <select id="ozel_kat">
+          <option value="">— Seçin —</option>
+          <option value="Zemin Kat">Zemin Kat</option>
+          <option value="1. Kat">1. Kat</option>
+          <option value="2. Kat">2. Kat</option>
+          <option value="3. Kat">3. Kat</option>
+          <option value="4. Kat">4. Kat</option>
+          <option value="5. Kat">5. Kat</option>
+          <option value="Çatı Katı">Çatı Katı</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cephe / Manzara</label>
+        <select id="ozel_cephe">
+          <option value="">— Seçin —</option>
+          <option value="Deniz Manzarası">Deniz Manzarası</option>
+          <option value="Dağ Manzarası">Dağ Manzarası</option>
+          <option value="Bahçe Manzarası">Bahçe Manzarası</option>
+          <option value="Havuz Manzarası">Havuz Manzarası</option>
+          <option value="Şehir Manzarası">Şehir Manzarası</option>
+          <option value="İç Avlu">İç Avlu</option>
+          <option value="Sokak Cephesi">Sokak Cephesi</option>
+          <option value="Arka Cephe">Arka Cephe</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Oda Tipi</label>
+        <select id="ozel_tip">
+          <option value="">— Seçin —</option>
+          <option value="Standart">Standart</option>
+          <option value="Deluxe">Deluxe</option>
+          <option value="Superior">Superior</option>
+          <option value="Suite">Suite</option>
+          <option value="Junior Suite">Junior Suite</option>
+          <option value="Aile Odası">Aile Odası</option>
+          <option value="Apart">Apart</option>
+          <option value="Ekonomi">Ekonomi</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Yatak Tipi</label>
+        <select id="ozel_yatak">
+          <option value="">— Seçin —</option>
+          <option value="Çift Kişilik">Çift Kişilik (King)</option>
+          <option value="İki Ayrı Yatak">İki Ayrı Yatak (Twin)</option>
+          <option value="Tek Kişilik">Tek Kişilik</option>
+          <option value="Üç Kişilik">Üç Kişilik</option>
+          <option value="Ranza">Ranza</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Maksimum Kişi</label>
+        <select id="ozel_maxkisi">
+          <option value="1">1 Kişi</option>
+          <option value="2" selected>2 Kişi</option>
+          <option value="3">3 Kişi</option>
+          <option value="4">4 Kişi</option>
+          <option value="5">5 Kişi</option>
+          <option value="6">6 Kişi</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Metrekare (m²)</label>
+      <input type="number" id="ozel_m2" placeholder="örn: 28" style="width:120px">
+    </div>
+    <div class="form-group">
+      <label>Özellikler / Donanım</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px" id="ozellikCheckbox">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Klima" class="ozel-cb"> Klima</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Balkon" class="ozel-cb"> Balkon</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Jakuzi" class="ozel-cb"> Jakuzi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Minibar" class="ozel-cb"> Minibar</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Kasa" class="ozel-cb"> Kasa</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="TV" class="ozel-cb"> TV</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Wi-Fi" class="ozel-cb"> Wi-Fi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Banyo" class="ozel-cb"> Banyo</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Küvet" class="ozel-cb"> Küvet</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Engelli Uyumlu" class="ozel-cb"> Engelli Uyumlu</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Çamaşır Makinesi" class="ozel-cb"> Çamaşır Mak.</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" value="Mutfak" class="ozel-cb"> Mutfak</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Ek Notlar</label>
+      <textarea id="ozel_not" rows="3" placeholder="Oda hakkında ek bilgi..." style="width:100%;border:1px solid var(--border);padding:9px 13px;font-family:'Jost',sans-serif;font-size:13px;color:var(--text);background:var(--cream);outline:none;resize:vertical"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('odaOzelModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveOdaOzel()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <!-- GELİR MODAL -->
 <div class="modal-overlay" id="gelirModal">
   <div class="modal">
@@ -283,6 +393,7 @@ tbody td{padding:11px 16px;font-size:13px;}
     <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">📋 Masraflar</div>
     <div class="nav-tab" id="tab-kasa" onclick="showPage('kasa',this)">🏦 Kasa</div>
     <div class="nav-tab" id="tab-fiyatlar" onclick="showPage('fiyatlar',this)">💲 Fiyatlandırma</div>
+    <div class="nav-tab" id="tab-odaozel" onclick="showPage('odaozel',this)">🏨 Oda Özellikleri</div>
   </div>
 </nav>
 
@@ -514,6 +625,14 @@ tbody td{padding:11px 16px;font-size:13px;}
       </table>
     </div>
   </div>
+</div>
+<!-- ODA ÖZELLİKLERİ SAYFASI -->
+<div class="page" id="page-odaozel">
+  <div class="section-head">
+    <h2>Oda <em>Özellikleri</em></h2>
+    <div style="font-size:13px;color:var(--muted)">Her odanın adı, katı, cephesi ve donanımını buradan düzenleyin · Resepsiyonda hover popup olarak görünür</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px" id="odaOzelGrid"></div>
 </div>
 
 </div><!-- /content -->
@@ -876,14 +995,6 @@ window.openModal = function(id) {
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');}));
 
-window.showPage = function(id, tab) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+id)?.classList.add('active');
-  tab.classList.add('active');
-  if(id==='takvim') setTimeout(renderTakvim, 50);
-};
-
 // ── TAKVİM ──
 window.takvimNav = function(dir) {
   if(takvimModu==='ay') takvimTarih.setMonth(takvimTarih.getMonth()+dir);
@@ -1017,9 +1128,113 @@ window.doLogout = async function() {
   window.location.href = 'index.html';
 };
 
+// ── ODA ÖZELLİKLERİ ──
+window._OZ = {}; // {oda1:{ad,kat,cephe,tip,yatak,maxkisi,m2,ozellikler:[],not}, ...}
+
+async function loadOdaOzel() {
+  try {
+    const snap = await getDoc(doc(db,'meta','odaOzellikleri'));
+    if(snap.exists()) window._OZ = snap.data();
+    else window._OZ = {};
+  } catch(e) { console.error(e); }
+  renderOdaOzelGrid();
+}
+
+function renderOdaOzelGrid() {
+  const grid = document.getElementById('odaOzelGrid'); if(!grid) return;
+  const tipRenk = {
+    'Standart':'var(--muted)','Deluxe':'var(--blue)','Superior':'var(--green)',
+    'Suite':'var(--gold)','Junior Suite':'var(--gold)','Aile Odası':'var(--purple)',
+    'Apart':'var(--orange)','Ekonomi':'var(--muted)'
+  };
+  grid.innerHTML = '';
+  for(let i=1;i<=12;i++) {
+    const oz = window._OZ['oda'+i] || {};
+    const renk = tipRenk[oz.tip] || 'var(--border)';
+    const ozellikler = (oz.ozellikler||[]).slice(0,4).join(' · ');
+    const div = document.createElement('div');
+    div.style.cssText = `background:var(--white);border:1px solid var(--border);border-top:3px solid ${renk};padding:20px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s`;
+    div.onmouseenter = () => div.style.boxShadow = 'var(--shadow-lg)';
+    div.onmouseleave = () => div.style.boxShadow = 'var(--shadow)';
+    div.onclick = () => openOdaOzelModal(i);
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark)">Oda ${i}</div>
+          ${oz.ad?`<div style="font-size:12px;color:var(--gold);font-weight:600;letter-spacing:.5px;margin-top:2px">${oz.ad}</div>`:'<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">İsim girilmemiş</div>'}
+        </div>
+        ${oz.tip?`<span class="badge badge-blue" style="color:${renk};background:transparent;border:1px solid ${renk}">${oz.tip}</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:10px">
+        <div><span style="color:var(--muted)">Kat:</span> <strong>${oz.kat||'—'}</strong></div>
+        <div><span style="color:var(--muted)">m²:</span> <strong>${oz.m2||'—'}</strong></div>
+        <div><span style="color:var(--muted)">Cephe:</span> <strong>${oz.cephe||'—'}</strong></div>
+        <div><span style="color:var(--muted)">Max:</span> <strong>${oz.maxkisi||'2'} kişi</strong></div>
+        <div style="grid-column:1/-1"><span style="color:var(--muted)">Yatak:</span> <strong>${oz.yatak||'—'}</strong></div>
+      </div>
+      ${ozellikler?`<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px">${ozellikler}${(oz.ozellikler||[]).length>4?' +'+((oz.ozellikler||[]).length-4)+' daha':''}</div>`:''}
+      <div style="text-align:right;margin-top:10px">
+        <span style="font-size:11px;color:var(--gold);font-weight:600;letter-spacing:.5px">Düzenle →</span>
+      </div>`;
+    grid.appendChild(div);
+  }
+}
+
+window.openOdaOzelModal = function(no) {
+  const oz = window._OZ['oda'+no] || {};
+  document.getElementById('ozel_oda_no').value = no;
+  document.getElementById('odaOzelModalTitle').textContent = `Oda ${no} — Özellikler`;
+  document.getElementById('ozel_ad').value = oz.ad || '';
+  document.getElementById('ozel_kat').value = oz.kat || '';
+  document.getElementById('ozel_cephe').value = oz.cephe || '';
+  document.getElementById('ozel_tip').value = oz.tip || '';
+  document.getElementById('ozel_yatak').value = oz.yatak || '';
+  document.getElementById('ozel_maxkisi').value = oz.maxkisi || '2';
+  document.getElementById('ozel_m2').value = oz.m2 || '';
+  document.getElementById('ozel_not').value = oz.not || '';
+  // Checkboxlar
+  document.querySelectorAll('.ozel-cb').forEach(cb => {
+    cb.checked = (oz.ozellikler||[]).includes(cb.value);
+  });
+  openModal('odaOzelModal');
+};
+
+window.saveOdaOzel = async function() {
+  const no = document.getElementById('ozel_oda_no').value;
+  const ozellikler = [...document.querySelectorAll('.ozel-cb:checked')].map(cb => cb.value);
+  window._OZ['oda'+no] = {
+    ad: document.getElementById('ozel_ad').value.trim(),
+    kat: document.getElementById('ozel_kat').value,
+    cephe: document.getElementById('ozel_cephe').value,
+    tip: document.getElementById('ozel_tip').value,
+    yatak: document.getElementById('ozel_yatak').value,
+    maxkisi: document.getElementById('ozel_maxkisi').value,
+    m2: document.getElementById('ozel_m2').value,
+    not: document.getElementById('ozel_not').value.trim(),
+    ozellikler
+  };
+  try {
+    await setDoc(doc(db,'meta','odaOzellikleri'), window._OZ);
+    renderOdaOzelGrid();
+    closeModal('odaOzelModal');
+    toast(`Oda ${no} özellikleri kaydedildi ✓`, 'success');
+  } catch(e) { toast('Hata: '+e.message, 'error'); }
+};
+
+// showPage güncelle — odaozel sekmesi için render
+window.showPage = function(id, tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  tab.classList.add('active');
+  if(id==='takvim') setTimeout(renderTakvim, 50);
+  if(id==='odaozel') renderOdaOzelGrid();
+};
+
 // Başlat
 await loadFiyatlar();
 await loadOdalar();
+await loadOdaOzel();
 </script>
 </body>
 </html>
