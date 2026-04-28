@@ -453,50 +453,66 @@ tbody td{padding:11px 16px;font-size:13px;}
 <div class="page" id="page-fiyatlar">
   <div class="section-head">
     <h2>Oda <em>Fiyatlandırması</em></h2>
-    <div style="font-size:13px;color:var(--muted)">Her odaya 4 farklı fiyat tipi — resepsiyoncu sadece bunlar arasından seçer</div>
+    <div style="font-size:13px;color:var(--muted)">Resepsiyoncu check-in sırasında bu 4 tipten birini seçer · Fiyatlar gecelik ücret olarak girilmeli</div>
   </div>
 
-  <!-- Tip adları -->
-  <div style="background:var(--white);border:1px solid var(--border);padding:22px;margin-bottom:22px;box-shadow:var(--shadow)">
-    <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--dark);margin-bottom:16px">Fiyat Tip Adları</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:6px">Tip 1</div>
-        <input type="text" id="tip1_ad" placeholder="Standart" style="width:100%;border:1px solid var(--border);padding:9px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:6px">Tip 2</div>
-        <input type="text" id="tip2_ad" placeholder="Hafta Sonu" style="width:100%;border:1px solid var(--border);padding:9px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Tip 3</div>
-        <input type="text" id="tip3_ad" placeholder="Sezon" style="width:100%;border:1px solid var(--border);padding:9px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:6px">Tip 4</div>
-        <input type="text" id="tip4_ad" placeholder="İndirimli" style="width:100%;border:1px solid var(--border);padding:9px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
-      </div>
+  <!-- Fiyat tipleri açıklama kartları -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px">
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--green);padding:16px 18px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:6px">Tip 1</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark)">Hafta İçi</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Pzt – Prş geceleri standart tarife</div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px">
-      <button class="btn btn-primary" onclick="saveTipAdlar()">Tip Adlarını Kaydet</button>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--blue);padding:16px 18px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:6px">Tip 2</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark)">Hafta Sonu</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Cum – Paz geceleri yüksek talep</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--gold);padding:16px 18px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Tip 3</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark)">Sezon</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Yoğun dönem / bayram / özel tarih</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--red);padding:16px 18px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:6px">Tip 4</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark)">İndirimli</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Uzun konaklama / kurumsal / promosyon</div>
     </div>
   </div>
 
-  <!-- Oda fiyatları -->
-  <div class="section-head" style="margin-top:8px">
-    <h2>Oda Bazlı <em>Fiyatlar</em></h2>
-  </div>
-  <div class="fiyat-oda-grid" id="fiyatGrid"></div>
-
-  <!-- Toplu -->
-  <div style="background:var(--white);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
-    <span style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--dark)">Toplu Uygula:</span>
-    <select id="toplu-tip" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none">
-      <option value="1">Tip 1</option><option value="2">Tip 2</option>
-      <option value="3">Tip 3</option><option value="4">Tip 4</option>
+  <!-- Toplu uygulama -->
+  <div style="background:var(--white);border:1px solid var(--border);padding:18px 22px;box-shadow:var(--shadow);margin-bottom:22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Toplu Uygula — Tüm Odalar:</span>
+    <select id="toplu-tip" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
+      <option value="1">Hafta İçi (Tip 1)</option>
+      <option value="2">Hafta Sonu (Tip 2)</option>
+      <option value="3">Sezon (Tip 3)</option>
+      <option value="4">İndirimli (Tip 4)</option>
     </select>
-    <input type="number" id="toplu-fiyat" placeholder="Fiyat (₺)" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;width:140px">
+    <input type="number" id="toplu-fiyat" placeholder="Gecelik ücret (₺)" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;width:180px;background:var(--cream)">
     <button class="btn btn-primary" onclick="topluFiyatUygula()">Tüm Odalara Uygula</button>
+  </div>
+
+  <!-- Fiyat tablosu -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Oda Bazlı Fiyatlar <span style="font-size:12px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— gecelik ₺</span></div>
+      <div style="font-size:11px;color:var(--muted)">Değeri değiştir → otomatik kaydeder</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:70px">Oda</th>
+            <th style="color:var(--green)">Hafta İçi</th>
+            <th style="color:var(--blue)">Hafta Sonu</th>
+            <th style="color:var(--gold)">Sezon</th>
+            <th style="color:var(--red)">İndirimli</th>
+          </tr>
+        </thead>
+        <tbody id="fiyatTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -559,63 +575,56 @@ updateTime(); setInterval(updateTime,1000);
 const gOdaSel = document.getElementById('g_oda');
 for(let i=1;i<=12;i++) gOdaSel.innerHTML += `<option value="${i}">Oda ${i}</option>`;
 
-// ── FİYAT ──
-function getTipAd(no) { return window._F?.tipAdlar?.[no]||`Tip ${no}`; }
-function getOdaFiyat(odaNo,tip) { return Number(window._F?.odalar?.['oda'+odaNo]?.[tip])||0; }
+// ── FİYAT — SABİT TİP ADLARI ──
+const TIP_ADLAR = {1:'Hafta İçi', 2:'Hafta Sonu', 3:'Sezon', 4:'İndirimli'};
+function getTipAd(no) { return TIP_ADLAR[no] || `Tip ${no}`; }
+function getOdaFiyat(odaNo, tip) { return Number(window._F?.odalar?.['oda'+odaNo]?.[tip]) || 0; }
 
 async function loadFiyatlar() {
   try {
     const snap = await getDoc(doc(db,'meta','fiyatlar2'));
-    if(snap.exists()) window._F = snap.data();
-    else {
-      window._F = {tipAdlar:{1:'Standart',2:'Hafta Sonu',3:'Sezon',4:'İndirimli'},odalar:{}};
+    if(snap.exists()) {
+      window._F = snap.data();
+      // Tip adlarını sabit güncelle
+      window._F.tipAdlar = TIP_ADLAR;
+    } else {
+      window._F = {tipAdlar:TIP_ADLAR, odalar:{}};
       for(let i=1;i<=12;i++) window._F.odalar['oda'+i]={1:0,2:0,3:0,4:0};
-      await setDoc(doc(db,'meta','fiyatlar2'),window._F);
+      await setDoc(doc(db,'meta','fiyatlar2'), window._F);
     }
-    renderFiyatGrid();
-    renderTipAdlarForm();
+    renderFiyatTable();
   } catch(e) { console.error(e); }
 }
 
-function renderTipAdlarForm() {
-  for(let i=1;i<=4;i++) {
-    const el = document.getElementById('tip'+i+'_ad');
-    if(el) el.value = window._F?.tipAdlar?.[i]||'';
-  }
-}
-
-window.saveTipAdlar = async function() {
-  if(!window._F.tipAdlar) window._F.tipAdlar={};
-  for(let i=1;i<=4;i++) window._F.tipAdlar[i] = document.getElementById('tip'+i+'_ad')?.value||`Tip ${i}`;
-  try {
-    await setDoc(doc(db,'meta','fiyatlar2'),window._F);
-    toast('Tip adları kaydedildi ✓','success');
-    renderFiyatGrid();
-  } catch(e) { toast('Hata','error'); }
-};
-
-function renderFiyatGrid() {
-  const grid = document.getElementById('fiyatGrid'); if(!grid) return;
-  const cols = ['var(--green)','var(--blue)','var(--gold)','var(--red)'];
-  grid.innerHTML='';
+function renderFiyatTable() {
+  const tbody = document.getElementById('fiyatTableBody'); if(!tbody) return;
+  const tipRenk = ['var(--green)','var(--blue)','var(--gold)','var(--red)'];
+  let html = '';
   for(let i=1;i<=12;i++) {
-    const of = window._F?.odalar?.['oda'+i]||{};
-    const card = document.createElement('div');
-    card.className='fiyat-oda-card';
-    card.innerHTML=`
-      <div class="fiyat-oda-title">Oda ${i}</div>
-      <div class="tip-grid">
-        ${[1,2,3,4].map(t=>`
-          <div class="tip-cell">
-            <div class="tip-cell-label" style="color:${cols[t-1]}">${getTipAd(t)}</div>
-            <input type="number" class="tip-cell-input" id="f_${i}_${t}" value="${of[t]||0}"
-              inputmode="numeric" onchange="saveOdaFiyat(${i},${t},this.value)">
+    const of = window._F?.odalar?.['oda'+i] || {};
+    html += `<tr>
+      <td style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--dark)">Oda ${i}</td>
+      ${[1,2,3,4].map(t=>`
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="f_${i}_${t}" value="${of[t]||0}"
+              style="width:100px;border:1px solid var(--border);border-bottom:2px solid ${tipRenk[t-1]};padding:7px 10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:600;color:var(--text);outline:none;background:var(--cream);text-align:right"
+              inputmode="numeric"
+              onchange="saveOdaFiyat(${i},${t},this.value)"
+              onfocus="this.style.background='var(--white)'"
+              onblur="this.style.background='var(--cream)'">
+            <span style="font-size:11px;color:var(--muted)">₺</span>
           </div>
-        `).join('')}
-      </div>`;
-    grid.appendChild(card);
+        </td>`).join('')}
+    </tr>`;
   }
+  tbody.innerHTML = html;
 }
+
+// saveTipAdlar artık gerekli değil (sabit), ama harmless bırakıyoruz
+window.saveTipAdlar = async function() {
+  toast('Tip adları sabittir: Hafta İçi / Hafta Sonu / Sezon / İndirimli', '');
+};
 
 window.saveOdaFiyat = async function(odaNo,tip,val) {
   if(!window._F.odalar) window._F.odalar={};
@@ -630,8 +639,8 @@ window.saveOdaFiyat = async function(odaNo,tip,val) {
 window.topluFiyatUygula = async function() {
   const tip   = Number(document.getElementById('toplu-tip')?.value);
   const fiyat = Number(document.getElementById('toplu-fiyat')?.value);
-  if(!fiyat) { toast('Fiyat girin','error'); return; }
-  if(!confirm(`Tüm 12 odaya ${getTipAd(tip)} = ${fiyat.toLocaleString('tr-TR')} ₺ uygulanacak?`)) return;
+  if(!fiyat) { toast('Gecelik ücret girin','error'); return; }
+  if(!confirm(`Tüm 12 odaya "${getTipAd(tip)}" = ${fiyat.toLocaleString('tr-TR')} ₺ uygulanacak?`)) return;
   for(let i=1;i<=12;i++) {
     if(!window._F.odalar['oda'+i]) window._F.odalar['oda'+i]={1:0,2:0,3:0,4:0};
     window._F.odalar['oda'+i][tip] = fiyat;
@@ -639,8 +648,8 @@ window.topluFiyatUygula = async function() {
   try {
     await setDoc(doc(db,'meta','fiyatlar2'),window._F);
     document.getElementById('toplu-fiyat').value='';
-    renderFiyatGrid();
-    toast('Uygulandı ✓','success');
+    renderFiyatTable();
+    toast(`"${getTipAd(tip)}" → tüm odalara ${fiyat.toLocaleString('tr-TR')} ₺ uygulandı ✓`,'success');
   } catch(e) { toast('Hata','error'); }
 };
 
