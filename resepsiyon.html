@@ -64,7 +64,19 @@ nav{background:var(--charcoal);border-bottom:1px solid rgba(196,165,90,.15);posi
 .modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--dark);margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border);}
 .form-group{margin-bottom:16px;}
 .form-group label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);padding:10px 13px;font-family:'Jost',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;border-radius:0;-webkit-appearance:none;}
+.form-group input:not([type=checkbox]):not([type=radio]),
+.form-group select,
+.form-group textarea{width:100%;border:1px solid var(--border);padding:10px 13px;font-family:'Jost',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;border-radius:0;-webkit-appearance:none;}
+/* Checkbox ve radio — native görünüm */
+input[type=checkbox], input[type=radio]{
+  width:18px;height:18px;min-width:18px;
+  cursor:pointer;
+  accent-color:var(--dark);
+  -webkit-appearance:checkbox;
+  appearance:checkbox;
+  flex-shrink:0;
+}
+input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .form-group input:focus,.form-group select:focus{border-color:var(--gold);background:var(--white);}
 .form-group input[readonly]{background:var(--parchment);color:var(--muted);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -253,7 +265,7 @@ tbody td{padding:12px 16px;font-size:13px;}
 @media(max-width:900px){.rooms-stats{grid-template-columns:repeat(2,1fr);}}
 /* ── CROSS-PLATFORM MOBİL ── */
 /* Android Chrome, Samsung Internet, iOS Safari */
-input, select, textarea, button {
+input:not([type=checkbox]):not([type=radio]), select, textarea, button {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -362,7 +374,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="section-mini-title">Konaklama Bilgileri</div>
 
     <div class="form-row">
-      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()"></div>
+      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()" min=""></div>
       <div class="form-group"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" placeholder="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
     </div>
     <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="Giriş tarihi ve gece sayısından hesaplanır"></div>
@@ -546,12 +558,55 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 </div>
 
+<!-- HARCAMA MODAL (Resepsiyon) -->
+<div class="modal-overlay" id="harcamaModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">Otel Harcaması</div>
+    <div style="background:var(--parchment);border:1px solid var(--border);padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--muted)">
+      Resepsiyon birimi tarafından yapılan küçük harcamalar — temizlik malzemesi, kırtasiye, küçük alımlar vb.
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tutar (₺) *</label>
+        <input type="number" id="harc_tutar" placeholder="0" inputmode="decimal" style="font-size:18px;font-weight:600;text-align:right">
+      </div>
+      <div class="form-group">
+        <label>Ödeme Türü</label>
+        <select id="harc_odeme">
+          <option value="nakit">Nakit</option>
+          <option value="kart">Kart</option>
+          <option value="havale">Havale</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Kategori</label>
+      <select id="harc_kategori">
+        <option value="Temizlik Malzemesi">Temizlik Malzemesi</option>
+        <option value="Kırtasiye">Kırtasiye</option>
+        <option value="Misafir İkramı">Misafir İkramı</option>
+        <option value="Küçük Onarım">Küçük Onarım</option>
+        <option value="Ulaşım">Ulaşım</option>
+        <option value="Diğer">Diğer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Açıklama *</label>
+      <input type="text" id="harc_aciklama" placeholder="Ne için harcandı?">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('harcamaModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveHarcama()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <!-- REZERVASYON MODAL -->
 <div class="modal-overlay" id="rezervModal">
   <div class="modal" style="max-width:560px">
     <div class="modal-title">Rezervasyon Ekle</div>
     <div class="form-row">
-      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()"></div>
+      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()" min=""></div>
       <div class="form-group"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
     </div>
     <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly></div>
@@ -675,6 +730,7 @@ input[type="number"], input[type="date"], input[type="password"] {
   <div class="section-head">
     <h2>Oda <em>Durumları</em></h2>
     <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="openModal('harcamaModal')">💸 Harcama Gir</button>
       <button class="btn btn-primary" onclick="openModal('rezervModal')">+ Rezervasyon</button>
     </div>
   </div>
@@ -862,10 +918,19 @@ const nowISO = () => new Date().toISOString();
 const timeStr = iso => iso ? new Date(iso).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
 const dateStr = iso => iso ? new Date(iso).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}) : '—';
 const addDays = (dateStr, days) => {
-  const d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate()+days);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d+days);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 };
-const geceSayisi = (g,c) => g&&c ? Math.max(1,Math.round((new Date(c)-new Date(g))/(864e5))) : 0;
+// Timezone-safe gece sayısı hesabı
+const geceSayisi = (g, c) => {
+  if(!g || !c) return 0;
+  const [gy,gm,gd] = g.split('-').map(Number);
+  const [cy,cm,cd] = c.split('-').map(Number);
+  const d1 = new Date(gy, gm-1, gd);
+  const d2 = new Date(cy, cm-1, cd);
+  return Math.max(1, Math.round((d2 - d1) / 864e5));
+};
 
 function toast(msg, type='') {
   const t = document.getElementById('toast');
@@ -1132,6 +1197,14 @@ window.openCheckin = function(no) {
 window.hesaplaKonaklama = function() {
   const giris = document.getElementById('ci_giris').value;
   const gece  = parseInt(document.getElementById('ci_gece').value) || 1;
+
+  // Geçmiş tarih engeli
+  if(giris && giris < today()) {
+    toast('Giriş tarihi geçmiş tarih olamaz', 'error');
+    document.getElementById('ci_giris').value = today();
+    return;
+  }
+
   if(giris) {
     const cikis = addDays(giris, gece);
     document.getElementById('ci_cikis').value = cikis;
@@ -1243,6 +1316,7 @@ window.saveCheckin = async function() {
 
   renderOdalar();
   closeModal('checkinModal');
+  await logAktivite('checkin', `${ad} · ${gece} gece · ${getTipAd(fiyatTip)} · ${fmt(toplam)}`, no);
   toast(`Oda ${no} — Check-in ✓ ${toplam>0?fmt(toplam)+' gelir kaydedildi':''}`, 'success');
 };
 
@@ -1391,6 +1465,7 @@ window.saveCheckoutFromOzet = async function() {
 
   renderOdalar();
   closeModal('checkoutOzetModal');
+  await logAktivite('checkout', `${o.misafir||'?'} · ${gece} gece · Toplam ${fmt(toplam)}`, no);
   toast(`${odaAdi} — Check-out tamamlandı ✓ · ${fmt(toplam)}`, 'success');
 };
 
@@ -1510,6 +1585,7 @@ window.saveMasraf = async function() {
     });
   }
   closeModal('masrafModal');
+  await logAktivite('masraf', `${kategori} · ${aciklama} · ${tutar.toLocaleString('tr-TR')} ₺ · ${odemeDurumu==='ayri_odendi'?'Ayrı ödendi':'Odaya yansıtıldı'}`, no);
   toast(`Oda ${no} — Masraf eklendi ✓`,'success');
 };
 
@@ -1577,6 +1653,7 @@ window.saveDurum = async function() {
   await setDoc(doc(db,'meta','odalar'), window._O);
   renderOdalar();
   closeModal('durumModal');
+  await logAktivite('durum_degisim', `Oda ${no} → ${durum}`, no);
   toast(`Oda ${no} güncellendi ✓`, 'success');
 };
 
@@ -1584,6 +1661,14 @@ window.saveDurum = async function() {
 window.revHesapla = function() {
   const giris = document.getElementById('rev_giris').value;
   const gece  = parseInt(document.getElementById('rev_gece').value)||1;
+
+  // Geçmiş tarih engeli
+  if(giris && giris < today()) {
+    toast('Rezervasyon geçmiş tarihe yapılamaz', 'error');
+    document.getElementById('rev_giris').value = today();
+    return;
+  }
+
   if(giris) {
     const cikis = addDays(giris, gece);
     document.getElementById('rev_cikis').value = cikis;
@@ -1673,6 +1758,7 @@ window.saveRezervasyon = async function() {
   document.getElementById('rev_carpısma').style.display='none';
   document.getElementById('rev_fiyat_info').style.display='none';
   closeModal('rezervModal');
+  await logAktivite('rezervasyon', `${ad} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(gece*fiyat)}`, odaNo);
   toast('Rezervasyon kaydedildi ✓','success');
 };
 
@@ -1724,6 +1810,7 @@ window.renderRezervasyonlar = function() {
 window.iptalRezervasyon = async function(id) {
   if(!confirm('Rezervasyon iptal edilsin mi?')) return;
   await deleteDoc(doc(db,'rezervasyonlar',id));
+  await logAktivite('rezervasyon_iptal', `Rezervasyon iptal edildi (ID: ${id})`);
   toast('Rezervasyon iptal edildi','success');
 };
 
@@ -1817,7 +1904,13 @@ window.deleteMasraf = async function(id) {
 // ── MODAL & SAYFA ──
 window.openModal = function(id) {
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll(`#${id} input[type=date]`).forEach(inp=>{if(!inp.value)inp.value=today();});
+  // Tarih inputlarına bugünü min olarak set et
+  const t = today();
+  document.querySelectorAll(`#${id} input[type=date]`).forEach(inp => {
+    if(!inp.value) inp.value = t;
+    // Geçmiş tarih engeli — sadece rezervasyon ve checkin tarih inputlarına
+    if(inp.id === 'ci_giris' || inp.id === 'rev_giris') inp.min = t;
+  });
 };
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');}));
@@ -1980,6 +2073,48 @@ async function loadOdaOzel() {
     if(snap.exists()) window._OZ = snap.data();
   } catch(e) {}
 }
+
+// ── AKTİVİTE LOGU (gizli — sadece yönetici görür) ──
+async function logAktivite(islem, detay, odaNo='') {
+  try {
+    await addDoc(collection(db,'aktiviteLog'), {
+      islem,          // 'checkin' | 'checkout' | 'rezervasyon' | 'rezervasyon_iptal' | 'masraf' | 'harcama' | 'durum_degisim'
+      detay,          // açıklama metni
+      odaNo: String(odaNo),
+      kim: auth.currentUser?.email || 'resepsiyon',
+      zaman: nowISO(),
+      tarih: today()
+    });
+  } catch(e) { /* sessizce geç */ }
+}
+
+// ── HARCAMA ──
+window.saveHarcama = async function() {
+  const tutar    = Number(document.getElementById('harc_tutar').value);
+  const aciklama = document.getElementById('harc_aciklama').value.trim();
+  const kategori = document.getElementById('harc_kategori').value;
+  const odeme    = document.getElementById('harc_odeme').value;
+  if(!tutar || !aciklama) { toast('Tutar ve açıklama zorunlu','error'); return; }
+  const now = nowISO();
+
+  // Giderler koleksiyonuna yaz (yönetici görebilir)
+  await addDoc(collection(db,'giderler'), {
+    tarih: today(),
+    tutar,
+    kategori,
+    aciklama: `[Resepsiyon] ${aciklama}`,
+    odemeTuru: odeme,
+    kim: auth.currentUser?.email || 'resepsiyon',
+    kayitTarih: now
+  });
+
+  await logAktivite('harcama', `${kategori} · ${aciklama} · ${tutar.toLocaleString('tr-TR')} ₺`);
+
+  closeModal('harcamaModal');
+  document.getElementById('harc_tutar').value = '';
+  document.getElementById('harc_aciklama').value = '';
+  toast(`Harcama kaydedildi ✓ — ${tutar.toLocaleString('tr-TR')} ₺`, 'success');
+};
 
 // Başlat
 await loadFiyatlar();
