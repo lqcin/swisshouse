@@ -251,17 +251,75 @@ tbody td{padding:12px 16px;font-size:13px;}
 
 /* RESPONSIVE */
 @media(max-width:900px){.rooms-stats{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:700px){
-  .header-inner{padding:0 14px;}
-  .nav-inner{padding:0 14px;}
-  .content{padding:16px 14px;}
-  .modal{padding:22px 18px;}
-  .folio-header{margin:-22px -18px 20px;}
-  .form-row,.form-row-3{grid-template-columns:1fr;}
-  .rooms-stats{grid-template-columns:1fr 1fr;}
-  .rooms-grid{grid-template-columns:repeat(3,1fr);}
+/* ── CROSS-PLATFORM MOBİL ── */
+/* Android Chrome, Samsung Internet, iOS Safari */
+input, select, textarea, button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0;
+  font-family: 'Jost', sans-serif;
 }
-@media(max-width:480px){.rooms-grid{grid-template-columns:repeat(2,1fr);}}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%237a7268'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px !important;
+}
+/* Android'de input zoom'unu önle */
+input[type="text"], input[type="email"], input[type="tel"],
+input[type="number"], input[type="date"], input[type="password"] {
+  font-size: 16px !important;
+}
+/* Tablet (768-1024) */
+@media(max-width:1024px) {
+  .rooms-grid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); }
+  .rooms-stats { grid-template-columns: repeat(4,1fr); }
+  .content { padding: 20px 16px; }
+}
+/* Mobil (max 768) */
+@media(max-width:768px) {
+  .header-inner { padding: 0 12px; height: 54px; }
+  .header-date { display: none; }
+  .logo { font-size: 17px; }
+  .nav-inner { padding: 0 8px; }
+  .nav-tab { padding: 11px 12px; font-size: 10px; letter-spacing: 1px; }
+  .content { padding: 14px 12px; }
+  .modal { padding: 20px 16px; max-height: 95vh; }
+  .folio-header { margin: -20px -16px 18px; padding: 14px 16px; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; gap: 0; }
+  .rooms-stats { grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-value { font-size: 26px; }
+  .rooms-grid { grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .room-card { padding: 14px 10px; }
+  .room-no { font-size: 22px; }
+  .section-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions .btn { flex: 1; justify-content: center; min-width: 80px; }
+  /* Popup mobilde gösterme — dokunmatik için modal açılır zaten */
+  .room-popup { display: none !important; }
+  /* Tablo scroll */
+  .table-card { overflow-x: auto; }
+  table { min-width: 500px; }
+}
+/* Küçük telefon (max 480) */
+@media(max-width:480px) {
+  .rooms-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .nav-tab { padding: 10px 8px; font-size: 9px; }
+  .content { padding: 12px 10px; }
+  .rooms-stats { gap: 8px; }
+}
+/* Yatay mod (landscape telefon) */
+@media(max-height:500px) and (orientation:landscape) {
+  header { position: relative; }
+  nav { position: relative; top: 0; }
+  .modal { max-height: 100vh; }
+}
+/* Dokunmatik cihazlarda hover kaldır */
+@media(hover:none) {
+  .room-card:hover { transform: none; box-shadow: var(--shadow); }
+  .room-popup { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -358,30 +416,121 @@ tbody td{padding:12px 16px;font-size:13px;}
   </div>
 </div>
 
-<!-- CHECKOUT MODAL -->
-<div class="modal-overlay folio-modal" id="checkoutModal">
-  <div class="modal" style="max-width:600px">
-    <div class="folio-header">
+<!-- CHECKOUT ÖZET + CHECK-IN MODALI -->
+<!-- checkoutOzetModal aşağıda tanımlandı -->
+
+<!-- MASRAF EKLE MODAL -->
+<div class="modal-overlay" id="masrafModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="masrafTitle">Oda Masrafı</div>
+    <input type="hidden" id="masraf_oda_no">
+
+    <!-- Oda + misafir bilgisi -->
+    <div id="masraf_oda_info" style="background:var(--parchment);border:1px solid var(--border);padding:12px 16px;margin-bottom:18px;display:flex;gap:16px;align-items:center">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--dark);line-height:1" id="masraf_info_no">—</div>
       <div>
-        <div class="folio-oda" id="co_baslik">Oda</div>
-        <div class="folio-misafir" id="co_misafir"></div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase">Check-out</div>
-        <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:2px" id="co_tarih"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--dark)" id="masraf_info_ad">—</div>
+        <div style="font-size:11px;color:var(--muted)" id="masraf_info_misafir">—</div>
       </div>
     </div>
 
-    <div class="section-mini-title">Hesap Özeti</div>
-    <div class="folio-items" id="co_items"></div>
-    <div class="folio-toplam">
-      <div class="folio-toplam-label">Ödenecek Toplam</div>
-      <div class="folio-toplam-val" id="co_toplam"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tutar (₺) *</label>
+        <input type="number" id="masraf_tutar" placeholder="0" inputmode="decimal" style="font-size:18px;font-weight:600;text-align:right">
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="masraf_kategori">
+          <option value="Minibar">Minibar</option>
+          <option value="Yiyecek / İçecek">Yiyecek / İçecek</option>
+          <option value="Oda Servisi">Oda Servisi</option>
+          <option value="Çamaşır">Çamaşır</option>
+          <option value="Telefon">Telefon</option>
+          <option value="Ekipman Kiralama">Ekipman Kiralama</option>
+          <option value="SPA / Havuz">SPA / Havuz</option>
+          <option value="Minibar Hasar">Minibar Hasar</option>
+          <option value="Oda Hasarı">Oda Hasarı</option>
+          <option value="Diğer">Diğer</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Açıklama *</label>
+      <input type="text" id="masraf_aciklama" placeholder="örn: 2 adet su, havlu değişimi...">
+    </div>
+    <div class="form-group">
+      <label>Ödeme Durumu</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <label id="lbl_yansitildi" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);cursor:pointer;background:var(--cream);transition:all .2s">
+          <input type="radio" name="masraf_odeme" value="odaya_yansitildi" checked onchange="masrafOdemeToggle()">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--dark)">Odaya Yansıtıldı</div>
+            <div style="font-size:10px;color:var(--muted)">Check-out'ta tahsil</div>
+          </div>
+        </label>
+        <label id="lbl_ayri" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);cursor:pointer;background:var(--cream);transition:all .2s">
+          <input type="radio" name="masraf_odeme" value="ayri_odendi" onchange="masrafOdemeToggle()">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--dark)">Ayrı Ödendi</div>
+            <div style="font-size:10px;color:var(--muted)">Nakit / kart tahsil edildi</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="form-group" id="masraf_odeme_turu_wrap">
+      <label>Ödeme Türü</label>
+      <select id="masraf_odeme_turu" style="display:none">
+        <option value="nakit">Nakit</option>
+        <option value="kart">Kredi / Banka Kartı</option>
+        <option value="havale">Havale / EFT</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('masrafModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="saveMasraf()">Masrafı Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK-OUT ÖZET MODAL -->
+<div class="modal-overlay" id="checkoutOzetModal">
+  <div class="modal" style="max-width:640px">
+    <div class="folio-header">
+      <div>
+        <div class="folio-oda" id="coz_baslik">Oda</div>
+        <div class="folio-misafir" id="coz_misafir"></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase">Check-out Özeti</div>
+        <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:2px" id="coz_tarih"></div>
+      </div>
+    </div>
+
+    <!-- Konaklama kalemi -->
+    <div class="section-mini-title">Konaklama</div>
+    <div id="coz_konaklama"></div>
+
+    <!-- Masraflar -->
+    <div id="coz_masraf_blok">
+      <div class="section-mini-title" style="margin-top:14px">Oda Masrafları</div>
+      <div id="coz_masraflar"></div>
+    </div>
+
+    <!-- Toplam -->
+    <div class="folio-toplam" style="margin-top:12px">
+      <div class="folio-toplam-label">Toplam (Odaya Yansıtılan)</div>
+      <div class="folio-toplam-val" id="coz_toplam"></div>
+    </div>
+    <div style="background:var(--parchment);border:1px solid var(--border);padding:10px 16px;margin-top:8px;display:flex;justify-content:space-between;font-size:13px" id="coz_ayri_blok">
+      <span style="color:var(--muted)">Daha önce ayrı ödenen masraflar:</span>
+      <span style="font-weight:600;color:var(--green)" id="coz_ayri_toplam">—</span>
     </div>
 
     <div class="separator"></div>
-    <div class="form-group"><label>Ödeme Türü</label>
-      <select id="co_odeme">
+    <div class="form-group">
+      <label>Ödeme Türü (Konaklama + Odaya Yansıtılan Masraflar)</label>
+      <select id="coz_odeme">
         <option value="nakit">Nakit</option>
         <option value="kart">Kredi / Banka Kartı</option>
         <option value="havale">Havale / EFT</option>
@@ -389,41 +538,10 @@ tbody td{padding:12px 16px;font-size:13px;}
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('checkoutModal')">Vazgeç</button>
-      <button class="btn btn-warning" onclick="printFolio()">🖨 Fatura Yazdır</button>
-      <button class="btn btn-primary" onclick="saveCheckout()">✓ Check-out & Öde</button>
-    </div>
-  </div>
-</div>
-
-<!-- MASRAF EKLE MODAL -->
-<div class="modal-overlay" id="masrafModal">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-title" id="masrafTitle">Oda Masrafı</div>
-    <input type="hidden" id="masraf_oda_no">
-    <div class="form-group">
-      <label>Tutar (₺) *</label>
-      <input type="number" id="masraf_tutar" placeholder="0,00" inputmode="decimal" style="font-size:20px;font-weight:600;text-align:center;">
-    </div>
-    <div class="form-group">
-      <label>Açıklama *</label>
-      <input type="text" id="masraf_aciklama" placeholder="Örn: Su, Havlu, Kahvaltı...">
-    </div>
-    <div class="form-group">
-      <label>Kategori</label>
-      <select id="masraf_kategori">
-        <option value="yiyecek">Yiyecek / İçecek</option>
-        <option value="minibar">Minibar</option>
-        <option value="servis">Oda Servisi</option>
-        <option value="camasir">Çamaşır</option>
-        <option value="telefon">Telefon</option>
-        <option value="ekipman">Ekipman Kiralama</option>
-        <option value="diger">Diğer</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('masrafModal')">Vazgeç</button>
-      <button class="btn btn-primary btn-full" onclick="saveMasraf()">Odaya Ekle</button>
+      <button class="btn btn-ghost" onclick="closeModal('checkoutOzetModal')">Vazgeç</button>
+      <button class="btn btn-warning" id="coz_masraf_ekle_btn" onclick="openMasrafModal(currentCheckoutOda)">+ Masraf Ekle</button>
+      <button class="btn btn-ghost" onclick="printFolioFromOzet()">🖨 Fatura Yazdır</button>
+      <button class="btn btn-primary" onclick="saveCheckoutFromOzet()">✓ Check-out Tamamla</button>
     </div>
   </div>
 </div>
@@ -642,28 +760,64 @@ tbody td{padding:12px 16px;font-size:13px;}
 <div class="page" id="page-masraflar">
   <div class="section-head">
     <h2>Oda <em>Masrafları</em></h2>
-    <div style="font-size:13px;color:var(--muted)">Misafire ait oda masrafları burada listelenir</div>
+    <button class="btn btn-primary" onclick="openMasrafModalGenel()">+ Masraf Ekle</button>
   </div>
 
-  <div class="filter-row" style="background:var(--white);border:1px solid var(--border);padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap">
-    <select id="masraf-filter-oda" onchange="renderMasraflar()" style="border:1px solid var(--border);padding:8px 11px;font-family:'Jost',sans-serif;font-size:12px;outline:none">
-      <option value="">Tüm Odalar</option>
-    </select>
-    <select id="masraf-filter-durum" onchange="renderMasraflar()" style="border:1px solid var(--border);padding:8px 11px;font-family:'Jost',sans-serif;font-size:12px;outline:none">
-      <option value="acik">Açık (Ödenmemiş)</option>
-      <option value="odendi">Ödenmiş</option>
-      <option value="">Tümü</option>
-    </select>
+  <!-- Özet kartları -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--red);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Açık (Tahsil Edilecek)</div>
+      <div class="masraf-total" id="masraf-acik-toplam">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--orange);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Odaya Yansıtılan</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--orange)" id="masraf-yansi-toplam">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--green);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Ayrı Ödenen</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--green)" id="masraf-ayri-toplam">—</div>
+    </div>
   </div>
 
+  <!-- Filtreler -->
   <div class="table-card">
+    <div class="filter-row">
+      <select id="masraf-filter-oda" onchange="renderMasraflar()">
+        <option value="">Tüm Odalar</option>
+      </select>
+      <select id="masraf-filter-durum" onchange="renderMasraflar()">
+        <option value="">Tümü</option>
+        <option value="acik">Açık (Tahsil Edilecek)</option>
+        <option value="odaya_yansitildi">Odaya Yansıtıldı</option>
+        <option value="ayri_odendi">Ayrı Ödendi</option>
+        <option value="checkout_odendi">Check-out'ta Ödendi</option>
+      </select>
+      <select id="masraf-filter-kategori" onchange="renderMasraflar()">
+        <option value="">Tüm Kategoriler</option>
+        <option value="Minibar">Minibar</option>
+        <option value="Yiyecek / İçecek">Yiyecek / İçecek</option>
+        <option value="Oda Servisi">Oda Servisi</option>
+        <option value="Çamaşır">Çamaşır</option>
+        <option value="Telefon">Telefon</option>
+        <option value="SPA / Havuz">SPA / Havuz</option>
+        <option value="Oda Hasarı">Oda Hasarı</option>
+        <option value="Diğer">Diğer</option>
+      </select>
+    </div>
     <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>Tarih/Saat</th><th>Oda</th><th>Misafir</th>
-          <th>Kategori</th><th>Açıklama</th><th>Tutar</th><th>Durum</th><th></th>
+          <th>Tarih / Saat</th>
+          <th>Oda</th>
+          <th>Misafir</th>
+          <th>Kategori</th>
+          <th>Açıklama</th>
+          <th>Tutar</th>
+          <th>Ödeme Durumu</th>
+          <th>Kim Girdi</th>
+          <th></th>
         </tr></thead>
-        <tbody id="masrafBody"><tr class="empty-row"><td colspan="8">Yükleniyor...</td></tr></tbody>
+        <tbody id="masrafBody"><tr class="empty-row"><td colspan="9">Yükleniyor...</td></tr></tbody>
       </table>
     </div>
     <div class="total-row" id="masrafToplam"></div>
@@ -1124,52 +1278,110 @@ window.checkindenRezervasyon = function(rev) {
 window.openCheckoutMenu = function(no) {
   const o = window._O['oda'+no];
   if(!o || o.durum !== 'dolu') { openDurumModal(no); return; }
-
-  // Odanın açık masrafları
-  const odaMasraflari = window._M.filter(m => String(m.odaNo)===String(no) && m.durum==='acik');
-  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const oz = window._OZ?.['oda'+no] || {};
   const gece = geceSayisi(o.giris, o.cikis);
-  const konaklama = gece * (o.fiyat||0);
-  const genel = konaklama + masrafToplam;
+  const konaklama = gece * (o.fiyat || 0);
+
+  // Masrafları grupla
+  const tumMasraflar = window._M.filter(m => String(m.odaNo) === String(no));
+  const yansitilan  = tumMasraflar.filter(m => m.odemeDurumu === 'odaya_yansitildi');
+  const ayriOdenen  = tumMasraflar.filter(m => m.odemeDurumu === 'ayri_odendi');
+  const yansitilanT = yansitilan.reduce((a,b)=>a+Number(b.tutar||0), 0);
+  const ayriT       = ayriOdenen.reduce((a,b)=>a+Number(b.tutar||0), 0);
+  const genel       = konaklama + yansitilanT;
 
   currentCheckoutOda = no;
-  document.getElementById('co_baslik').textContent = `Oda ${no}`;
-  document.getElementById('co_misafir').textContent = o.misafir || '—';
-  document.getElementById('co_tarih').textContent = dateStr(nowISO());
+  const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
 
-  // Folio items
-  let items = '';
-  items += `<div class="folio-item"><div><div class="folio-item-name">Konaklama — ${gece} gece</div><div class="folio-item-meta">${o.giris} → ${o.cikis} · ${getTipAd(o.fiyatTip||1)}</div></div><div class="folio-item-tutar">${fmt(konaklama)}</div></div>`;
-  odaMasraflari.forEach(m => {
-    items += `<div class="folio-item"><div><div class="folio-item-name">${m.aciklama||'—'}</div><div class="folio-item-meta">${m.kategori||'—'} · ${timeStr(m.kayitTarih)}</div></div><div class="folio-item-tutar">${fmt(m.tutar)}</div></div>`;
-  });
-  document.getElementById('co_items').innerHTML = items;
-  document.getElementById('co_toplam').textContent = fmt(genel);
+  document.getElementById('coz_baslik').textContent = odaAdi;
+  document.getElementById('coz_misafir').textContent = o.misafir || '—';
+  document.getElementById('coz_tarih').textContent = dateStr(nowISO());
 
-  openModal('checkoutModal');
+  // Konaklama kalemi
+  document.getElementById('coz_konaklama').innerHTML = `
+    <div class="folio-item">
+      <div>
+        <div class="folio-item-name">${gece} Gece Konaklama</div>
+        <div class="folio-item-meta">${o.giris||'?'} → ${o.cikis||'?'} · ${getTipAd(o.fiyatTip||1)} · ${(o.fiyat||0).toLocaleString('tr-TR')} ₺/gece</div>
+      </div>
+      <div class="folio-item-tutar">${fmt(konaklama)}</div>
+    </div>`;
+
+  // Masraf kalemleri
+  const masrafBlok = document.getElementById('coz_masraf_blok');
+  if(tumMasraflar.length === 0) {
+    masrafBlok.innerHTML = '';
+  } else {
+    const durumBadge = (m) => {
+      if(m.odemeDurumu === 'ayri_odendi') return `<span class="badge badge-green" style="font-size:9px">Ayrı Ödendi</span>`;
+      return `<span class="badge badge-orange" style="font-size:9px">Odaya Yansıtıldı</span>`;
+    };
+    let html = '<div class="section-mini-title" style="margin-top:14px">Oda Masrafları</div><div id="coz_masraflar">';
+    tumMasraflar.forEach(m => {
+      const checked = m.odemeDurumu !== 'ayri_odendi';
+      html += `<div class="folio-item">
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+          <div style="flex:1">
+            <div class="folio-item-name">${m.aciklama||'—'} ${durumBadge(m)}</div>
+            <div class="folio-item-meta">${m.kategori||'—'} · ${timeStr(m.kayitTarih)} · ${m.kimGirdi||'—'}</div>
+          </div>
+        </div>
+        <div class="folio-item-tutar ${m.odemeDurumu==='ayri_odendi'?'':'amount-neg'}">${m.odemeDurumu==='ayri_odendi'?'<span style="text-decoration:line-through;color:var(--muted)">'+fmt(m.tutar)+'</span>':fmt(m.tutar)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    masrafBlok.innerHTML = html;
+  }
+
+  document.getElementById('coz_toplam').textContent = fmt(genel);
+  document.getElementById('coz_ayri_toplam').textContent = ayriT > 0 ? fmt(ayriT) : '—';
+
+  // Masraf ekle butonu checkout özet içinde
+  const ekleBtn = document.getElementById('coz_masraf_ekle_btn');
+  if(ekleBtn) ekleBtn.onclick = () => openMasrafModal(no);
+
+  openModal('checkoutOzetModal');
 };
 
-window.saveCheckout = async function() {
+window.saveCheckoutFromOzet = async function() {
   const no = currentCheckoutOda;
   const o  = window._O['oda'+no];
   if(!o) return;
+  const oz = window._OZ?.['oda'+no] || {};
+  const odeme = document.getElementById('coz_odeme').value;
+  const gece  = geceSayisi(o.giris, o.cikis);
+  const now   = nowISO();
 
-  const odeme  = document.getElementById('co_odeme').value;
-  const gece   = geceSayisi(o.giris, o.cikis);
-  const now    = nowISO();
-  const odaMasraflari = window._M.filter(m=>String(m.odaNo)===String(no)&&m.durum==='acik');
-  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+  // Sadece odaya yansıtılan masrafları checkout_odendi yap
+  const yansitilan = window._M.filter(m => String(m.odaNo)===String(no) && m.odemeDurumu==='odaya_yansitildi');
+  const yansitilanT = yansitilan.reduce((a,b)=>a+Number(b.tutar||0), 0);
+  const konaklama = gece * (o.fiyat||0);
+  const toplam = konaklama + yansitilanT;
+  const odaAdi = oz.ad ? `Oda ${no} (${oz.ad})` : `Oda ${no}`;
 
-  // Masrafları ödenmiş işaretle
-  for(const m of odaMasraflari) {
-    await updateDoc(doc(db,'odaMasraflari',m.id),{durum:'odendi',odemeZamani:now});
-    // Muhasebe kaydı
-    await addDoc(collection(db,'gelirler'),{
-      tarih:today(), tutar:Number(m.tutar), odaNo:String(no),
-      odemeTuru:odeme, misafir:o.misafir, tc:o.tc||'',
-      kaynak:'oda-masrafi',
-      aciklama:`Oda ${no} Masraf · ${m.aciklama}`,
-      kayitTarih:now
+  for(const m of yansitilan) {
+    await updateDoc(doc(db,'odaMasraflari',m.id), {odemeDurumu:'checkout_odendi', checkoutTarih:now});
+    await addDoc(collection(db,'gelirler'), {
+      tarih: today(), tutar: Number(m.tutar),
+      odaNo: String(no), odemeTuru: odeme,
+      misafir: o.misafir, tc: o.tc||'',
+      kaynak: 'oda-masrafi',
+      aciklama: `${odaAdi} · Masraf · ${m.aciklama}`,
+      kayitTarih: now
+    });
+  }
+
+  // Konaklama gelir kaydı
+  if(konaklama > 0) {
+    await addDoc(collection(db,'gelirler'), {
+      tarih: today(), tutar: konaklama,
+      odaNo: String(no), odemeTuru: odeme,
+      misafir: o.misafir, tc: o.tc||'',
+      kaynak: o.kaynak||'walk-in',
+      fiyatTip: o.fiyatTip||1,
+      fiyatTipAd: getTipAd(o.fiyatTip||1),
+      aciklama: `${odaAdi} · ${gece} gece konaklama`,
+      kayitTarih: now
     });
   }
 
@@ -1178,35 +1390,125 @@ window.saveCheckout = async function() {
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   renderOdalar();
-  closeModal('checkoutModal');
-  toast(`Oda ${no} check-out ✓`, 'success');
+  closeModal('checkoutOzetModal');
+  toast(`${odaAdi} — Check-out tamamlandı ✓ · ${fmt(toplam)}`, 'success');
 };
 
+// Eski referansları karşıla
+window.saveCheckout = window.saveCheckoutFromOzet;
+window.printFolioFromOzet = function() { printFolio(); };
+
 // ── MASRAF ──
-window.openMasrafModal = function(no) {
+window.masrafOdemeToggle = function() {
+  const val = document.querySelector('input[name="masraf_odeme"]:checked')?.value;
+  const turWrap = document.getElementById('masraf_odeme_turu');
+  if(val === 'ayri_odendi') {
+    turWrap.style.display = 'block';
+  } else {
+    turWrap.style.display = 'none';
+  }
+};
+
+// Genel sekmeden masraf ekle
+window.openMasrafModalGenel = function() {
+  const dolular = [];
+  for(let i=1;i<=12;i++) {
+    const o = window._O['oda'+i];
+    if(o && o.durum === 'dolu') {
+      const oz = window._OZ?.['oda'+i] || {};
+      dolular.push({no:i, misafir:o.misafir, ad:oz.ad});
+    }
+  }
+  if(!dolular.length) { toast('Şu an dolu oda yok','error'); return; }
+  // Birden fazla dolu oda varsa seçtir
+  openMasrafModal(dolular[0].no, dolular);
+};
+
+window.openMasrafModal = function(no, dolularList) {
   const o = window._O['oda'+no];
-  if(!o||o.durum!=='dolu') { toast('Sadece dolu odalara masraf eklenebilir','error'); return; }
-  document.getElementById('masrafTitle').textContent = `Oda ${no} — Masraf Ekle`;
+  if(!o || o.durum !== 'dolu') { toast('Sadece dolu odalara masraf eklenebilir','error'); return; }
+  const oz = window._OZ?.['oda'+no] || {};
+  const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
+
+  document.getElementById('masrafTitle').textContent = 'Masraf Ekle';
   document.getElementById('masraf_oda_no').value = no;
+  document.getElementById('masraf_info_no').textContent = no;
+  document.getElementById('masraf_info_ad').textContent = odaAdi;
+  document.getElementById('masraf_info_misafir').textContent = o.misafir ? `Misafir: ${o.misafir}` : '—';
   document.getElementById('masraf_tutar').value = '';
   document.getElementById('masraf_aciklama').value = '';
-  document.getElementById('masraf_kategori').value = 'yiyecek';
-  closeModal('checkoutModal');
+  document.getElementById('masraf_kategori').value = 'Minibar';
+  document.querySelector('input[name="masraf_odeme"][value="odaya_yansitildi"]').checked = true;
+  document.getElementById('masraf_odeme_turu').style.display = 'none';
+
+  // Eğer seçim listesi varsa oda seçtir
+  if(dolularList && dolularList.length > 1) {
+    const sel = document.getElementById('masraf_oda_no');
+    // Oda no'yu dinamik select'e çevir
+    const infoNo = document.getElementById('masraf_info_no');
+    infoNo.innerHTML = '';
+    const s = document.createElement('select');
+    s.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:22px;font-weight:700;color:var(--dark);border:none;background:none;outline:none;padding:0;width:100%';
+    dolularList.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.no;
+      const oz2 = window._OZ?.['oda'+d.no] || {};
+      opt.textContent = oz2.ad ? `Oda ${d.no} — ${oz2.ad}` : `Oda ${d.no}`;
+      if(d.no === no) opt.selected = true;
+      s.appendChild(opt);
+    });
+    s.onchange = () => {
+      const n = s.value;
+      const o2 = window._O['oda'+n];
+      const oz2 = window._OZ?.['oda'+n] || {};
+      document.getElementById('masraf_oda_no').value = n;
+      document.getElementById('masraf_info_ad').textContent = oz2.ad ? `Oda ${n} — ${oz2.ad}` : `Oda ${n}`;
+      document.getElementById('masraf_info_misafir').textContent = o2?.misafir ? `Misafir: ${o2.misafir}` : '—';
+    };
+    infoNo.appendChild(s);
+  }
+
+  closeModal('checkoutOzetModal');
   openModal('masrafModal');
 };
 
 window.saveMasraf = async function() {
   const no       = document.getElementById('masraf_oda_no').value;
-  const tutar    = document.getElementById('masraf_tutar').value;
+  const tutar    = Number(document.getElementById('masraf_tutar').value);
   const aciklama = document.getElementById('masraf_aciklama').value.trim();
   const kategori = document.getElementById('masraf_kategori').value;
-  if(!tutar||!aciklama) { toast('Tutar ve açıklama zorunlu','error'); return; }
-  const o = window._O['oda'+no];
-  await addDoc(collection(db,'odaMasraflari'),{
-    odaNo:String(no), misafir:o?.misafir||'—', tc:o?.tc||'',
-    tutar:Number(tutar), aciklama, kategori, durum:'acik',
-    kayitTarih:nowISO()
+  const odemeDurumu = document.querySelector('input[name="masraf_odeme"]:checked')?.value || 'odaya_yansitildi';
+  const odemeTuru = document.getElementById('masraf_odeme_turu').value || '';
+  if(!tutar || !aciklama) { toast('Tutar ve açıklama zorunlu','error'); return; }
+  const o  = window._O['oda'+no];
+  const oz = window._OZ?.['oda'+no] || {};
+  const now = nowISO();
+  await addDoc(collection(db,'odaMasraflari'), {
+    odaNo: String(no),
+    odaAdi: oz.ad || '',
+    misafir: o?.misafir || '—',
+    tc: o?.tc || '',
+    tutar,
+    aciklama,
+    kategori,
+    odemeDurumu,   // 'odaya_yansitildi' | 'ayri_odendi'
+    odemeTuru: odemeDurumu === 'ayri_odendi' ? odemeTuru : '',
+    kimGirdi: auth.currentUser?.email || 'resepsiyon',
+    kayitTarih: now
   });
+  // Ayrı ödendiyse direkt gelir kaydı yaz
+  if(odemeDurumu === 'ayri_odendi') {
+    await addDoc(collection(db,'gelirler'), {
+      tarih: today(), tutar,
+      odaNo: String(no),
+      odemeTuru,
+      misafir: o?.misafir || '—',
+      tc: o?.tc || '',
+      kaynak: 'oda-masrafi',
+      aciklama: `Oda ${no}${oz.ad?' ('+oz.ad+')':''} · Masraf · ${aciklama}`,
+      kayitTarih: now
+    });
+  }
   closeModal('masrafModal');
   toast(`Oda ${no} — Masraf eklendi ✓`,'success');
 };
@@ -1427,33 +1729,83 @@ window.iptalRezervasyon = async function(id) {
 
 // ── MASRAF LİSTESİ ──
 window.renderMasraflar = function() {
-  const fo = document.getElementById('masraf-filter-oda')?.value||'';
-  const fd = document.getElementById('masraf-filter-durum')?.value||'acik';
+  const fo  = document.getElementById('masraf-filter-oda')?.value || '';
+  const fd  = document.getElementById('masraf-filter-durum')?.value || '';
+  const fk  = document.getElementById('masraf-filter-kategori')?.value || '';
   let d = window._M;
-  if(fo) d=d.filter(m=>String(m.odaNo)===String(fo));
-  if(fd) d=d.filter(m=>m.durum===fd);
+  if(fo) d = d.filter(m => String(m.odaNo) === String(fo));
+  if(fd) d = d.filter(m => m.odemeDurumu === fd || m.durum === fd);
+  if(fk) d = d.filter(m => m.kategori === fk);
 
+  // Filtre oda listesini doldur (oda adıyla)
   const odaSel = document.getElementById('masraf-filter-oda');
-  if(odaSel&&odaSel.children.length<=1) for(let i=1;i<=12;i++) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
+  if(odaSel && odaSel.children.length <= 1) {
+    for(let i=1;i<=12;i++) {
+      const oz = window._OZ?.['oda'+i] || {};
+      const label = oz.ad ? `Oda ${i} — ${oz.ad}` : `Oda ${i}`;
+      odaSel.innerHTML += `<option value="${i}">${label}</option>`;
+    }
+  }
 
-  document.getElementById('masrafBody').innerHTML = d.length ? d.map(m=>`
-    <tr>
-      <td style="font-size:12px">${timeStr(m.kayitTarih)}</td>
-      <td>Oda ${m.odaNo}</td>
-      <td>${m.misafir||'—'}</td>
+  // Özet kartları güncelle
+  const acik = window._M.filter(m => m.odemeDurumu === 'odaya_yansitildi' || m.odemeDurumu === 'acik');
+  const yansi = window._M.filter(m => m.odemeDurumu === 'odaya_yansitildi');
+  const ayri  = window._M.filter(m => m.odemeDurumu === 'ayri_odendi');
+  document.getElementById('masraf-acik-toplam').textContent  = fmt(acik.reduce((a,b)=>a+Number(b.tutar||0),0));
+  document.getElementById('masraf-yansi-toplam').textContent = fmt(yansi.reduce((a,b)=>a+Number(b.tutar||0),0));
+  document.getElementById('masraf-ayri-toplam').textContent  = fmt(ayri.reduce((a,b)=>a+Number(b.tutar||0),0));
+
+  const durumBadge = (m) => {
+    const map = {
+      'odaya_yansitildi': ['badge-orange','Odaya Yansıtıldı'],
+      'ayri_odendi':      ['badge-green', 'Ayrı Ödendi'],
+      'checkout_odendi':  ['badge-blue',  'Check-out\'ta Ödendi'],
+      'acik':             ['badge-red',   'Açık'],
+    };
+    const [cls, lbl] = map[m.odemeDurumu] || map[m.durum] || ['badge-gray','—'];
+    return `<span class="badge ${cls}">${lbl}</span>`;
+  };
+
+  document.getElementById('masrafBody').innerHTML = d.length ? d.map(m => {
+    const oz = window._OZ?.['oda'+m.odaNo] || {};
+    const odaLabel = oz.ad ? `Oda ${m.odaNo}<br><span style="font-size:10px;color:var(--gold)">${oz.ad}</span>` : `Oda ${m.odaNo}`;
+    return `<tr>
+      <td style="font-size:11px;white-space:nowrap">${timeStr(m.kayitTarih)}</td>
+      <td style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700">${odaLabel}</td>
+      <td style="font-size:12px">${m.misafir||'—'}</td>
       <td><span class="badge badge-orange">${m.kategori||'—'}</span></td>
-      <td>${m.aciklama||'—'}</td>
-      <td class="amount-neg">−${fmt(m.tutar)}</td>
-      <td><span class="badge ${m.durum==='acik'?'badge-red':'badge-green'}">${m.durum==='acik'?'Açık':'Ödendi'}</span></td>
-      <td>
-        ${m.durum==='acik'?`<button class="btn btn-warning btn-sm" onclick="openMasrafModal(${m.odaNo})">+ Ekle</button>`:''}
+      <td style="font-size:12px">${m.aciklama||'—'}</td>
+      <td class="amount-neg" style="white-space:nowrap">−${fmt(m.tutar)}</td>
+      <td>${durumBadge(m)}</td>
+      <td style="font-size:11px;color:var(--muted)">${m.kimGirdi||'—'}</td>
+      <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
+        ${(m.odemeDurumu==='odaya_yansitildi'||m.odemeDurumu==='acik')
+          ?`<button class="btn btn-success btn-sm" onclick="masrafAyriOde('${m.id}')">Ayrı Öde</button>`:''}
         <button class="btn btn-danger btn-sm" onclick="deleteMasraf('${m.id}')">Sil</button>
       </td>
-    </tr>`).join('')
-  : '<tr class="empty-row"><td colspan="8">Masraf kaydı yok</td></tr>';
+    </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="9">Masraf kaydı yok</td></tr>';
 
   const top = d.reduce((a,b)=>a+Number(b.tutar||0),0);
   document.getElementById('masrafToplam').textContent = d.length ? `${d.length} kayıt · Toplam: ${fmt(top)}` : '';
+};
+
+window.masrafAyriOde = async function(id) {
+  const m = window._M.find(x => x.id === id);
+  if(!m) return;
+  const odeme = prompt('Ödeme türü: nakit / kart / havale', 'nakit');
+  if(!odeme) return;
+  const now = nowISO();
+  await updateDoc(doc(db,'odaMasraflari',id), {odemeDurumu:'ayri_odendi', odemeTuru:odeme, odemeZamani:now});
+  await addDoc(collection(db,'gelirler'), {
+    tarih: today(), tutar: Number(m.tutar),
+    odaNo: m.odaNo, odemeTuru: odeme,
+    misafir: m.misafir, tc: m.tc||'',
+    kaynak: 'oda-masrafi',
+    aciklama: `Oda ${m.odaNo} · Masraf · ${m.aciklama}`,
+    kayitTarih: now
+  });
+  toast('Masraf ayrı ödendi olarak işaretlendi ✓','success');
 };
 
 window.deleteMasraf = async function(id) {
