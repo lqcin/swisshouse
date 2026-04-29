@@ -433,6 +433,14 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
   </div>
 </nav>
 
+<!-- HATIRLATMA BANNER (Yönetici) -->
+<div id="hatirlatmaBanner" style="display:none;background:var(--dark);border-bottom:2px solid var(--gold2);padding:0">
+  <div style="max-width:1400px;margin:0 auto;padding:10px 24px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;gap:8px">🔔 Yaklaşan Rezervasyonlar — Arama Takibi</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto" id="hatrListe"></div>
+  </div>
+</div>
+
 <div class="content">
 
 <!-- ÖZET -->
@@ -781,6 +789,8 @@ let takvimModu = 'ay';
 // ── YARDIMCI ──
 const fmt = n => Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const addDays = (dateStr, days) => { const [y,m,d]=dateStr.split('-').map(Number); const dt=new Date(y,m-1,d+days); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; };
+const geceSayisi = (g,c) => { if(!g||!c) return 0; const [gy,gm,gd]=g.split('-').map(Number),[cy,cm,cd]=c.split('-').map(Number); return Math.max(1,Math.round((new Date(cy,cm-1,cd)-new Date(gy,gm-1,gd))/864e5)); };
 const thisMonth = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
 const nowISO = () => new Date().toISOString();
 const timeStr = iso => iso ? new Date(iso).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}) : '—';
@@ -896,7 +906,41 @@ async function loadOdalar() {
 
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
+  renderHatirlatmaY();
 });
+
+function renderHatirlatmaY() {
+  const todayStr = today();
+  const gun1 = addDays(todayStr, 1);
+  const gun3 = addDays(todayStr, 3);
+
+  const yaklasan = (window._R||[]).filter(r => {
+    if(r.durum==='iptal'||r.durum==='noshow') return false;
+    return r.giris===todayStr||r.giris===gun1||r.giris===gun3;
+  });
+
+  const banner = document.getElementById('hatirlatmaBanner');
+  if(!yaklasan.length) { banner.style.display='none'; return; }
+  banner.style.display = 'block';
+
+  const et = {[todayStr]:'BUGÜN GİRİŞ',[gun1]:'YARIN',[gun3]:'3 GÜN SONRA'};
+  const durumRenk = {arandi:'#4caf50',ulasilamadi:'var(--gold2)',aranmadi:'rgba(255,255,255,.3)',''  :'rgba(255,255,255,.3)'};
+  const durumTxt  = {arandi:'✓ Arandı',ulasilamadi:'⚠ Ulaşılamadı',aranmadi:'Aranmadı',''  :''};
+
+  document.getElementById('hatrListe').innerHTML = yaklasan.map(r => {
+    const oz = window._OZ?.['oda'+r.odaNo]||{};
+    const odaLabel = oz.ad?`Oda ${r.odaNo} — ${oz.ad}`:`Oda ${r.odaNo}`;
+    const mevcut = r.aramaDurumu||'';
+    return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(196,165,90,.15);padding:10px 14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--gold2);border:1px solid var(--gold2);padding:2px 7px">${et[r.giris]||r.giris}</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--gold2)">${odaLabel}</span>
+      <span style="font-size:13px;color:#fff">${r.misafir||'—'}</span>
+      ${r.tel?`<span style="font-size:12px;color:rgba(255,255,255,.5)">📞 ${r.tel}</span>`:''}
+      <span style="font-size:11px;color:rgba(196,165,90,.6)">${r.giris}→${r.cikis}</span>
+      ${mevcut?`<span style="font-size:11px;font-weight:600;color:${durumRenk[mevcut]}">${durumTxt[mevcut]}</span>`:'<span style="font-size:11px;color:rgba(255,255,255,.3)">Henüz Aranmadı</span>'}
+    </div>`;
+  }).join('');
+}
 
 // Aktivite logu — gerçek zamanlı
 onSnapshot(query(collection(db,'aktiviteLog'), orderBy('zaman','desc')), s => {
