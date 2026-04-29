@@ -384,9 +384,12 @@ input[type="number"], input[type="date"], input[type="password"] {
         <button class="btn btn-ghost" onclick="tcTemizle()">Temizle</button>
       </div>
     </div>
-    <div class="musteri-bulundu" id="musteriBulundu">
-      <div class="mb-ad" id="mb-ad"></div>
-      <div class="mb-meta" id="mb-meta"></div>
+    <div class="musteri-bulundu" id="musteriBulundu" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="mb-ad" id="mb-ad"></div>
+        <div class="mb-meta" id="mb-meta"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="musteriKartiAc(document.getElementById('ci_tc').value)" style="white-space:nowrap">📋 Kartı Gör</button>
     </div>
 
     <div class="form-row">
@@ -592,6 +595,53 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-warning" id="coz_masraf_ekle_btn" onclick="openMasrafModal(currentCheckoutOda)">+ Masraf Ekle</button>
       <button class="btn btn-ghost" onclick="printFolioFromOzet()">🖨 Fatura Yazdır</button>
       <button class="btn btn-primary" onclick="saveCheckoutFromOzet()">✓ Check-out Tamamla</button>
+    </div>
+  </div>
+</div>
+
+<!-- MÜŞTERİ KARTI MODAL -->
+<div class="modal-overlay" id="musteriKartiModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title" id="mk_baslik">Müşteri Kartı</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div style="background:var(--parchment);border:1px solid var(--border);padding:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Kişisel Bilgiler</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark)" id="mk_ad">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="mk_tc">—</div>
+        <div style="font-size:12px;color:var(--muted)" id="mk_tel">—</div>
+        <div style="font-size:12px;color:var(--muted)" id="mk_email">—</div>
+      </div>
+      <div style="background:var(--parchment);border:1px solid var(--border);padding:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Konaklama Özeti</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Konaklama</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--dark)" id="mk_sayi">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Toplam Harcama</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--green)" id="mk_toplam">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">İlk Konaklama</div>
+            <div style="font-size:13px;font-weight:600;color:var(--dark)" id="mk_ilk">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Son Konaklama</div>
+            <div style="font-size:13px;font-weight:600;color:var(--dark)" id="mk_son">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Konaklama Geçmişi</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Tarih</th><th>Oda</th><th>Gece</th><th>Ödeme</th><th>Tutar</th></tr></thead>
+        <tbody id="mk_gecmis"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('musteriKartiModal')">Kapat</button>
     </div>
   </div>
 </div>
@@ -1297,19 +1347,45 @@ document.getElementById('ci_yetiskin')?.addEventListener('input', kisilerGuncell
 document.getElementById('ci_cocuk')?.addEventListener('input', kisilerGuncelle);
 
 window.fiyatTipGuncelle = function() {
-  const no   = currentCheckinOda;
-  const tip  = Number(document.getElementById('ci_fiyat_tip')?.value)||1;
-  const gece = parseInt(document.getElementById('ci_gece')?.value)||1;
+  const no    = currentCheckinOda;
+  const tip   = Number(document.getElementById('ci_fiyat_tip')?.value)||1;
+  const gece  = parseInt(document.getElementById('ci_gece')?.value)||1;
   const fiyat = getOdaFiyat(no, tip);
   const toplam = fiyat * gece;
   document.getElementById('ci_fiyat').value = fiyat;
-  document.getElementById('ci_fiyat_val').textContent = fiyat.toLocaleString('tr-TR') + ' ₺';
-  document.getElementById('ci_fiyat_toplam_sub').textContent = `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)}`;
+  const valEl = document.getElementById('ci_fiyat_val');
+  if(fiyat === 0) {
+    valEl.innerHTML = `<span style="color:var(--red);font-weight:600">⚠ Fiyat girilmemiş — Fiyatlandırma sekmesinden ayarlayın</span>`;
+  } else {
+    valEl.textContent = fiyat.toLocaleString('tr-TR') + ' ₺';
+  }
+  document.getElementById('ci_fiyat_toplam_sub').textContent = fiyat > 0
+    ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)}`
+    : '';
 };
+
+// TC doğrulama (Türkiye Cumhuriyeti kimlik algoritması)
+function tcDogrula(tc) {
+  if(!tc || tc.length !== 11 || !/^\d{11}$/.test(tc)) return false;
+  if(tc[0] === '0') return false;
+  const d = tc.split('').map(Number);
+  const s1 = (d[0]+d[2]+d[4]+d[6]+d[8])*7 - (d[1]+d[3]+d[5]+d[7]);
+  if((s1%10) !== d[9]) return false;
+  const s2 = d.slice(0,10).reduce((a,b)=>a+b,0);
+  return (s2%10) === d[10];
+}
 
 // TC Arama
 window.tcAra = async function(tc) {
   if(tc.length !== 11) { document.getElementById('musteriBulundu').style.display='none'; return; }
+  // Algoritma kontrolü
+  const tcEl = document.getElementById('ci_tc');
+  if(!tcDogrula(tc)) {
+    tcEl.style.borderColor = 'var(--red)';
+    document.getElementById('musteriBulundu').style.display='none';
+    return;
+  }
+  tcEl.style.borderColor = 'var(--green)';
   try {
     const q = query(collection(db,'musteriler'), where('tc','==',tc));
     const snap = await getDocs(q);
@@ -1354,6 +1430,7 @@ window.saveCheckin = async function() {
 
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
+  if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz — lütfen kontrol edin','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden check-in yapılamaz — Fiyat Tipi seçin veya fiyatı kontrol edin','error'); return; }
 
   const girisSaati = new Date().toLocaleTimeString('tr-TR');
@@ -1705,43 +1782,123 @@ window.printFolio = function() {
   const no = currentCheckoutOda;
   const o  = window._O['oda'+no];
   if(!o) return;
+  const oz = window._OZ?.['oda'+no] || {};
 
-  const gece = geceSayisi(o.giris, o.cikis);
+  const faturaGeceEl = document.getElementById('coz_fatura_gece');
+  const gece = (faturaGeceEl && parseInt(faturaGeceEl.value) > 0)
+    ? parseInt(faturaGeceEl.value)
+    : geceSayisi(o.giris, o.cikis);
   const konaklama = gece * (o.fiyat||0);
-  const odaMasraflari = window._M.filter(m=>String(m.odaNo)===String(no)&&m.durum==='acik');
-  const masrafToplam = odaMasraflari.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const tumMasraflar = window._M.filter(m=>String(m.odaNo)===String(no));
+  const yansitilan = tumMasraflar.filter(m=>m.odemeDurumu==='odaya_yansitildi');
+  const masrafToplam = yansitilan.reduce((a,b)=>a+Number(b.tutar||0),0);
   const genel = konaklama + masrafToplam;
+  const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
+  const faturaTarih = new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  const faturaNo = `SW-${Date.now().toString().slice(-6)}`;
 
-  const rows = [
-    ['Fatura Tarihi', dateStr(nowISO())],
-    ['Oda No', no],
-    ['Misafir', o.misafir||'—'],
-    ['TC Kimlik', o.tc||'—'],
-    ['Giriş Tarihi', o.giris||'—'],
-    ['Giriş Saati', o.girisSaati||'—'],
-    ['Çıkış Tarihi', o.cikis||'—'],
-    ['Konaklama', `${gece} gece`],
-    ['Fiyat Tipi', getTipAd(o.fiyatTip||1)],
-    ['Gecelik Ücret', fmt(o.fiyat||0)],
-    ['Konaklama Tutarı', fmt(konaklama)],
-  ];
+  const masrafSatir = yansitilan.map(m=>`
+    <tr>
+      <td style="padding:9px 0;color:#555;border-bottom:1px solid #e8e4dc">${m.aciklama||'—'}</td>
+      <td style="padding:9px 0;color:#888;text-align:center;border-bottom:1px solid #e8e4dc">${m.kategori||'—'}</td>
+      <td style="padding:9px 0;font-weight:600;text-align:right;border-bottom:1px solid #e8e4dc">${fmt(m.tutar)}</td>
+    </tr>`).join('');
 
-  let masrafRows = '';
-  odaMasraflari.forEach(m => {
-    masrafRows += `<tr style="border-bottom:1px solid #ddd7cc"><td style="padding:8px 0;color:#7a7268">${m.aciklama}</td><td style="padding:8px 0;font-weight:500;text-align:right">${fmt(m.tutar)}</td></tr>`;
-  });
+  const html = `
+    <!DOCTYPE html><html lang="tr"><head>
+    <meta charset="UTF-8">
+    <title>Fatura ${faturaNo}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:'Jost',sans-serif;background:#f5f2ec;padding:40px;color:#2a2520;}
+      .invoice{background:#fff;max-width:720px;margin:0 auto;padding:48px 52px;box-shadow:0 2px 24px rgba(0,0,0,.08);}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:28px;border-bottom:2px solid #1e1b17;}
+      .logo-area .name{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;letter-spacing:6px;text-transform:uppercase;}
+      .logo-area .sub{font-size:10px;letter-spacing:3px;color:#9a7c3f;text-transform:uppercase;margin-top:4px;}
+      .fatura-no{text-align:right;}
+      .fatura-no .label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a8a7a;margin-bottom:6px;}
+      .fatura-no .num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#1e1b17;}
+      .fatura-no .tarih{font-size:12px;color:#9a8a7a;margin-top:4px;}
+      .bilgiler{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:36px;}
+      .bilgi-blok .baslik{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#9a7c3f;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8e4dc;}
+      .bilgi-blok .satir{font-size:13px;margin-bottom:5px;display:flex;gap:8px;}
+      .bilgi-blok .satir .etiket{color:#9a8a7a;min-width:90px;flex-shrink:0;}
+      .bilgi-blok .satir .deger{font-weight:500;}
+      .tablo{width:100%;border-collapse:collapse;margin-bottom:24px;}
+      .tablo thead th{padding:10px 0;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#9a8a7a;border-bottom:2px solid #1e1b17;text-align:left;}
+      .tablo thead th:last-child{text-align:right;}
+      .toplam-blok{border-top:2px solid #1e1b17;padding-top:16px;display:flex;justify-content:space-between;align-items:center;}
+      .toplam-blok .toplam-lbl{font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+      .toplam-blok .toplam-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:700;color:#9a7c3f;}
+      .footer{margin-top:40px;padding-top:20px;border-top:1px solid #e8e4dc;text-align:center;font-size:11px;color:#b0a89a;letter-spacing:1px;}
+      @media print{body{background:#fff;padding:0;}.invoice{box-shadow:none;padding:32px;}}
+    </style></head><body>
+    <div class="invoice">
+      <div class="header">
+        <div class="logo-area">
+          <div class="name">Swiss Hotel</div>
+          <div class="sub">& Suites</div>
+        </div>
+        <div class="fatura-no">
+          <div class="label">Fatura No</div>
+          <div class="num">${faturaNo}</div>
+          <div class="tarih">${faturaTarih}</div>
+        </div>
+      </div>
 
-  document.getElementById('printContent').innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-      ${rows.map(([k,v])=>`<tr style="border-bottom:1px solid #ddd7cc"><td style="padding:9px 0;color:#7a7268;width:45%">${k}</td><td style="padding:9px 0;font-weight:500">${v}</td></tr>`).join('')}
-    </table>
-    ${masrafRows?`<div style="font-weight:600;font-size:13px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd7cc">Ek Masraflar</div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">${masrafRows}</table>`:'' }
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:2px solid #1e1b17">
-      <span style="font-weight:700;font-size:16px">TOPLAM</span>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:#9a7c3f">${fmt(genel)}</span>
+      <div class="bilgiler">
+        <div class="bilgi-blok">
+          <div class="baslik">Misafir Bilgileri</div>
+          <div class="satir"><span class="etiket">Ad Soyad</span><span class="deger">${o.misafir||'—'}</span></div>
+          ${o.tc?`<div class="satir"><span class="etiket">TC Kimlik</span><span class="deger">${o.tc}</span></div>`:''}
+          ${o.tel?`<div class="satir"><span class="etiket">Telefon</span><span class="deger">${o.tel}</span></div>`:''}
+          ${o.email?`<div class="satir"><span class="etiket">E-posta</span><span class="deger">${o.email}</span></div>`:''}
+        </div>
+        <div class="bilgi-blok">
+          <div class="baslik">Konaklama Bilgileri</div>
+          <div class="satir"><span class="etiket">Oda</span><span class="deger">${odaAdi}</span></div>
+          <div class="satir"><span class="etiket">Giriş</span><span class="deger">${o.giris||'—'} ${o.girisSaati?'· '+o.girisSaati:''}</span></div>
+          <div class="satir"><span class="etiket">Çıkış</span><span class="deger">${o.cikis||'—'}</span></div>
+          <div class="satir"><span class="etiket">Süre</span><span class="deger">${gece} gece</span></div>
+          <div class="satir"><span class="etiket">Kaynak</span><span class="deger">${o.kaynak||'walk-in'}</span></div>
+        </div>
+      </div>
+
+      <table class="tablo">
+        <thead><tr>
+          <th>Açıklama</th>
+          <th style="text-align:center">Birim</th>
+          <th style="text-align:right">Tutar</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td style="padding:12px 0;border-bottom:1px solid #e8e4dc">
+              <div style="font-weight:600">${gece} Gece Konaklama</div>
+              <div style="font-size:11px;color:#9a8a7a;margin-top:3px">${getTipAd(o.fiyatTip||1)} · ${(o.fiyat||0).toLocaleString('tr-TR')} ₺/gece</div>
+            </td>
+            <td style="padding:12px 0;text-align:center;color:#888;border-bottom:1px solid #e8e4dc">${gece} × ${(o.fiyat||0).toLocaleString('tr-TR')} ₺</td>
+            <td style="padding:12px 0;font-weight:600;text-align:right;border-bottom:1px solid #e8e4dc">${fmt(konaklama)}</td>
+          </tr>
+          ${masrafSatir}
+        </tbody>
+      </table>
+
+      <div class="toplam-blok">
+        <div class="toplam-lbl">Genel Toplam</div>
+        <div class="toplam-val">${fmt(genel)}</div>
+      </div>
+
+      <div class="footer">
+        Swiss Hotel & Suites · Teşekkür ederiz · Tekrar görüşmek dileğiyle
+      </div>
     </div>
-  `;
-  window.print();
+    <script>window.onload=()=>window.print();<\/script>
+    </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
 };
 
 // ── DURUM MODAL ──
@@ -2321,6 +2478,43 @@ window.hatirlatmaDurum = async function(id, durum) {
   await updateDoc(doc(db,'rezervasyonlar',id), {aramaDurumu: durum, aramaZamani: nowISO()});
   await logAktivite('hatirlatma', `Rezervasyon arama durumu: ${durum}`, '');
   // Banner'ı güncelle (onSnapshot zaten tetikler)
+};
+
+// ── MÜŞTERİ KARTI ──
+window.musteriKartiAc = async function(tc) {
+  if(!tc) { toast('TC bilgisi yok','error'); return; }
+  try {
+    const mq = query(collection(db,'musteriler'), where('tc','==',tc));
+    const msnap = await getDocs(mq);
+    if(msnap.empty) { toast('Müşteri kaydı bulunamadı','error'); return; }
+    const m = msnap.docs[0].data();
+
+    document.getElementById('mk_baslik').textContent = `Müşteri Kartı — ${m.ad||'—'}`;
+    document.getElementById('mk_ad').textContent = m.ad || '—';
+    document.getElementById('mk_tc').textContent = `TC: ${m.tc||'—'}`;
+    document.getElementById('mk_tel').textContent = m.tel ? `📞 ${m.tel}` : '';
+    document.getElementById('mk_email').textContent = m.email ? `✉ ${m.email}` : '';
+    document.getElementById('mk_sayi').textContent = m.konaklamaSayisi || '0';
+    document.getElementById('mk_toplam').textContent = fmt(m.toplamHarcama||0);
+    document.getElementById('mk_ilk').textContent = m.ilkKonaklama || m.ilkKayit?.slice(0,10) || '—';
+    document.getElementById('mk_son').textContent = m.sonKonaklama || '—';
+
+    // Geçmiş konaklamalar
+    const gq = query(collection(db,'gelirler'), where('tc','==',tc), orderBy('tarih','desc'));
+    const gsnap = await getDocs(gq);
+    const gecmis = gsnap.docs.map(d=>d.data());
+    document.getElementById('mk_gecmis').innerHTML = gecmis.length
+      ? gecmis.map(g=>`<tr>
+          <td>${g.tarih||'—'}</td>
+          <td>${g.odaNo?'Oda '+g.odaNo:'—'}</td>
+          <td>${g.gece||'—'}</td>
+          <td><span class="badge badge-blue">${g.odemeTuru||'—'}</span></td>
+          <td class="amount-pos">${fmt(g.tutar)}</td>
+        </tr>`).join('')
+      : '<tr class="empty-row"><td colspan="5">Konaklama kaydı yok</td></tr>';
+
+    openModal('musteriKartiModal');
+  } catch(e) { toast('Hata: '+e.message,'error'); }
 };
 
 // Başlat
