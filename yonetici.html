@@ -174,12 +174,35 @@ tbody td{padding:11px 16px;font-size:13px;}
 .takvim-nav{background:none;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;cursor:pointer;font-size:14px;transition:all .2s;}
 .takvim-nav:hover{border-color:var(--gold);color:var(--gold);}
 
-@media(max-width:700px){
-  .header-inner{padding:0 14px;}
-  .nav-inner{padding:0 14px;}
-  .content{padding:16px 14px;}
-  .modal{padding:22px 18px;}
-  .form-row{grid-template-columns:1fr;}
+/* ── CROSS-PLATFORM MOBİL ── */
+input, select, textarea, button {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  border-radius: 0; font-family: 'Jost', sans-serif;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%237a7268'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px !important;
+}
+input[type="text"],input[type="email"],input[type="tel"],input[type="number"],input[type="date"],input[type="password"] { font-size:16px !important; }
+@media(max-width:768px){
+  .header-inner{padding:0 12px;height:54px;}
+  .nav-inner{padding:0 6px;}
+  .nav-tab{padding:10px 10px;font-size:10px;letter-spacing:.8px;}
+  .content{padding:14px 12px;}
+  .modal{padding:18px 14px;max-height:95vh;}
+  .form-row{grid-template-columns:1fr;gap:0;}
+  .section-head{flex-direction:column;align-items:flex-start;gap:8px;}
+  .modal-actions{flex-wrap:wrap;}
+  .modal-actions .btn{flex:1;min-width:80px;justify-content:center;}
+  .table-card{overflow-x:auto;}
+  table{min-width:600px;}
+}
+@media(max-width:480px){
+  .nav-tab{padding:9px 7px;font-size:9px;}
+  .content{padding:10px 8px;}
+}
+@media(hover:none){
+  .btn:hover{background:unset;border-color:unset;color:unset;}
 }
 </style>
 </head>
@@ -502,21 +525,58 @@ tbody td{padding:11px 16px;font-size:13px;}
 <div class="page" id="page-masraflar">
   <div class="section-head">
     <h2>Masraf <em>Logları</em></h2>
-    <div style="font-size:13px;color:var(--muted)">Resepsiyoncu tarafından girilen tüm masraflar</div>
+    <div style="font-size:13px;color:var(--muted)">Resepsiyoncu tarafından girilen tüm oda masrafları</div>
   </div>
+
+  <!-- Özet -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--red);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Açık / Yansıtılan</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--red)" id="ym-acik">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--green);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Ayrı Ödenen</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--green)" id="ym-ayri">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--blue);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Check-out'ta Ödenen</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--blue)" id="ym-checkout">—</div>
+    </div>
+  </div>
+
   <div class="table-card">
     <div class="filter-row">
-      <select id="mf-ay" onchange="renderMasraflar()"><option value="">Tüm Aylar</option></select>
-      <select id="mf-kim" onchange="renderMasraflar()"><option value="">Tüm Kullanıcılar</option></select>
+      <select id="mf-durum" onchange="renderMasraflar()">
+        <option value="">Tüm Durumlar</option>
+        <option value="odaya_yansitildi">Odaya Yansıtıldı</option>
+        <option value="ayri_odendi">Ayrı Ödendi</option>
+        <option value="checkout_odendi">Check-out'ta Ödendi</option>
+      </select>
       <select id="mf-oda" onchange="renderMasraflar()"><option value="">Tüm Odalar</option></select>
+      <select id="mf-kategori" onchange="renderMasraflar()">
+        <option value="">Tüm Kategoriler</option>
+        <option value="Minibar">Minibar</option>
+        <option value="Yiyecek / İçecek">Yiyecek / İçecek</option>
+        <option value="Oda Servisi">Oda Servisi</option>
+        <option value="Oda Hasarı">Oda Hasarı</option>
+        <option value="SPA / Havuz">SPA / Havuz</option>
+        <option value="Diğer">Diğer</option>
+      </select>
     </div>
     <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>Tarih</th><th>Saat</th><th>Saniye</th><th>Kim</th>
-          <th>Oda</th><th>Misafir</th><th>Kategori</th><th>Açıklama</th><th>Tutar</th><th>Durum</th><th></th>
+          <th>Tarih / Saat</th>
+          <th>Oda</th>
+          <th>Misafir</th>
+          <th>Kategori</th>
+          <th>Açıklama</th>
+          <th>Tutar</th>
+          <th>Ödeme Durumu</th>
+          <th>Kim Girdi</th>
+          <th></th>
         </tr></thead>
-        <tbody id="masrafBody"><tr class="empty-row"><td colspan="11">Yükleniyor...</td></tr></tbody>
+        <tbody id="masrafBody"><tr class="empty-row"><td colspan="9">Yükleniyor...</td></tr></tbody>
       </table>
     </div>
     <div class="total-row" id="masrafToplam"></div>
@@ -893,43 +953,60 @@ window.renderGiderler = function() {
 
 // ── MASRAFLAR ──
 window.renderMasraflar = function() {
-  const fa = document.getElementById('mf-ay')?.value||'';
-  const fk = document.getElementById('mf-kim')?.value||'';
+  const fd = document.getElementById('mf-durum')?.value||'';
   const fo = document.getElementById('mf-oda')?.value||'';
+  const fk = document.getElementById('mf-kategori')?.value||'';
   let d = window._M;
-  if(fa) d=d.filter(m=>m.kayitTarih?.startsWith(fa.slice(0,7)));
-  if(fk) d=d.filter(m=>m.kim===fk);
+  if(fd) d=d.filter(m=>m.odemeDurumu===fd||m.durum===fd);
   if(fo) d=d.filter(m=>String(m.odaNo)===String(fo));
+  if(fk) d=d.filter(m=>m.kategori===fk);
 
-  document.getElementById('masrafBody').innerHTML = d.length ? d.map(m=>`
-    <tr>
-      <td>${m.kayitTarih?.slice(0,10)||'—'}</td>
-      <td style="font-size:11px;color:var(--muted)">${timeStr(m.kayitTarih)}</td>
-      <td style="font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${secStr(m.kayitTarih)}s</td>
-      <td><span class="badge badge-purple">${m.kim||'—'}</span></td>
-      <td>Oda ${m.odaNo}</td>
-      <td>${m.misafir||'—'}</td>
-      <td><span class="badge badge-orange">${m.kategori||'—'}</span></td>
-      <td>${m.aciklama||'—'}</td>
-      <td class="amount-neg">−${fmt(m.tutar)}</td>
-      <td><span class="badge ${m.durum==='acik'?'badge-red':'badge-green'}">${m.durum==='acik'?'Açık':'Ödendi'}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="sil('odaMasraflari','${m.id}')">Sil</button></td>
-    </tr>`).join('')
-  : '<tr class="empty-row"><td colspan="11">Masraf kaydı yok</td></tr>';
+  // Özet kartları
+  const acik = window._M.filter(m=>m.odemeDurumu==='odaya_yansitildi'||m.odemeDurumu==='acik');
+  const ayri = window._M.filter(m=>m.odemeDurumu==='ayri_odendi');
+  const chk  = window._M.filter(m=>m.odemeDurumu==='checkout_odendi');
+  const el1=document.getElementById('ym-acik'); if(el1) el1.textContent=fmt(acik.reduce((a,b)=>a+Number(b.tutar||0),0));
+  const el2=document.getElementById('ym-ayri'); if(el2) el2.textContent=fmt(ayri.reduce((a,b)=>a+Number(b.tutar||0),0));
+  const el3=document.getElementById('ym-checkout'); if(el3) el3.textContent=fmt(chk.reduce((a,b)=>a+Number(b.tutar||0),0));
 
-  const top = d.reduce((a,b)=>a+Number(b.tutar||0),0);
-  document.getElementById('masrafToplam').textContent = d.length?`${d.length} kayıt · ${fmt(top)}`:'';
-
-  // Kim filtresi
-  const kimSel = document.getElementById('mf-kim');
-  if(kimSel&&kimSel.children.length<=1) {
-    [...new Set(window._M.map(m=>m.kim).filter(Boolean))].forEach(k=>kimSel.innerHTML+=`<option value="${k}">${k}</option>`);
-  }
   // Oda filtresi
   const odaSel = document.getElementById('mf-oda');
-  if(odaSel&&odaSel.children.length<=1) for(let i=1;i<=12;i++) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
+  if(odaSel&&odaSel.children.length<=1) {
+    for(let i=1;i<=12;i++){
+      const oz=window._OZ?.['oda'+i]||{};
+      odaSel.innerHTML+=`<option value="${i}">${oz.ad?`Oda ${i} — ${oz.ad}`:`Oda ${i}`}</option>`;
+    }
+  }
 
-  fillAy('mf-ay', window._M.map(m=>({tarih:m.kayitTarih?.slice(0,10)})), fa);
+  const durumBadge = (m) => {
+    const map = {
+      'odaya_yansitildi':['badge-orange','Odaya Yansıtıldı'],
+      'ayri_odendi':     ['badge-green', 'Ayrı Ödendi'],
+      'checkout_odendi': ['badge-blue',  'Check-out\'ta Ödendi'],
+      'acik':            ['badge-red',   'Açık'],
+    };
+    const [cls,lbl]=map[m.odemeDurumu]||map[m.durum]||['badge-gray','—'];
+    return `<span class="badge ${cls}">${lbl}</span>`;
+  };
+
+  document.getElementById('masrafBody').innerHTML = d.length ? d.map(m=>{
+    const oz = window._OZ?.['oda'+m.odaNo]||{};
+    const odaLabel = oz.ad ? `Oda ${m.odaNo}<br><span style="font-size:10px;color:var(--gold)">${oz.ad}</span>` : `Oda ${m.odaNo}`;
+    return `<tr>
+      <td style="font-size:11px;white-space:nowrap">${timeStr(m.kayitTarih)}</td>
+      <td style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700">${odaLabel}</td>
+      <td style="font-size:12px">${m.misafir||'—'}</td>
+      <td><span class="badge badge-orange">${m.kategori||'—'}</span></td>
+      <td style="font-size:12px">${m.aciklama||'—'}</td>
+      <td class="amount-neg" style="white-space:nowrap">−${fmt(m.tutar)}</td>
+      <td>${durumBadge(m)}</td>
+      <td style="font-size:11px;color:var(--muted)">${m.kimGirdi||m.kim||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="sil('odaMasraflari','${m.id}')">Sil</button></td>
+    </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="9">Masraf kaydı yok</td></tr>';
+
+  const top = d.reduce((a,b)=>a+Number(b.tutar||0),0);
+  document.getElementById('masrafToplam').textContent = d.length?`${d.length} kayıt · Toplam: ${fmt(top)}`:'';
 };
 
 // ── KASA ──
