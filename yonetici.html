@@ -427,8 +427,10 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
     <div class="nav-tab" id="tab-giderler" onclick="showPage('giderler',this)">📤 Giderler</div>
     <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">📋 Masraflar</div>
     <div class="nav-tab" id="tab-kasa" onclick="showPage('kasa',this)">🏦 Kasa</div>
-    <div class="nav-tab" id="tab-fiyatlar" onclick="showPage('fiyatlar',this)">💲 Fiyatlandırma</div>
-    <div class="nav-tab" id="tab-odaozel" onclick="showPage('odaozel',this)">🏨 Oda Özellikleri</div>
+    <div class="nav-tab" id="tab-musteriler" onclick="showPage('musteriler',this)">👤 Müşteriler</div>
+    <div class="nav-tab" id="tab-rapor" onclick="showPage('rapor',this)">📄 Gün Sonu</div>
+    <div class="nav-tab" id="tab-fiyatlar" onclick="showPage('fiyatlar',this)">💲 Fiyatlar</div>
+    <div class="nav-tab" id="tab-odaozel" onclick="showPage('odaozel',this)">🏨 Odalar</div>
     <div class="nav-tab" id="tab-aktivite" onclick="showPage('aktivite',this)">👁 Aktivite</div>
   </div>
 </nav>
@@ -798,6 +800,84 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px" id="odaOzelGrid"></div>
 </div>
+<!-- MÜŞTERİLER -->
+<div class="page" id="page-musteriler">
+  <div class="section-head">
+    <h2>Müşteri <em>Kartları</em></h2>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="musteri-ara" placeholder="Ad, TC veya telefon..." oninput="renderMusteriler()" style="border:1px solid var(--border);padding:7px 13px;font-family:'Jost',sans-serif;font-size:13px;outline:none;min-width:220px;background:var(--white)">
+    </div>
+  </div>
+  <div class="table-card">
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Ad Soyad</th>
+          <th>TC Kimlik</th>
+          <th>Telefon</th>
+          <th>İlk Konaklama</th>
+          <th>Son Konaklama</th>
+          <th>Konaklama</th>
+          <th>Toplam Harcama</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="musteriBody"><tr class="empty-row"><td colspan="8">Yükleniyor...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MÜŞTERİ DETAY MODAL -->
+<div class="modal-overlay" id="musteriDetayModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title" id="md_baslik">Müşteri Detayı</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div style="background:var(--parchment);border:1px solid var(--border);padding:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Kişisel Bilgiler</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark)" id="md_ad"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px" id="md_tc"></div>
+        <div style="font-size:12px;color:var(--muted)" id="md_tel"></div>
+        <div style="font-size:12px;color:var(--muted)" id="md_email"></div>
+        <div style="font-size:12px;color:var(--muted)" id="md_plaka"></div>
+      </div>
+      <div style="background:var(--parchment);border:1px solid var(--border);padding:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">İstatistikler</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div style="font-size:10px;color:var(--muted)">Konaklama Sayısı</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--dark)" id="md_sayi"></div></div>
+          <div><div style="font-size:10px;color:var(--muted)">Toplam Harcama</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--green)" id="md_toplam"></div></div>
+          <div><div style="font-size:10px;color:var(--muted)">İlk Konaklama</div>
+            <div style="font-size:13px;font-weight:600" id="md_ilk"></div></div>
+          <div><div style="font-size:10px;color:var(--muted)">Son Konaklama</div>
+            <div style="font-size:13px;font-weight:600" id="md_son"></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Konaklama Geçmişi</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Tarih</th><th>Oda</th><th>Gece</th><th>Fiyat Tipi</th><th>Ödeme</th><th>Tutar</th></tr></thead>
+      <tbody id="md_gecmis"></tbody>
+    </table></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('musteriDetayModal')">Kapat</button></div>
+  </div>
+</div>
+
+<!-- GÜN SONU RAPORU -->
+<div class="page" id="page-rapor">
+  <div class="section-head">
+    <h2>Gün Sonu <em>Raporu</em></h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="date" id="rapor-tarih" style="border:1px solid var(--border);padding:7px 11px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--white)">
+      <button class="btn btn-primary" onclick="renderRapor()">Raporu Oluştur</button>
+      <button class="btn btn-ghost" onclick="raporuYazdir()">🖨 PDF / Yazdır</button>
+    </div>
+  </div>
+  <div id="raporIcerik">
+    <div style="text-align:center;padding:60px;color:var(--muted);font-size:14px">Tarih seçin ve "Raporu Oluştur" butonuna tıklayın</div>
+  </div>
+</div>
+
 <!-- AKTİVİTE LOGU -->
 <div class="page" id="page-aktivite">
   <div class="section-head">
@@ -1652,6 +1732,199 @@ window.showPage = function(id, tab) {
   if(id==='odaozel') renderOdaOzelGrid();
   if(id==='aktivite') renderAktivite();
   if(id==='kasa') renderKasa();
+  if(id==='musteriler') renderMusteriler();
+  if(id==='rapor') { document.getElementById('rapor-tarih').value = today(); }
+};
+
+// ── MÜŞTERİLER ──
+window._MUS = [];
+onSnapshot(query(collection(db,'musteriler'), orderBy('sonKonaklama','desc')), s => {
+  window._MUS = s.docs.map(d=>({id:d.id,...d.data()}));
+  renderMusteriler();
+});
+
+window.renderMusteriler = function() {
+  const ara = document.getElementById('musteri-ara')?.value?.toLowerCase() || '';
+  let d = window._MUS;
+  if(ara) d = d.filter(m =>
+    (m.ad||'').toLowerCase().includes(ara) ||
+    (m.tc||'').includes(ara) ||
+    (m.tel||'').includes(ara)
+  );
+  document.getElementById('musteriBody').innerHTML = d.length ? d.map(m=>`
+    <tr style="cursor:pointer" onclick="musteriDetay('${m.id}')">
+      <td style="font-weight:600">${m.ad||'—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${m.tc||'—'}</td>
+      <td style="font-size:12px">${m.tel||'—'}</td>
+      <td style="font-size:12px">${m.ilkKonaklama||m.ilkKayit?.slice(0,10)||'—'}</td>
+      <td style="font-size:12px">${m.sonKonaklama||'—'}</td>
+      <td style="text-align:center"><span class="badge badge-blue">${m.konaklamaSayisi||1}</span></td>
+      <td class="amount-pos">${fmt(m.toplamHarcama||0)}</td>
+      <td><button class="btn btn-ghost btn-sm">Detay →</button></td>
+    </tr>`).join('')
+  : '<tr class="empty-row"><td colspan="8">Müşteri bulunamadı</td></tr>';
+};
+
+window.musteriDetay = async function(id) {
+  const m = window._MUS.find(x=>x.id===id);
+  if(!m) return;
+  document.getElementById('md_baslik').textContent = `${m.ad||'—'} — Müşteri Kartı`;
+  document.getElementById('md_ad').textContent = m.ad||'—';
+  document.getElementById('md_tc').textContent = m.tc ? `TC: ${m.tc}` : '';
+  document.getElementById('md_tel').textContent = m.tel ? `📞 ${m.tel}` : '';
+  document.getElementById('md_email').textContent = m.email ? `✉ ${m.email}` : '';
+  document.getElementById('md_plaka').textContent = m.plaka ? `🚗 ${m.plaka}` : '';
+  document.getElementById('md_sayi').textContent = m.konaklamaSayisi||'0';
+  document.getElementById('md_toplam').textContent = fmt(m.toplamHarcama||0);
+  document.getElementById('md_ilk').textContent = m.ilkKonaklama||m.ilkKayit?.slice(0,10)||'—';
+  document.getElementById('md_son').textContent = m.sonKonaklama||'—';
+  // Konaklama geçmişi
+  try {
+    const gq = query(collection(db,'gelirler'), where('tc','==',m.tc), orderBy('tarih','desc'));
+    const gsnap = await getDocs(gq);
+    const gecmis = gsnap.docs.map(d=>d.data());
+    document.getElementById('md_gecmis').innerHTML = gecmis.length
+      ? gecmis.map(g=>`<tr>
+          <td>${g.tarih||'—'}</td>
+          <td>${g.odaNo?'Oda '+g.odaNo:'—'}</td>
+          <td>${g.gece||geceSayisi(g.tarih,g.cikis)||'—'}</td>
+          <td>${g.fiyatTipAd||'—'}</td>
+          <td><span class="badge badge-blue">${g.odemeTuru||'—'}</span></td>
+          <td class="amount-pos">${fmt(g.tutar)}</td>
+        </tr>`).join('')
+      : '<tr class="empty-row"><td colspan="6">Kayıt yok</td></tr>';
+  } catch(e) { document.getElementById('md_gecmis').innerHTML = '<tr class="empty-row"><td colspan="6">Yüklenemedi</td></tr>'; }
+  openModal('musteriDetayModal');
+};
+
+// ── GÜN SONU RAPORU ──
+window.renderRapor = async function() {
+  const tarih = document.getElementById('rapor-tarih')?.value || today();
+  const el = document.getElementById('raporIcerik');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Hesaplanıyor...</div>';
+
+  const gelirler   = window._G.filter(g=>g.tarih===tarih);
+  const giderler   = window._E.filter(e=>e.tarih===tarih);
+  const masraflar  = window._M.filter(m=>m.kayitTarih?.startsWith(tarih));
+  const aktiviteler= window._AK.filter(a=>a.tarih===tarih);
+
+  const toplamGelir = gelirler.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const toplamGider = giderler.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const netKar = toplamGelir - toplamGider;
+
+  // Oda doluluk
+  let doluOda=0, bosOda=0, temizOda=0;
+  for(let i=1;i<=12;i++){
+    const o=window._O['oda'+i]||{};
+    if(o.durum==='dolu') doluOda++;
+    else if(o.durum==='temizlik') temizOda++;
+    else bosOda++;
+  }
+  const dolulukOrani = Math.round((doluOda/12)*100);
+
+  // Ödeme tipi dağılımı
+  const byOdeme = {nakit:0,kart:0,havale:0};
+  gelirler.forEach(g=>{byOdeme[g.odemeTuru]=(byOdeme[g.odemeTuru]||0)+Number(g.tutar||0);});
+
+  // Check-in / checkout sayıları
+  const checkinSayisi  = aktiviteler.filter(a=>a.islem==='checkin').length;
+  const checkoutSayisi = aktiviteler.filter(a=>a.islem==='checkout').length;
+  const rezervSayisi   = aktiviteler.filter(a=>a.islem==='rezervasyon').length;
+
+  const gunAdi = new Date(tarih+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  el.innerHTML = `
+    <div id="raporPrint">
+      <!-- Başlık -->
+      <div style="background:var(--dark);color:var(--cream);padding:24px 28px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:4px">SWISS HOTEL</div>
+          <div style="font-size:11px;letter-spacing:2px;color:rgba(196,165,90,.7);text-transform:uppercase;margin-top:4px">Gün Sonu Raporu</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--gold2)">${gunAdi}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">Oluşturulma: ${new Date().toLocaleTimeString('tr-TR')}</div>
+        </div>
+      </div>
+
+      <!-- Doluluk -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+        ${[
+          ['Doluluk Oranı',dolulukOrani+'%','var(--gold)'],
+          ['Dolu Oda',doluOda+' / 12','var(--red)'],
+          ['Boş Oda',bosOda+' / 12','var(--green)'],
+          ['Temizlikte',temizOda+' oda','var(--orange)']
+        ].map(([lbl,val,renk])=>`
+          <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid ${renk};padding:16px 18px;box-shadow:var(--shadow)">
+            <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${lbl}</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:${renk}">${val}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Finansal özet -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+        ${[
+          ['Toplam Gelir',fmt(toplamGelir),'var(--green)'],
+          ['Toplam Gider',fmt(toplamGider),'var(--red)'],
+          ['Net Kâr',fmt(netKar),netKar>=0?'var(--green)':'var(--red)']
+        ].map(([lbl,val,renk])=>`
+          <div style="background:var(--white);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow)">
+            <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${lbl}</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:${renk}">${val}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Ödeme dağılımı + İşlemler -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <div style="background:var(--white);border:1px solid var(--border);padding:20px 22px;box-shadow:var(--shadow)">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--dark);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">Ödeme Türü Dağılımı</div>
+          ${[['💵 Nakit',byOdeme.nakit,'var(--green)'],['💳 Kart',byOdeme.kart,'var(--blue)'],['🏦 Havale',byOdeme.havale,'var(--purple)']].map(([lbl,val,renk])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">${lbl}</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:${renk}">${fmt(val)}</span>
+            </div>`).join('')}
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);padding:20px 22px;box-shadow:var(--shadow)">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--dark);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">Günün İşlemleri</div>
+          ${[['✓ Check-in',checkinSayisi,'var(--green)'],['↑ Check-out',checkoutSayisi,'var(--blue)'],['📅 Rezervasyon',rezervSayisi,'var(--purple)'],['💳 Masraf',masraflar.length,'var(--orange)']].map(([lbl,val,renk])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">${lbl}</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:${renk}">${val}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Günün gelir detayı -->
+      ${gelirler.length ? `
+      <div style="background:var(--white);border:1px solid var(--border);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:14px">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--dark);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">Günün Gelirleri</div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr>${['Oda','Misafir','Kaynak','Ödeme','Açıklama','Tutar'].map(h=>`<th style="padding:8px 4px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
+          <tbody>${gelirler.map(g=>`<tr>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border)">${g.odaNo?'Oda '+g.odaNo:'—'}</td>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border)">${g.misafir||'—'}</td>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border)">${g.kaynak||'—'}</td>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border)">${g.odemeTuru||'—'}</td>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${g.aciklama||'—'}</td>
+            <td style="padding:8px 4px;border-bottom:1px solid var(--border);font-weight:700;color:var(--green)">+${fmt(g.tutar)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+    </div>`;
+};
+
+window.raporuYazdir = function() {
+  const tarih = document.getElementById('rapor-tarih')?.value || today();
+  const icerik = document.getElementById('raporPrint')?.innerHTML;
+  if(!icerik) { toast('Önce raporu oluşturun','error'); return; }
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="tr"><head>
+    <meta charset="UTF-8"><title>Gün Sonu Raporu — ${tarih}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Jost',sans-serif;background:#f5f2ec;padding:32px;color:#2a2520;}
+    @media print{body{background:#fff;padding:16px;}}
+    </style></head><body>${icerik}<script>window.onload=()=>window.print();<\/script></body></html>`);
+  w.document.close();
 };
 
 // Başlat
