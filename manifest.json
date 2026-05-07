@@ -1,0 +1,40 @@
+{
+  "name": "Swiss House Yönetim",
+  "short_name": "Swiss House",
+  "description": "Swiss House Otel Yönetim Sistemi",
+  "id": "/house/index.html",
+  "start_url": "/house/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#C8102E",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Swiss House Yönetim Paneli"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "label": "Swiss House Resepsiyon"
+    }
+  ]
+}
