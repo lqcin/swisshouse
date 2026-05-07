@@ -1141,6 +1141,18 @@ document.addEventListener('click', function(e) {
     menu.style.display = 'none';
   }
 });
+
+// Masraf modal açılınca tutar alanına fokusla
+var _origOpenModal = window.openModal;
+window.openModal = function(id) {
+  if(_origOpenModal) _origOpenModal(id);
+  if(id === 'masrafModal') {
+    setTimeout(function() {
+      var t = document.getElementById('masraf_tutar');
+      if(t) { t.focus(); t.select(); }
+    }, 150);
+  }
+};
 </script>
 </body>
 </html>
