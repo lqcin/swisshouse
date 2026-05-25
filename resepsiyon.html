@@ -1178,7 +1178,9 @@ window._printSozlesmeMultilang = function(dil) {
   var gece = parseInt(document.getElementById('ci_gece') ? document.getElementById('ci_gece').value : 1) || 1;
   var fiyat = Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0;
   var toplam = gece * fiyat;
-  var odaNo = currentCheckinOda;
+  var odaNo = (typeof currentCheckinOda !== 'undefined' && currentCheckinOda) 
+    ? currentCheckinOda 
+    : document.getElementById('checkinTitle')?.textContent?.match(/\d+/)?.[0] || '?';
   var no = 'SH-' + Date.now().toString().slice(-6);
   var tarih = new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'});
 
