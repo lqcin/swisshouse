@@ -1178,13 +1178,7 @@ window.sozlesmeDiliSec = function(dil) {
   _sozlesmeDili = dil;
   closeModal('dilSecimModal');
   setTimeout(function() {
-    // Obfuscated kodun printSozlesme fonksiyonunu çağır
-    if(typeof printSozlesme === 'function') {
-      printSozlesme(currentCheckinOda);
-    } else {
-      // Fallback: doğrudan oluştur
-      _printSozlesmeMultilang(dil);
-    }
+    _printSozlesmeMultilang(dil);
   }, 100);
 };
 
