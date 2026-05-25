@@ -924,27 +924,6 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 </div>
 
-<!-- DİL SEÇİM MODAL -->
-<div class="modal-overlay" id="dilSecimModal">
-  <div class="modal" style="max-width:380px;text-align:center">
-    <div class="modal-title">Sözleşme Dili / Contract Language / زبان قرارداد</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin:24px 0">
-      <button onclick="sozlesmeDiliSec('tr')" style="padding:16px;border:2px solid var(--border);background:#fff;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseenter="this.style.borderColor='var(--primary)';this.style.background='#fff0f2'" onmouseleave="this.style.borderColor='var(--border)';this.style.background='#fff'">
-        <span style="font-size:24px">🇹🇷</span>
-        <span>Türkçe</span>
-      </button>
-      <button onclick="sozlesmeDiliSec('en')" style="padding:16px;border:2px solid var(--border);background:#fff;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseenter="this.style.borderColor='var(--primary)';this.style.background='#fff0f2'" onmouseleave="this.style.borderColor='var(--border)';this.style.background='#fff'">
-        <span style="font-size:24px">🇬🇧</span>
-        <span>English</span>
-      </button>
-      <button onclick="sozlesmeDiliSec('fa')" style="padding:16px;border:2px solid var(--border);background:#fff;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border-radius:2px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseenter="this.style.borderColor='var(--primary)';this.style.background='#fff0f2'" onmouseleave="this.style.borderColor='var(--border)';this.style.background='#fff'">
-        <span style="font-size:24px">🇮🇷</span>
-        <span style="font-family:serif">فارسی</span>
-      </button>
-    </div>
-    <button class="btn btn-ghost" onclick="closeModal('dilSecimModal')">Vazgeç / Cancel / لغو</button>
-  </div>
-</div>
 
 <!-- VARDİYA BAR -->
 <div id="vardiyaBar" class="vardiya-bar" style="display:none">
@@ -1176,10 +1155,13 @@ let _sozlesmeDili = 'tr';
 
 window.sozlesmeDiliSec = function(dil) {
   _sozlesmeDili = dil;
-  closeModal('dilSecimModal');
+  // Önce modal'ı kapat
+  var dilModal = document.getElementById('dilSecimModal');
+  if(dilModal) dilModal.classList.remove('active');
+  // Sözleşmeyi oluştur
   setTimeout(function() {
     _printSozlesmeMultilang(dil);
-  }, 100);
+  }, 200);
 };
 
 // Sözleşme butonuna tıklanınca önce dil sor
@@ -1330,7 +1312,11 @@ window._printSozlesmeMultilang = function(dil) {
   var w = window.open('', '_blank');
   w.document.write(html);
   w.document.close();
-  setTimeout(function() { openModal('sozlesmeOnayModal'); }, 400);
+  setTimeout(function() {
+    var onayModal = document.getElementById('sozlesmeOnayModal');
+    if(onayModal) onayModal.classList.add('active');
+    if(typeof openModal === 'function') openModal('sozlesmeOnayModal');
+  }, 400);
 };
 
 function harcamaMenuToggle() {
