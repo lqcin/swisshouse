@@ -1155,10 +1155,17 @@ let _sozlesmeDili = 'tr';
 
 window.sozlesmeDiliSec = function(dil) {
   _sozlesmeDili = dil;
-  // Önce modal'ı kapat
+  // Değerleri modal kapanmadan önce oku
+  window._sozlesmeData = {
+    ad: document.getElementById('ci_ad') ? document.getElementById('ci_ad').value.trim() : '',
+    tc: document.getElementById('ci_tc') ? document.getElementById('ci_tc').value.trim() : '',
+    giris: document.getElementById('ci_giris') ? document.getElementById('ci_giris').value : '',
+    cikis: document.getElementById('ci_cikis') ? document.getElementById('ci_cikis').value : '',
+    gece: parseInt(document.getElementById('ci_gece') ? document.getElementById('ci_gece').value : 1) || 1,
+    fiyat: Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0
+  };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
-  // Sözleşmeyi oluştur
   setTimeout(function() {
     _printSozlesmeMultilang(dil);
   }, 200);
@@ -1171,12 +1178,13 @@ window.checkinSozlesmeOnayla = function() {
 };
 
 window._printSozlesmeMultilang = function(dil) {
-  var ad = document.getElementById('ci_ad') ? document.getElementById('ci_ad').value.trim() : '';
-  var tc = document.getElementById('ci_tc') ? document.getElementById('ci_tc').value.trim() : '';
-  var giris = document.getElementById('ci_giris') ? document.getElementById('ci_giris').value : '';
-  var cikis = document.getElementById('ci_cikis') ? document.getElementById('ci_cikis').value : '';
-  var gece = parseInt(document.getElementById('ci_gece') ? document.getElementById('ci_gece').value : 1) || 1;
-  var fiyat = Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0;
+  var data = window._sozlesmeData || {};
+  var ad = data.ad || document.getElementById('ci_ad')?.value?.trim() || '';
+  var tc = data.tc || document.getElementById('ci_tc')?.value?.trim() || '';
+  var giris = data.giris || document.getElementById('ci_giris')?.value || '';
+  var cikis = data.cikis || document.getElementById('ci_cikis')?.value || '';
+  var gece = data.gece || parseInt(document.getElementById('ci_gece')?.value) || 1;
+  var fiyat = data.fiyat || Number(document.getElementById('ci_fiyat')?.value) || 0;
   var toplam = gece * fiyat;
   var odaNo = (typeof currentCheckinOda !== 'undefined' && currentCheckinOda) 
     ? currentCheckinOda 
