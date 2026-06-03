@@ -1649,9 +1649,28 @@ var _ciTitleObs = new MutationObserver(function() {
 document.addEventListener('DOMContentLoaded', function() {
   var t = document.getElementById('checkinTitle');
   if(t) _ciTitleObs.observe(t, {childList:true, characterData:true, subtree:true});
-  // rev_oda değişince güncelle
+
+  // rev_oda dropdown açılınca güncelle
   var ro = document.getElementById('rev_oda');
-  if(ro) new MutationObserver(function(){ setTimeout(window._odaAdlariniGuncelle,100); }).observe(ro, {childList:true});
+  if(ro) {
+    new MutationObserver(function(){ setTimeout(window._odaAdlariniGuncelle,100); }).observe(ro, {childList:true});
+    ro.addEventListener('mousedown', function(){ setTimeout(window._odaAdlariniGuncelle,50); });
+    ro.addEventListener('focus', function(){ setTimeout(window._odaAdlariniGuncelle,50); });
+  }
+
+  // Rezervasyon filtre dropdown
+  var rf = document.getElementById('rev-filter-oda');
+  if(rf) {
+    new MutationObserver(function(){ setTimeout(window._odaAdlariniGuncelle,100); }).observe(rf, {childList:true});
+  }
+
+  // İlk 5 saniye her 500ms güncelle — obfuscated kodun yüklenmesini bekle
+  var _initInterval = setInterval(function() {
+    if(Object.keys(window._odaAdlari).length) {
+      window._odaAdlariniGuncelle();
+    }
+  }, 500);
+  setTimeout(function(){ clearInterval(_initInterval); }, 5000);
 });
 
 // Oda adlarını Firebase'den yükle
