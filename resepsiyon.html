@@ -1157,7 +1157,7 @@ const _0x5d2892=_0x4740;(function(_0x2b0e8e,_0x5d2664){const _0x5d8dca=_0x4740,_
 </script>
 <script>
 // ── KAT GRUPLAMA ──
-var ODA_ADLARI = {
+var ODA_ADLARI_MAP = {
   '1':'101','2':'102','3':'103',
   '4':'201','5':'202','6':'203',
   '7':'301','8':'302','9':'303',
@@ -1165,7 +1165,7 @@ var ODA_ADLARI = {
 };
 
 function kartOdaNoGuncelle(kart, eskiNo) {
-  var yeniAd = ODA_ADLARI[eskiNo];
+  var yeniAd = ODA_ADLARI_MAP[eskiNo];
   if(!yeniAd) return;
   var divler = kart.querySelectorAll('div');
   for(var i=0; i<divler.length; i++) {
@@ -1176,6 +1176,8 @@ function kartOdaNoGuncelle(kart, eskiNo) {
     }
   }
 }
+
+function katGrupla() {
   var grid = document.getElementById('roomsGrid');
   var wrapper = document.getElementById('roomsGridWrapper');
   if(!grid || !wrapper) return;
@@ -1226,7 +1228,7 @@ function kartOdaNoGuncelle(kart, eskiNo) {
     grup.appendChild(baslik);
     var yeniGrid = document.createElement('div');
     yeniGrid.className = 'rooms-grid';
-    // Orijinal kartları (onclick dahil) taşı ve numarayı güncelle
+    // Orijinal kartları (onclick dahil) taşı
     katlar[kat].forEach(function(k) {
       var no = odaNumarasi(k);
       kartOdaNoGuncelle(k, no);
