@@ -1271,7 +1271,7 @@ window._printSozlesmeMultilang = function(dil) {
   var odemelbl = odemeMap[odeme] || odeme;
   var odaNo = (typeof currentCheckinOda !== 'undefined' && currentCheckinOda) 
     ? currentCheckinOda 
-    : document.getElementById('checkinTitle')?.textContent?.match(/[\w\d]+(?:\s*[-\/]\s*[\w\d]+)*/)?.[0] || '?';
+    : (document.getElementById('checkinTitle')?.textContent?.match(/Oda\s+(\S+)/)?.[1] || '?');
   var no = 'SH-' + Date.now().toString().slice(-6);
   var tarih = new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'});
 
