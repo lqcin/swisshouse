@@ -1162,7 +1162,9 @@ window.sozlesmeDiliSec = function(dil) {
     giris: document.getElementById('ci_giris') ? document.getElementById('ci_giris').value : '',
     cikis: document.getElementById('ci_cikis') ? document.getElementById('ci_cikis').value : '',
     gece: parseInt(document.getElementById('ci_gece') ? document.getElementById('ci_gece').value : 1) || 1,
-    fiyat: Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0
+    fiyat: Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0,
+    not_: document.getElementById('ci_not') ? document.getElementById('ci_not').value.trim() : '',
+    odeme: document.getElementById('ci_odeme') ? document.getElementById('ci_odeme').value : 'nakit'
   };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
@@ -1186,9 +1188,13 @@ window._printSozlesmeMultilang = function(dil) {
   var gece = data.gece || parseInt(document.getElementById('ci_gece')?.value) || 1;
   var fiyat = data.fiyat || Number(document.getElementById('ci_fiyat')?.value) || 0;
   var toplam = gece * fiyat;
+  var not_ = data.not_ || document.getElementById('ci_not')?.value?.trim() || '';
+  var odeme = data.odeme || document.getElementById('ci_odeme')?.value || 'nakit';
+  var odemeMap = {nakit:'Nakit', kart:'Kredi Kartı', havale:'Havale / EFT'};
+  var odemelbl = odemeMap[odeme] || odeme;
   var odaNo = (typeof currentCheckinOda !== 'undefined' && currentCheckinOda) 
     ? currentCheckinOda 
-    : document.getElementById('checkinTitle')?.textContent?.match(/\d+/)?.[0] || '?';
+    : document.getElementById('checkinTitle')?.textContent?.match(/[\w\d]+(?:\s*[-\/]\s*[\w\d]+)*/)?.[0] || '?';
   var no = 'SH-' + Date.now().toString().slice(-6);
   var tarih = new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'});
 
@@ -1217,6 +1223,7 @@ window._printSozlesmeMultilang = function(dil) {
         'Kiracı bu sözleşmeyi okuyup anladığını ve kabul ettiğini beyan eder.'
       ],
       imzaK:'Kiracı İmzası', imzaKV:'Kiraya Veren İmzası',
+      odemeLbl:'Ödeme Türü', pesinOdendi:'Peşin Ödenmiştir', notLbl:'Not',
       refLbl:'Refakatçi', footer:'Swiss House · Geçici Konut Kiralama Sözleşmesi'
     },
     en: {
@@ -1237,6 +1244,7 @@ window._printSozlesmeMultilang = function(dil) {
         'The tenant declares that they have read, understood and accepted this agreement.'
       ],
       imzaK:'Tenant Signature', imzaKV:'Landlord Signature',
+      odemeLbl:'Payment Method', pesinOdendi:'Paid in Full', notLbl:'Note',
       refLbl:'Companion', footer:'Swiss House · Temporary Accommodation Rental Agreement'
     },
     fa: {
@@ -1257,6 +1265,7 @@ window._printSozlesmeMultilang = function(dil) {
         'مستاجر اعلام می‌کند که این قرارداد را خوانده، درک کرده و پذیرفته است.'
       ],
       imzaK:'امضای مستاجر', imzaKV:'امضای موجر',
+      odemeLbl:'روش پرداخت', pesinOdendi:'پیش پرداخت شده', notLbl:'یادداشت',
       refLbl:'همراه', footer:'Swiss House · قرارداد اجاره موقت مسکن'
     }
   };
@@ -1308,7 +1317,8 @@ window._printSozlesmeMultilang = function(dil) {
     + '<div class="kira-box"><div class="etiket">'+m.girisLbl+'</div><div class="deger">'+fmt2(giris)+'</div></div>'
     + '<div class="kira-box"><div class="etiket">'+m.cikisLbl+'</div><div class="deger">'+fmt2(cikis)+'</div></div>'
     + '<div class="kira-box"><div class="etiket">'+m.tutarLbl+'</div><div class="deger" style="color:#C8102E">'+toplam.toLocaleString('tr-TR')+' ₺</div></div>'
-    + '<div class="kira-box"><div class="etiket">'+m.imzaK+'</div><div class="deger">'+ad+'</div></div>'
+    + '<div class="kira-box"><div class="etiket">'+m.odemeLbl+'</div><div class="deger">'+odemelbl+' <span style="color:#2a7a2a;font-size:10px">✓ '+m.pesinOdendi+'</span></div></div>'
+    + (not_ ? '<div class="kira-box" style="grid-column:span 2"><div class="etiket">'+m.notLbl+'</div><div class="deger" style="font-size:11px;font-weight:400">'+not_+'</div></div>' : '')
     + '</div></div>'
     + '<div class="bolum"><div class="bolum-baslik">'+m.b3+'</div>'
     + '<ul class="maddeler">'+m.maddeler.map(function(md){return '<li>'+md+'</li>';}).join('')+'</ul></div>'
