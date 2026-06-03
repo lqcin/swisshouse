@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Oda Adları Güncelle</title>
+<style>
+body { font-family: sans-serif; max-width: 500px; margin: 60px auto; padding: 20px; }
+h2 { color: #C8102E; }
+button { background: #C8102E; color: #fff; border: none; padding: 14px 28px; font-size: 15px; cursor: pointer; border-radius: 4px; margin-top: 20px; }
+button:disabled { opacity: .5; }
+#log { margin-top: 20px; font-size: 13px; line-height: 2; }
+.ok { color: green; }
+.err { color: red; }
+input { width: 100%; padding: 10px; font-size: 15px; margin-bottom: 10px; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<h2>🏨 Oda Adları Güncelle</h2>
+<p style="color:#666;font-size:13px;margin-bottom:20px">Yönetici e-posta ve şifrenizi girin. Tüm oda adları 101–403 formatına güncellenecek.</p>
+
+<label>E-posta</label>
+<input type="email" id="email" placeholder="yonetici@swisshouse.com">
+<label>Şifre</label>
+<input type="password" id="sifre" placeholder="••••••••">
+
+<button onclick="guncelle()" id="btn">Oda Adlarını Güncelle</button>
+<div id="log"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const ODALAR = {
+  oda1: '101', oda2: '102', oda3: '103',
+  oda4: '201', oda5: '202', oda6: '203',
+  oda7: '301', oda8: '302', oda9: '303',
+  oda10: '401', oda11: '402', oda12: '403'
+};
+
+// Varsayılan oda özellikleri
+const KATLAR = {
+  oda1:1, oda2:1, oda3:1,
+  oda4:2, oda5:2, oda6:2,
+  oda7:3, oda8:3, oda9:3,
+  oda10:4, oda11:4, oda12:4
+};
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6fvFby9bts5Aer0687AeI6FLJh2UXtcc",
+  authDomain: 'swiss-house-64451.firebaseapp.com',
+  projectId: 'swiss-house-64451',
+  storageBucket: 'swiss-house-64451.firebasestorage.app',
+  messagingSenderId: '1030946095760',
+  appId: '1:1030946095760:web:cca400316adc1672ce8e15'
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.guncelle = async function() {
+  const email = document.getElementById('email').value.trim();
+  const sifre = document.getElementById('sifre').value;
+  const log = document.getElementById('log');
+  const btn = document.getElementById('btn');
+  log.innerHTML = '';
+
+  if(!email || !sifre) { log.innerHTML = '<span class="err">E-posta ve şifre gerekli.</span>'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Giriş yapılıyor...';
+
+  try {
+    await signInWithEmailAndPassword(auth, email, sifre);
+    log.innerHTML += '<span class="ok">✓ Giriş başarılı</span><br>';
+  } catch(e) {
+    log.innerHTML = '<span class="err">✗ Giriş hatası: ' + e.message + '</span>';
+    btn.disabled = false; btn.textContent = 'Oda Adlarını Güncelle';
+    return;
+  }
+
+  btn.textContent = 'Güncelleniyor...';
+
+  try {
+    const odaRef = doc(db, 'meta', 'odalar');
+    const odaSnap = await getDoc(odaRef);
+    const mevcut = odaSnap.exists() ? odaSnap.data() : {};
+    const guncel = {};
+
+    for(const [key, yeniAd] of Object.entries(ODALAR)) {
+      const eskiData = mevcut[key] || {};
+      guncel[key] = {
+        durum: eskiData.durum || 'bos',
+        misafir: eskiData.misafir || '',
+        tc: eskiData.tc || '',
+        giris: eskiData.giris || '',
+        cikis: eskiData.cikis || '',
+        fiyat: eskiData.fiyat || 0,
+        fiyatTip: eskiData.fiyatTip || 1,
+        guncelleme: eskiData.guncelleme || '',
+        ad: yeniAd,
+        kat: KATLAR[key]
+      };
+      log.innerHTML += `<span class="ok">✓ ${key} → ${yeniAd} (${KATLAR[key]}. kat)</span><br>`;
+    }
+
+    await setDoc(odaRef, guncel);
+    log.innerHTML += '<br><strong style="color:#C8102E">✓ Tüm oda adları güncellendi!</strong>';
+    btn.textContent = 'Tamamlandı ✓';
+
+  } catch(e) {
+    log.innerHTML += '<span class="err">✗ Hata: ' + e.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = 'Tekrar Dene';
+  }
+};
+</script>
+</body>
+</html>
