@@ -1412,6 +1412,28 @@ window._printSozlesmeMultilang = function(dil) {
   }, 400);
 };
 
+// Oda adı mapping
+var ODA_ADLARI = {
+  '1':'101','2':'102','3':'103',
+  '4':'201','5':'202','6':'203',
+  '7':'301','8':'302','9':'303',
+  '10':'401','11':'402','12':'403'
+};
+
+// Check-in modal başlığını düzelt
+var _checkinTitleObs = new MutationObserver(function() {
+  var title = document.getElementById('checkinTitle');
+  if(!title) return;
+  var m = title.textContent.match(/Oda\s+(\d+)/);
+  if(!m) return;
+  var yeniAd = ODA_ADLARI[m[1]];
+  if(yeniAd) title.textContent = title.textContent.replace('Oda ' + m[1], yeniAd);
+});
+document.addEventListener('DOMContentLoaded', function() {
+  var title = document.getElementById('checkinTitle');
+  if(title) _checkinTitleObs.observe(title, {childList:true, characterData:true, subtree:true});
+});
+
 function harcamaMenuToggle() {
   var m = document.getElementById('harcamaMenu');
   if(m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
