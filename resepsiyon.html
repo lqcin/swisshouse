@@ -1792,77 +1792,6 @@ window._printSozlesmeMultilang = function(dil) {
     + '</div>'
     + '<div class="footer">'+m.footer+' · '+no+'</div>'
     + '
-<script id="sozlesme-yeni-sekme-kesin">
-(function(){
-  function q(id){ return document.getElementById(id); }
-  function val(id){ var el=q(id); return el ? String(el.value || '').trim() : ''; }
-  function txt(id){ var el=q(id); return el ? String(el.textContent || '').trim() : ''; }
-  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
-  function trDate(d){
-    if(!d) return '—';
-    var p=String(d).split('-');
-    return p.length===3 ? (p[2]+'.'+p[1]+'.'+p[0]) : d;
-  }
-  function getRoomNo(){
-    var title = txt('checkinTitle') || '';
-    var m = title.match(/(?:Oda|Room)\s*([0-9]+)/i);
-    if(m) return m[1];
-    var hidden = val('masraf_oda_no') || val('durum_oda_no');
-    return hidden || '—';
-  }
-  function buildContractHtml(dil){
-    var ad=val('ci_ad') || '—';
-    var tc=val('ci_tc') || '—';
-    var tel=val('ci_tel') || '—';
-    var giris=val('ci_giris');
-    var cikis=val('ci_cikis');
-    var gece=parseInt(val('ci_gece') || '1',10) || 1;
-    var fiyat=Number(val('ci_fiyat') || '0') || 0;
-    var toplam=gece*fiyat;
-    var oda=getRoomNo();
-    var no='SH-'+Date.now().toString().slice(-6);
-    var bugun=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
-    var rtl = dil === 'fa';
-    var L = {
-      tr:{lang:'tr',title:'GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ',no:'Sözleşme No',date:'Tarih',guest:'Misafir Bilgileri',name:'Ad Soyad',id:'TC Kimlik No',phone:'Telefon',stay:'Konaklama Bilgileri',room:'Oda',checkin:'Giriş Tarihi',checkout:'Çıkış Tarihi',nights:'Gece',total:'Toplam Tutar',terms:'Sözleşme Koşulları',print:'YAZDIR',close:'KAPAT',tenant:'Misafir İmzası',hotel:'Otel Yetkilisi',items:['Misafir, belirtilen tarihler arasında ilgili odada konaklamayı kabul eder.','Oda temiz ve eksiksiz teslim edilir; çıkışta aynı şekilde teslim alınır.','Oda ve otel eşyalarında oluşabilecek hasarlar misafirden tahsil edilir.','Otel kurallarına uyulması zorunludur.','Misafir bu sözleşmeyi okuyup kabul ettiğini beyan eder.']},
-      en:{lang:'en',title:'TEMPORARY ACCOMMODATION AGREEMENT',no:'Contract No',date:'Date',guest:'Guest Information',name:'Full Name',id:'ID Number',phone:'Phone',stay:'Stay Details',room:'Room',checkin:'Check-in Date',checkout:'Check-out Date',nights:'Nights',total:'Total Amount',terms:'Terms And Conditions',print:'PRINT',close:'CLOSE',tenant:'Guest Signature',hotel:'Hotel Representative',items:['The guest agrees to stay in the specified room between the stated dates.','The room is delivered clean and complete and must be returned in the same condition.','Any damage to the room or hotel property may be charged to the guest.','Hotel rules must be followed.','The guest declares that this agreement has been read and accepted.']},
-      fa:{lang:'fa',title:'قرارداد اقامت موقت',no:'شماره قرارداد',date:'تاریخ',guest:'اطلاعات مهمان',name:'نام و نام خانوادگی',id:'شماره شناسایی',phone:'تلفن',stay:'جزئیات اقامت',room:'اتاق',checkin:'تاریخ ورود',checkout:'تاریخ خروج',nights:'شب',total:'مبلغ کل',terms:'شرایط قرارداد',print:'چاپ',close:'بستن',tenant:'امضای مهمان',hotel:'نماینده هتل',items:['مهمان موافقت می‌کند در تاریخ‌های مشخص شده در اتاق مربوطه اقامت داشته باشد.','اتاق تمیز و کامل تحویل داده می‌شود و باید به همان شکل بازگردانده شود.','هرگونه خسارت به اتاق یا اموال هتل می‌تواند از مهمان دریافت شود.','رعایت قوانین هتل الزامی است.','مهمان اعلام می‌کند که این قرارداد را خوانده و پذیرفته است.']}
-    }[dil] || null;
-    if(!L) L = arguments.callee('tr');
-    var dir = rtl ? 'rtl' : 'ltr';
-    var fontLink = rtl ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">';
-    return '<!doctype html><html lang="'+esc(L.lang)+'" dir="'+dir+'"><head><meta charset="utf-8"><title>'+esc(L.title)+'</title>'+fontLink+
-    '<style>*{box-sizing:border-box}body{font-family:'+(rtl?'Vazirmatn':'Jost')+',Arial,sans-serif;margin:0;background:#f4f5f7;color:#1a1d23;direction:'+dir+'}.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;z-index:10}.toolbar button{border:1px solid #C8102E;background:#C8102E;color:#fff;padding:10px 18px;font-weight:700;letter-spacing:1px;cursor:pointer}.toolbar button.secondary{background:#fff;color:#555;border-color:#ddd}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}.head{display:flex;justify-content:space-between;border-bottom:2px solid #C8102E;padding-bottom:12px;margin-bottom:18px}.logo{font-size:22px;font-weight:700;letter-spacing:2px;color:#C8102E}.meta{font-size:12px;color:#555;text-align:'+(rtl?'left':'right')+'}.title{text-align:center;font-size:18px;font-weight:700;color:#C8102E;margin:18px 0 22px}.section{margin:16px 0}.section-title{font-size:12px;font-weight:700;color:#C8102E;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f8f8f8;border:1px solid #eee;padding:10px 12px}.label{font-size:10px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:3px}.value{font-size:14px;font-weight:700}.terms li{margin:8px 0;line-height:1.5}.sign{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:55px}.sigbox{border-top:1px solid #222;padding-top:8px;min-height:50px;font-weight:700;color:#555}.footer{text-align:center;border-top:1px solid #eee;color:#999;font-size:11px;margin-top:25px;padding-top:10px}@page{size:A4;margin:8mm}@media print{body{background:#fff}.toolbar{display:none!important}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:8mm}}</style></head><body>'+ 
-    '<div class="toolbar"><button onclick="window.print()">'+esc(L.print)+'</button><button class="secondary" onclick="window.close()">'+esc(L.close)+'</button></div>'+ 
-    '<div class="page"><div class="head"><div class="logo">SWISS HOUSE</div><div class="meta"><div><b>'+esc(L.no)+':</b> '+esc(no)+'</div><div><b>'+esc(L.date)+':</b> '+esc(bugun)+'</div></div></div>'+ 
-    '<div class="title">'+esc(L.title)+'</div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.guest)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.name)+'</div><div class="value">'+esc(ad)+'</div></div><div class="box"><div class="label">'+esc(L.id)+'</div><div class="value">'+esc(tc)+'</div></div><div class="box"><div class="label">'+esc(L.phone)+'</div><div class="value">'+esc(tel)+'</div></div></div></div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.stay)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.room)+'</div><div class="value">'+esc(oda)+'</div></div><div class="box"><div class="label">'+esc(L.nights)+'</div><div class="value">'+esc(gece)+'</div></div><div class="box"><div class="label">'+esc(L.checkin)+'</div><div class="value">'+esc(trDate(giris))+'</div></div><div class="box"><div class="label">'+esc(L.checkout)+'</div><div class="value">'+esc(trDate(cikis))+'</div></div><div class="box"><div class="label">'+esc(L.total)+'</div><div class="value" style="color:#C8102E">'+esc(toplam.toLocaleString('tr-TR'))+' ₺</div></div></div></div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.terms)+'</div><ol class="terms">'+L.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>'+ 
-    '<div class="sign"><div class="sigbox">'+esc(L.tenant)+'</div><div class="sigbox">'+esc(L.hotel)+'</div></div><div class="footer">Swiss House · '+esc(no)+'</div></div></body></html>';
-  }
-  function openContractTab(dil){
-    var html = buildContractHtml(dil);
-    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} try{ a.remove(); }catch(e){} }, 60000);
-    var modal=q('dilSecimModal');
-    if(modal) modal.classList.remove('active');
-  }
-  window.sozlesmeDiliSec = function(dil){
-    try { openContractTab(dil || 'tr'); }
-    catch(e) { alert('Sözleşme sekmesi açılamadı: ' + (e && e.message ? e.message : e)); }
-  };
-  window.printSozlesme = function(){ openContractTab('tr'); };
-})();
-</script>
-
 </body></html>';
 
   var w = window.open('', '_blank');
@@ -1902,74 +1831,196 @@ window.openModal = function(id) {
 </script>
 
 
-<script id="sozlesme-yeni-sekme-kesin">
+
+<script id="sozlesme-tek-sayfa-son">
 (function(){
   function q(id){ return document.getElementById(id); }
-  function val(id){ var el=q(id); return el ? String(el.value || '').trim() : ''; }
-  function txt(id){ var el=q(id); return el ? String(el.textContent || '').trim() : ''; }
-  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+  function v(id){ var el=q(id); return el ? String(el.value || '').trim() : ''; }
+  function t(id){ var el=q(id); return el ? String(el.textContent || '').trim() : ''; }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
   function trDate(d){
     if(!d) return '—';
     var p=String(d).split('-');
     return p.length===3 ? (p[2]+'.'+p[1]+'.'+p[0]) : d;
   }
-  function getRoomNo(){
-    var title = txt('checkinTitle') || '';
-    var m = title.match(/(?:Oda|Room)\s*([0-9]+)/i);
-    if(m) return m[1];
-    var hidden = val('masraf_oda_no') || val('durum_oda_no');
-    return hidden || '—';
+  function money(n){
+    n = Number(n || 0);
+    return n.toLocaleString('tr-TR') + ' ₺';
   }
-  function buildContractHtml(dil){
-    var ad=val('ci_ad') || '—';
-    var tc=val('ci_tc') || '—';
-    var tel=val('ci_tel') || '—';
-    var giris=val('ci_giris');
-    var cikis=val('ci_cikis');
-    var gece=parseInt(val('ci_gece') || '1',10) || 1;
-    var fiyat=Number(val('ci_fiyat') || '0') || 0;
-    var toplam=gece*fiyat;
-    var oda=getRoomNo();
-    var no='SH-'+Date.now().toString().slice(-6);
-    var bugun=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  function selectedText(id, fallback){
+    var el=q(id);
+    if(el && el.options && el.selectedIndex >= 0){
+      return (el.options[el.selectedIndex].text || fallback || '').trim();
+    }
+    return fallback || '';
+  }
+  function getRoomNo(){
+    var title = t('checkinTitle') || '';
+    var m = title.match(/(?:Oda|Room)\s*([0-9]+)/i);
+    if(m) return 'Oda ' + m[1];
+
+    var sel = q('rev_oda');
+    if(sel && sel.value) {
+      var raw = (sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : sel.value) || sel.value;
+      raw = String(raw).replace(/^Oda\s*/i,'').trim();
+      return raw ? 'Oda ' + raw : 'Oda -';
+    }
+
+    var hidden = v('durum_oda_no') || v('masraf_oda_no');
+    return hidden ? ('Oda ' + String(hidden).replace(/^Oda\s*/i,'')) : 'Oda -';
+  }
+  function getPaymentStatusText(){
+    return selectedText('ci_odeme_durum',
+           selectedText('rev_odeme_durum',
+           selectedText('rd_odeme_durum','Ödenmedi')));
+  }
+  function getContractData(){
+    var gece = parseInt(v('ci_gece') || v('rev_gece') || '1',10) || 1;
+    var fiyat = Number(v('ci_fiyat') || v('rev_fiyat') || '0') || 0;
+    return {
+      oda: getRoomNo(),
+      ad: v('ci_ad') || v('rev_ad') || '—',
+      tc: v('ci_tc') || v('rev_tc') || '—',
+      tel: v('ci_tel') || v('rev_tel') || '—',
+      giris: v('ci_giris') || v('rev_giris'),
+      cikis: v('ci_cikis') || v('rev_cikis'),
+      gece: gece,
+      ucret: fiyat * gece,
+      odemeDurum: getPaymentStatusText(),
+      not: v('ci_not') || v('rev_not') || '—',
+      sozNo: 'SW-' + Date.now().toString().slice(-6),
+      rezNo: 'RES-' + Date.now().toString().slice(-5),
+      duzenleme: new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'})
+    };
+  }
+
+  function contractHtml(dil){
+    var d = getContractData();
     var rtl = dil === 'fa';
+
     var L = {
-      tr:{lang:'tr',title:'GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ',no:'Sözleşme No',date:'Tarih',guest:'Misafir Bilgileri',name:'Ad Soyad',id:'TC Kimlik No',phone:'Telefon',stay:'Konaklama Bilgileri',room:'Oda',checkin:'Giriş Tarihi',checkout:'Çıkış Tarihi',nights:'Gece',total:'Toplam Tutar',terms:'Sözleşme Koşulları',print:'YAZDIR',close:'KAPAT',tenant:'Misafir İmzası',hotel:'Otel Yetkilisi',items:['Misafir, belirtilen tarihler arasında ilgili odada konaklamayı kabul eder.','Oda temiz ve eksiksiz teslim edilir; çıkışta aynı şekilde teslim alınır.','Oda ve otel eşyalarında oluşabilecek hasarlar misafirden tahsil edilir.','Otel kurallarına uyulması zorunludur.','Misafir bu sözleşmeyi okuyup kabul ettiğini beyan eder.']},
-      en:{lang:'en',title:'TEMPORARY ACCOMMODATION AGREEMENT',no:'Contract No',date:'Date',guest:'Guest Information',name:'Full Name',id:'ID Number',phone:'Phone',stay:'Stay Details',room:'Room',checkin:'Check-in Date',checkout:'Check-out Date',nights:'Nights',total:'Total Amount',terms:'Terms And Conditions',print:'PRINT',close:'CLOSE',tenant:'Guest Signature',hotel:'Hotel Representative',items:['The guest agrees to stay in the specified room between the stated dates.','The room is delivered clean and complete and must be returned in the same condition.','Any damage to the room or hotel property may be charged to the guest.','Hotel rules must be followed.','The guest declares that this agreement has been read and accepted.']},
-      fa:{lang:'fa',title:'قرارداد اقامت موقت',no:'شماره قرارداد',date:'تاریخ',guest:'اطلاعات مهمان',name:'نام و نام خانوادگی',id:'شماره شناسایی',phone:'تلفن',stay:'جزئیات اقامت',room:'اتاق',checkin:'تاریخ ورود',checkout:'تاریخ خروج',nights:'شب',total:'مبلغ کل',terms:'شرایط قرارداد',print:'چاپ',close:'بستن',tenant:'امضای مهمان',hotel:'نماینده هتل',items:['مهمان موافقت می‌کند در تاریخ‌های مشخص شده در اتاق مربوطه اقامت داشته باشد.','اتاق تمیز و کامل تحویل داده می‌شود و باید به همان شکل بازگردانده شود.','هرگونه خسارت به اتاق یا اموال هتل می‌تواند از مهمان دریافت شود.','رعایت قوانین هتل الزامی است.','مهمان اعلام می‌کند که این قرارداد را خوانده و پذیرفته است.']}
+      tr: {
+        title:'GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ',
+        contractNo:'SÖZLEŞME NO', date:'DÜZENLEME TARİHİ', resNo:'REZERVASYON NO', address:'TESİS ADRESİ',
+        parties:'1. TARAFLAR', landlord:'KİRAYA VEREN', tenants:'KİRACILAR', person:'KİŞİ', name:'ADI SOYADI', id:'TC KİMLİK NO', birth:'DOĞUM TARİHİ', responsible:'SORUMLU',
+        rental:'2. KİRALAMA BİLGİLERİ', room:'ODA NO', inDate:'GİRİŞ TARİHİ', outDate:'ÇIKIŞ TARİHİ', nights:'KONAKLAMA SÜRESİ', fee:'ÜCRET', pay:'ÖDEME DURUMU',
+        terms:'3. GENEL HÜKÜMLER', note:'4. NOT / DETAY', lessor:'KİRAYA VEREN', lessee:'KİRACI', sign:'İMZA',
+        print:'YAZDIR / PRINT', close:'KAPAT',
+        rules:[
+          'İşbu sözleşme, taraflar arasında belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.',
+          'Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.',
+          'Kiracı, kiralama süresi dolmadan erken çıkış yapması halinde kalan günlere ait kira bedelinin iadesini talep edemez.',
+          'Konutun demirbaşlarına verilecek zarar kiracı tarafından tazmin edilecektir.',
+          'Belirlenen kira bedeli, sözleşme imzalanırken peşin olarak ödenecektir.',
+          'Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.',
+          'Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız edecek davranışlarda bulunmak yasaktır.',
+          'Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.',
+          'Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.'
+        ]
+      },
+      en: {
+        title:'TEMPORARY ACCOMMODATION RENTAL AGREEMENT',
+        contractNo:'CONTRACT NO', date:'ISSUE DATE', resNo:'RESERVATION NO', address:'PROPERTY ADDRESS',
+        parties:'1. PARTIES', landlord:'LESSOR', tenants:'TENANTS', person:'PERSON', name:'FULL NAME', id:'ID NUMBER', birth:'DATE OF BIRTH', responsible:'RESPONSIBLE',
+        rental:'2. RENTAL DETAILS', room:'ROOM NO', inDate:'CHECK-IN', outDate:'CHECK-OUT', nights:'STAY PERIOD', fee:'FEE', pay:'PAYMENT STATUS',
+        terms:'3. TERMS', note:'4. NOTE / DETAIL', lessor:'LESSOR', lessee:'TENANT', sign:'SIGNATURE',
+        print:'PRINT', close:'CLOSE',
+        rules:[
+          'This agreement is issued for temporary accommodation between the parties.',
+          'The tenant agrees to use the property carefully and return it as received.',
+          'If the tenant leaves early, no refund for remaining days may be requested.',
+          'Damage to fixtures and property shall be compensated by the tenant.',
+          'The rental amount is payable upon signing this agreement.',
+          'The tenant agrees not to host more persons than stated in this agreement.',
+          'Fire, loud music, and disturbing neighbors are prohibited.',
+          'The tenant must return the key on the check-out date.',
+          'Disputes arising from this agreement are subject to competent courts and enforcement offices.'
+        ]
+      },
+      fa: {
+        title:'قرارداد اجاره اقامت موقت',
+        contractNo:'شماره قرارداد', date:'تاریخ تنظیم', resNo:'شماره رزرو', address:'آدرس اقامتگاه',
+        parties:'۱. طرفین', landlord:'موجر', tenants:'مستاجرین', person:'شخص', name:'نام و نام خانوادگی', id:'شماره شناسایی', birth:'تاریخ تولد', responsible:'مسئول',
+        rental:'۲. اطلاعات اجاره', room:'شماره اتاق', inDate:'تاریخ ورود', outDate:'تاریخ خروج', nights:'مدت اقامت', fee:'مبلغ', pay:'وضعیت پرداخت',
+        terms:'۳. شرایط عمومی', note:'۴. یادداشت / جزئیات', lessor:'موجر', lessee:'مستاجر', sign:'امضا',
+        print:'چاپ', close:'بستن',
+        rules:[
+          'این قرارداد برای اقامت موقت بین طرفین تنظیم شده است.',
+          'مستاجر متعهد است ملک را با دقت استفاده کرده و همان‌گونه تحویل دهد.',
+          'در صورت خروج زودتر، مستاجر حق درخواست بازپرداخت روزهای باقی‌مانده را ندارد.',
+          'خسارت وارد شده به وسایل و ملک توسط مستاجر پرداخت می‌شود.',
+          'مبلغ اجاره هنگام امضای قرارداد پرداخت می‌شود.',
+          'مستاجر متعهد است بیش از تعداد ذکر شده افراد را در ملک اسکان ندهد.',
+          'روشن کردن آتش، موسیقی با صدای بلند و ایجاد مزاحمت ممنوع است.',
+          'مستاجر موظف است کلید را در تاریخ خروج تحویل دهد.',
+          'اختلافات ناشی از قرارداد در مراجع صالح رسیدگی می‌شود.'
+        ]
+      }
     }[dil] || null;
     if(!L) L = arguments.callee('tr');
-    var dir = rtl ? 'rtl' : 'ltr';
-    var fontLink = rtl ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">';
-    return '<!doctype html><html lang="'+esc(L.lang)+'" dir="'+dir+'"><head><meta charset="utf-8"><title>'+esc(L.title)+'</title>'+fontLink+
-    '<style>*{box-sizing:border-box}body{font-family:'+(rtl?'Vazirmatn':'Jost')+',Arial,sans-serif;margin:0;background:#f4f5f7;color:#1a1d23;direction:'+dir+'}.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;z-index:10}.toolbar button{border:1px solid #C8102E;background:#C8102E;color:#fff;padding:10px 18px;font-weight:700;letter-spacing:1px;cursor:pointer}.toolbar button.secondary{background:#fff;color:#555;border-color:#ddd}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}.head{display:flex;justify-content:space-between;border-bottom:2px solid #C8102E;padding-bottom:12px;margin-bottom:18px}.logo{font-size:22px;font-weight:700;letter-spacing:2px;color:#C8102E}.meta{font-size:12px;color:#555;text-align:'+(rtl?'left':'right')+'}.title{text-align:center;font-size:18px;font-weight:700;color:#C8102E;margin:18px 0 22px}.section{margin:16px 0}.section-title{font-size:12px;font-weight:700;color:#C8102E;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f8f8f8;border:1px solid #eee;padding:10px 12px}.label{font-size:10px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:3px}.value{font-size:14px;font-weight:700}.terms li{margin:8px 0;line-height:1.5}.sign{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:55px}.sigbox{border-top:1px solid #222;padding-top:8px;min-height:50px;font-weight:700;color:#555}.footer{text-align:center;border-top:1px solid #eee;color:#999;font-size:11px;margin-top:25px;padding-top:10px}@page{size:A4;margin:8mm}@media print{body{background:#fff}.toolbar{display:none!important}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:8mm}}</style></head><body>'+ 
-    '<div class="toolbar"><button onclick="window.print()">'+esc(L.print)+'</button><button class="secondary" onclick="window.close()">'+esc(L.close)+'</button></div>'+ 
-    '<div class="page"><div class="head"><div class="logo">SWISS HOUSE</div><div class="meta"><div><b>'+esc(L.no)+':</b> '+esc(no)+'</div><div><b>'+esc(L.date)+':</b> '+esc(bugun)+'</div></div></div>'+ 
-    '<div class="title">'+esc(L.title)+'</div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.guest)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.name)+'</div><div class="value">'+esc(ad)+'</div></div><div class="box"><div class="label">'+esc(L.id)+'</div><div class="value">'+esc(tc)+'</div></div><div class="box"><div class="label">'+esc(L.phone)+'</div><div class="value">'+esc(tel)+'</div></div></div></div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.stay)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.room)+'</div><div class="value">'+esc(oda)+'</div></div><div class="box"><div class="label">'+esc(L.nights)+'</div><div class="value">'+esc(gece)+'</div></div><div class="box"><div class="label">'+esc(L.checkin)+'</div><div class="value">'+esc(trDate(giris))+'</div></div><div class="box"><div class="label">'+esc(L.checkout)+'</div><div class="value">'+esc(trDate(cikis))+'</div></div><div class="box"><div class="label">'+esc(L.total)+'</div><div class="value" style="color:#C8102E">'+esc(toplam.toLocaleString('tr-TR'))+' ₺</div></div></div></div>'+ 
-    '<div class="section"><div class="section-title">'+esc(L.terms)+'</div><ol class="terms">'+L.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>'+ 
-    '<div class="sign"><div class="sigbox">'+esc(L.tenant)+'</div><div class="sigbox">'+esc(L.hotel)+'</div></div><div class="footer">Swiss House · '+esc(no)+'</div></div></body></html>';
+
+    var rulesLeft = L.rules.slice(0,5).map(function(x,i){return '<div class="rule"><b>'+(i+1)+'.</b><span>'+esc(x)+'</span></div>';}).join('');
+    var rulesRight = L.rules.slice(5).map(function(x,i){return '<div class="rule"><b>'+(i+6)+'.</b><span>'+esc(x)+'</span></div>';}).join('');
+
+    return '<!doctype html><html lang="'+esc(dil || 'tr')+'" dir="'+(rtl?'rtl':'ltr')+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(L.title)+'</title>'+
+    '<style>'+
+    '@page{size:A4;margin:6mm}*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:#111;font-family:Arial,sans-serif;font-size:10px;line-height:1.35}.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:8px 12px;text-align:right;z-index:9}.toolbar button{background:#c8102e;color:#fff;border:0;padding:8px 14px;font-weight:700;cursor:pointer;margin-left:6px}.toolbar .secondary{background:#fff;color:#666;border:1px solid #ddd}.page{width:198mm;min-height:285mm;margin:10px auto;background:#fff;padding:8mm 8mm 7mm;box-shadow:0 3px 18px rgba(0,0,0,.12)}.head{text-align:center}.logo{font-size:25px;font-weight:900;letter-spacing:1px}.logo span{color:#c8102e}.sub{font-size:10px;letter-spacing:3px;color:#555}.title{font-size:21px;font-weight:900;margin:8px 0 8px}.redline{border-top:2px solid #c8102e;margin:8px 0 10px}.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:7px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.box{border:1px solid #cfd3d8;padding:7px 9px;min-height:43px;background:#fff}.label{font-size:8.5px;letter-spacing:1.1px;color:#555;font-weight:800;text-transform:uppercase;margin-bottom:3px}.value{font-size:13.5px;font-weight:800}.addr{font-size:10.5px;line-height:1.25}.section-title{color:#c8102e;font-size:14px;font-weight:900;letter-spacing:.8px;margin:10px 0 6px}table{width:100%;border-collapse:collapse;margin-bottom:6px}td,th{border:1px solid #cfd3d8;padding:5.5px 7px;font-size:9.5px}th{background:#f3f4f6;text-transform:uppercase;letter-spacing:.8px}.rules{display:grid;grid-template-columns:1fr 1fr;gap:8px 22px;font-size:10.2px}.rule{display:flex;gap:6px;margin-bottom:5.5px}.rule b{color:#c8102e;min-width:14px}.note{border:1px solid #cfd3d8;min-height:34px;padding:7px;font-size:10px}.signatures{border-top:2px solid #c8102e;margin-top:9px;padding-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:50px;text-align:center}.sig-title{color:#c8102e;font-weight:900;font-size:10px;letter-spacing:.8px}.sig-name{margin:6px 0 22px;font-weight:700}.sig-line{border-top:1px solid #999;padding-top:5px;font-size:9px}.footer{border-top:2px solid #c8102e;margin-top:9px;padding-top:7px;display:flex;justify-content:space-between;gap:12px;font-size:9.5px;color:#333}.blue{color:#0b3d91}@media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:0}}'+
+    '</style></head><body>'+
+    '<div class="toolbar"><button onclick="window.print()">'+esc(L.print)+'</button><button class="secondary" onclick="window.close()">'+esc(L.close)+'</button></div>'+
+    '<div class="page">'+
+    '<div class="head"><div class="logo"><span>SWISS</span> HOUSE</div><div class="sub">YÖNETİM SİSTEMİ</div><div class="title">'+esc(L.title)+'</div></div>'+
+    '<div class="redline"></div>'+
+    '<div class="grid4">'+
+      '<div class="box"><div class="label">'+esc(L.contractNo)+'</div><div class="value">'+esc(d.sozNo)+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.date)+'</div><div class="value">'+esc(d.duzenleme)+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.resNo)+'</div><div class="value">'+esc(d.rezNo)+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.address)+'</div><div class="value addr">Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div></div>'+
+    '</div>'+
+    '<div class="section-title">'+esc(L.parties)+'</div>'+
+    '<table><tr><th>'+esc(L.landlord)+'</th><td><b>Swiss House Yönetimi</b></td></tr></table>'+
+    '<table><tr><th>'+esc(L.person)+'</th><th>'+esc(L.name)+'</th><th>'+esc(L.id)+'</th><th>'+esc(L.birth)+'</th></tr><tr><td>'+esc(L.responsible)+'</td><td><b>'+esc(d.ad)+'</b></td><td><b>'+esc(d.tc)+'</b></td><td>—</td></tr></table>'+
+    '<div class="section-title">'+esc(L.rental)+'</div>'+
+    '<div class="grid3">'+
+      '<div class="box"><div class="label">'+esc(L.room)+'</div><div class="value">'+esc(d.oda)+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.inDate)+'</div><div class="value">'+esc(trDate(d.giris))+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.outDate)+'</div><div class="value">'+esc(trDate(d.cikis))+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.nights)+'</div><div class="value">'+esc(d.gece)+' Gece</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.fee)+'</div><div class="value">'+esc(money(d.ucret))+'</div></div>'+
+      '<div class="box"><div class="label">'+esc(L.pay)+'</div><div class="value blue">'+esc(d.odemeDurum)+'</div></div>'+
+    '</div>'+
+    '<div class="section-title">'+esc(L.terms)+'</div>'+
+    '<div class="rules"><div>'+rulesLeft+'</div><div>'+rulesRight+'</div></div>'+
+    '<div class="section-title">'+esc(L.note)+'</div>'+
+    '<div class="note">'+esc(d.not || '—')+'</div>'+
+    '<div class="signatures"><div><div class="sig-title">'+esc(L.lessor)+'</div><div class="sig-name">Swiss House Yönetimi</div><div class="sig-line">'+esc(L.sign)+'</div></div><div><div class="sig-title">'+esc(L.lessee)+'</div><div class="sig-name">'+esc(d.ad)+'</div><div class="sig-line">'+esc(L.sign)+'</div></div></div>'+
+    '<div class="footer"><div>📍 Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div><div>☎ +90 506 150 83 00</div></div>'+
+    '</div></body></html>';
   }
+
   function openContractTab(dil){
-    var html = buildContractHtml(dil);
-    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} try{ a.remove(); }catch(e){} }, 60000);
-    var modal=q('dilSecimModal');
+    var w = window.open('', '_blank');
+    if(!w){
+      alert('Yeni sekme açılamadı. Tarayıcı popup iznini kontrol edin.');
+      return;
+    }
+    w.document.open();
+    w.document.write(contractHtml(dil || 'tr'));
+    w.document.close();
+
+    var modal = q('dilSecimModal');
     if(modal) modal.classList.remove('active');
   }
+
   window.sozlesmeDiliSec = function(dil){
-    try { openContractTab(dil || 'tr'); }
-    catch(e) { alert('Sözleşme sekmesi açılamadı: ' + (e && e.message ? e.message : e)); }
+    openContractTab(dil || 'tr');
   };
-  window.printSozlesme = function(){ openContractTab('tr'); };
+  window.printSozlesme = function(){
+    openContractTab('tr');
+  };
 })();
 </script>
 
