@@ -1654,7 +1654,203 @@ window._printSozlesmeMultilang = function(dil) {
     + '<div class="imza-box"><div class="imza-label">'+m.imzaKV+'</div></div>'
     + '</div>'
     + '<div class="footer">'+m.footer+' · '+no+'<br><span style="font-size:8px;color:#aaa">Hafiziye Mah. Telli Sok. No:11/A İpekyolu / Van</span></div>'
-    + '</body></html>';
+    + '
+<script>
+/* ──────────────────────────────────────────────
+   ODA NUMARALANDIRMA DÜZELTMESİ
+   İç sistem: oda1..oda12 kalır.
+   Görünen oda no: her katta 3 oda olacak şekilde 101,102,103 / 201,202,203...
+   Böylece eski kayıtlar ve Firebase anahtarları bozulmadan çalışır.
+────────────────────────────────────────────── */
+(function(){
+  var ODA_KAT_BASINA = 3;
+  var TOPLAM_ODA = 12;
+
+  function sadeceRakam(v){
+    var m = String(v == null ? '' : v).match(/\d+/);
+    return m ? parseInt(m[0], 10) : NaN;
+  }
+
+  window.odaIctenGorunurNo = function(no){
+    var n = sadeceRakam(String(no).replace(/^oda/i,''));
+    if(!isFinite(n) || n < 1) return String(no || '');
+    // Zaten 101/102 gibi görünür numara geldiyse aynen döndür.
+    if(n >= 100) return String(n);
+    var kat = Math.floor((n - 1) / ODA_KAT_BASINA) + 1;
+    var oda = ((n - 1) % ODA_KAT_BASINA) + 1;
+    return String(kat * 100 + oda);
+  };
+
+  window.odaGorunurdenIcNo = function(no){
+    var n = sadeceRakam(String(no).replace(/^oda/i,''));
+    if(!isFinite(n) || n < 1) return String(no || '');
+    // 101,102,103 -> 1,2,3 / 201,202,203 -> 4,5,6
+    if(n >= 100){
+      var kat = Math.floor(n / 100);
+      var oda = n % 100;
+      if(kat >= 1 && oda >= 1 && oda <= ODA_KAT_BASINA){
+        return String((kat - 1) * ODA_KAT_BASINA + oda);
+      }
+    }
+    return String(n);
+  };
+
+  window.odaKatNoBul = function(no){
+    var gorunen = parseInt(window.odaIctenGorunurNo(no), 10);
+    if(isFinite(gorunen) && gorunen >= 100) return Math.floor(gorunen / 100);
+    var ic = parseInt(window.odaGorunurdenIcNo(no), 10) || 1;
+    return Math.floor((ic - 1) / ODA_KAT_BASINA) + 1;
+  };
+
+  window.ODA_ADLARI = window.ODA_ADLARI || {};
+  for(var i=1; i<=TOPLAM_ODA; i++){
+    window.ODA_ADLARI[String(i)] = window.odaIctenGorunurNo(i);
+  }
+
+  window._odaAdNo = window._odaAdNo || {};
+  window._odaAdlari = window._odaAdlari || {};
+  for(var j=1; j<=TOPLAM_ODA; j++){
+    window._odaAdNo[String(j)] = window.odaIctenGorunurNo(j);
+    window._odaAdlari['oda' + j] = window.odaIctenGorunurNo(j);
+  }
+
+  window._getOdaAd = function(no){
+    return window.odaIctenGorunurNo(window.odaGorunurdenIcNo(no));
+  };
+
+  window._odaAdiniAl = function(no){
+    return window._getOdaAd(no);
+  };
+
+  function metindekiOdayiDuzelt(txt){
+    return String(txt || '').replace(/\bOda\s+(\d{1,3})\b/g, function(_, no){
+      return window._getOdaAd(no);
+    });
+  }
+
+  function optionlariDuzelt(select){
+    if(!select) return;
+    Array.from(select.options || []).forEach(function(opt){
+      var icNo = window.odaGorunurdenIcNo(opt.value || opt.textContent);
+      var gorunen = window._getOdaAd(icNo);
+      // Value iç sistem numarası olarak kalsın; kayıt ve işlemler bozulmasın.
+      if(/^\d+$/.test(String(icNo))) opt.value = icNo;
+      if(opt.textContent && /\d/.test(opt.textContent)){
+        opt.textContent = opt.textContent.replace(/Oda\s+\d{1,3}|^\d{1,3}$/g, gorunen);
+      }
+    });
+  }
+
+  window._odaAdlariniGuncelle = function(){
+    // Oda kartları: görünen metin 101/102 olsun, işlem bağlantısı eski onclick değeriyle kalsın.
+    document.querySelectorAll('.room-card').forEach(function(kart){
+      kart.querySelectorAll('div').forEach(function(d){
+        if(d.children.length) return;
+        var t = d.textContent.trim();
+        if(/^\d{1,3}$/.test(t)){
+          d.textContent = window._getOdaAd(t);
+        }
+      });
+    });
+
+    // Başlık, tablo ve modal metinleri
+    ['checkinTitle','folioOda','checkoutOda'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.textContent = metindekiOdayiDuzelt(el.textContent);
+    });
+
+    ['rezervBody','masrafBody','folioItems','takvimGrid'].forEach(function(id){
+      var alan = document.getElementById(id);
+      if(!alan) return;
+      alan.querySelectorAll('td,th,span,div').forEach(function(el){
+        if(el.children.length === 0 && /Oda\s+\d{1,3}/.test(el.textContent)){
+          el.textContent = metindekiOdayiDuzelt(el.textContent);
+        }
+      });
+    });
+
+    // Dropdownlar: text görünen no, value iç no.
+    ['rev_oda','rev-filter-oda','masraf_oda_no'].forEach(function(id){
+      optionlariDuzelt(document.getElementById(id));
+    });
+  };
+
+  // Kat gruplama: görünen 101/201 üzerinden katı bulur; kartları taşırken onclick bozulmaz.
+  window.katGrupla = function(){
+    var grid = document.getElementById('roomsGrid');
+    var wrapper = document.getElementById('roomsGridWrapper');
+    if(!grid || !wrapper) return;
+    var kartlar = Array.from(grid.querySelectorAll('.room-card'));
+    if(!kartlar.length) return;
+
+    var katlar = {};
+    kartlar.forEach(function(kart){
+      var no = null;
+      kart.querySelectorAll('div').forEach(function(d){
+        var t = d.textContent.trim();
+        if(no === null && /^\d{1,3}$/.test(t)) no = t;
+      });
+      if(no === null){
+        var m = kart.innerHTML.match(/>(\d{1,3})</);
+        no = m ? m[1] : '1';
+      }
+      var kat = window.odaKatNoBul(no);
+      if(!katlar[kat]) katlar[kat] = [];
+      katlar[kat].push(kart);
+    });
+
+    grid.style.display = 'none';
+    wrapper.querySelectorAll('.kat-grup').forEach(function(g){ g.remove(); });
+
+    Object.keys(katlar).sort(function(a,b){return Number(a)-Number(b);}).forEach(function(kat){
+      var grup = document.createElement('div');
+      grup.className = 'kat-grup';
+      var baslik = document.createElement('div');
+      baslik.className = 'kat-baslik';
+      baslik.textContent = kat + '. KAT';
+      grup.appendChild(baslik);
+      var yeniGrid = document.createElement('div');
+      yeniGrid.className = 'rooms-grid';
+      katlar[kat].forEach(function(k){ yeniGrid.appendChild(k); });
+      grup.appendChild(yeniGrid);
+      wrapper.appendChild(grup);
+    });
+  };
+
+  // 101 gibi görünen numara yanlışlıkla işlem fonksiyonlarına giderse iç no'ya çevirerek çalıştır.
+  ['openCheckin','checkinAc','openFolio','folioAc','checkoutAc','openCheckout','openMasrafModal','openMasrafModalGenel'].forEach(function(fn){
+    if(typeof window[fn] !== 'function' || window[fn].__odaNoSafe) return;
+    var eski = window[fn];
+    var guvenli = function(no){
+      if(arguments.length){
+        arguments[0] = window.odaGorunurdenIcNo(no);
+      }
+      return eski.apply(this, arguments);
+    };
+    guvenli.__odaNoSafe = true;
+    window[fn] = guvenli;
+  });
+
+  function ilkCalistir(){
+    window._odaAdlariniGuncelle();
+    setTimeout(function(){ window._odaAdlariniGuncelle(); if(window.katGrupla) window.katGrupla(); }, 300);
+    setTimeout(function(){ window._odaAdlariniGuncelle(); if(window.katGrupla) window.katGrupla(); }, 1000);
+  }
+
+  document.addEventListener('DOMContentLoaded', ilkCalistir);
+  if(document.readyState !== 'loading') ilkCalistir();
+
+  new MutationObserver(function(){
+    clearTimeout(window.__odaNoFixTimer);
+    window.__odaNoFixTimer = setTimeout(function(){
+      window._odaAdlariniGuncelle();
+      if(window.katGrupla) window.katGrupla();
+    }, 120);
+  }).observe(document.documentElement, {childList:true, subtree:true});
+})();
+</script>
+
+</body></html>';
 
   var w = window.open('', '_blank');
   w.document.write(html);
@@ -1718,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Oda adlarını Firebase'den yükle (opsiyonel — .ad alanı yoksa ODA_ADLARI fallback devreye girer)
-onSnapshot(doc(db, 'meta', 'odaOzellikleri'), function(snap) {
+onSnapshot(doc(db, 'meta', 'odalar'), function(snap) {
   window._odaAdlari = {};
   window._odaAdNo = {};
   if(snap.exists()) {
