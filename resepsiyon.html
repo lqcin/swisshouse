@@ -1620,6 +1620,15 @@ let _sozlesmeDili = 'tr';
 
 window.sozlesmeDiliSec = function(dil) {
   _sozlesmeDili = dil;
+
+  // ÖNEMLİ: Yeni sekme kullanıcı tıklamasının içinde açılmalı.
+  // Aksi halde tarayıcı bunu popup sayıp engelleyebilir.
+  var sozlesmePenceresi = window.open('', '_blank');
+  if(!sozlesmePenceresi) {
+    toast('Yeni sekme engellendi. Tarayıcıdan bu site için açılır pencereye izin ver.', 'error');
+    return;
+  }
+
   // Mevcut check-in form verilerini oku
   window._sozlesmeData = {
     ad:     document.getElementById('ci_ad')?.value?.trim() || '',
@@ -1632,8 +1641,8 @@ window.sozlesmeDiliSec = function(dil) {
   };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
-  // Yazdırma penceresi kullanıcı tıklaması içinde açılmalı; aksi halde tarayıcı popup/yazdırma engelleyebilir.
-  _printSozlesmeMultilang(dil);
+
+  _printSozlesmeMultilang(dil, sozlesmePenceresi);
 };
 
 // Check-in sözleşme onay butonunu dil seçimine yönlendir
@@ -1644,7 +1653,7 @@ window.checkinSozlesmeOnayla = function() {
   else { _printSozlesmeMultilang('tr'); }
 };
 
-window._printSozlesmeMultilang = function(dil) {
+window._printSozlesmeMultilang = function(dil, hedefPencere) {
   var data = window._sozlesmeData || {};
   var ad    = data.ad    || document.getElementById('ci_ad')?.value?.trim()    || '';
   var tc    = data.tc    || document.getElementById('ci_tc')?.value?.trim()    || '';
@@ -1748,6 +1757,10 @@ window._printSozlesmeMultilang = function(dil) {
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
     + 'body { font-family:"'+m.font+'",sans-serif; font-size:10px; color:#1a1a1a; padding:10px 18px; direction:'+m.dir+'; max-width:210mm; margin:0 auto; }'
+    + '.print-toolbar { position:sticky; top:0; z-index:999; display:flex; justify-content:flex-end; gap:8px; padding:8px 0 10px; background:#fff; border-bottom:1px solid #eee; margin-bottom:10px; }'
+    + '.print-toolbar button { border:1px solid #C8102E; background:#C8102E; color:#fff; padding:8px 14px; font-size:11px; font-weight:700; letter-spacing:1px; cursor:pointer; }'
+    + '.print-toolbar .ghost { background:#fff; color:#666; border-color:#ddd; }'
+    + '@media print { .print-toolbar { display:none !important; } }'
     + '.header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #C8102E; padding-bottom:8px; margin-bottom:10px; }'
     + '.logo { font-size:16px; font-weight:700; color:#C8102E; letter-spacing:2px; }'
     + '.meta { font-size:9px; color:#666; text-align:'+(m.dir==='rtl'?'left':'right')+'; }'
@@ -1768,6 +1781,7 @@ window._printSozlesmeMultilang = function(dil) {
     + '@page { size:A4; margin:6mm; }'
     + '@media print { html,body { height:auto !important; } }'
     + '</style></head><body>'
+    + '<div class="print-toolbar"><button onclick="window.print()">YAZDIR / PRINT</button><button class="ghost" onclick="window.close()">KAPAT</button></div>'
     + '<div class="header"><div class="logo"><em>Swiss</em> HOUSE</div>'
     + '<div class="meta"><div><strong>'+m.sozNo+':</strong> '+no+'</div><div><strong>'+m.tarihLbl+':</strong> '+tarih+'</div></div></div>'
     + '<div class="baslik">'+m.baslik+'</div>'
@@ -1794,22 +1808,17 @@ window._printSozlesmeMultilang = function(dil) {
     + '<div class="footer">'+m.footer+' · '+no+'</div>'
     + '</body></html>';
 
-  var w = window.open('', '_blank');
-  if(!w) { toast('Popup engellendi, tarayıcı izni ver', 'error'); return; }
+  var w = hedefPencere || window.open('', '_blank');
+  if(!w) { toast('Yeni sekme engellendi. Tarayıcıdan bu site için açılır pencereye izin ver.', 'error'); return; }
   w.document.open();
   w.document.write(html);
   w.document.close();
   try { w.focus(); } catch(e) {}
-  function yazdirVeOnayAc(){
-    try { w.focus(); w.print(); } catch(e) { toast('Yazdırma penceresi açılamadı', 'error'); }
+
+  // Otomatik yazdırma yapmıyoruz. Kullanıcı yeni sekmede kontrol edip YAZDIR butonuna basacak.
+  setTimeout(function() {
     if(typeof openModal === 'function') openModal('sozlesmeOnayModal');
-  }
-  if(w.document.readyState === 'complete') {
-    setTimeout(yazdirVeOnayAc, 300);
-  } else {
-    w.onload = function(){ setTimeout(yazdirVeOnayAc, 300); };
-    setTimeout(yazdirVeOnayAc, 900);
-  }
+  }, 300);
 };
 
 // ── HARCAMA DROPDOWN ──
