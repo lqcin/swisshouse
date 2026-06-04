@@ -1620,15 +1620,6 @@ let _sozlesmeDili = 'tr';
 
 window.sozlesmeDiliSec = function(dil) {
   _sozlesmeDili = dil;
-
-  // ÖNEMLİ: Yeni sekme kullanıcı tıklamasının içinde açılmalı.
-  // Aksi halde tarayıcı bunu popup sayıp engelleyebilir.
-  var sozlesmePenceresi = window.open('', '_blank');
-  if(!sozlesmePenceresi) {
-    toast('Yeni sekme engellendi. Tarayıcıdan bu site için açılır pencereye izin ver.', 'error');
-    return;
-  }
-
   // Mevcut check-in form verilerini oku
   window._sozlesmeData = {
     ad:     document.getElementById('ci_ad')?.value?.trim() || '',
@@ -1641,8 +1632,7 @@ window.sozlesmeDiliSec = function(dil) {
   };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
-
-  _printSozlesmeMultilang(dil, sozlesmePenceresi);
+  setTimeout(function() { _printSozlesmeMultilang(dil); }, 200);
 };
 
 // Check-in sözleşme onay butonunu dil seçimine yönlendir
@@ -1653,7 +1643,7 @@ window.checkinSozlesmeOnayla = function() {
   else { _printSozlesmeMultilang('tr'); }
 };
 
-window._printSozlesmeMultilang = function(dil, hedefPencere) {
+window._printSozlesmeMultilang = function(dil) {
   var data = window._sozlesmeData || {};
   var ad    = data.ad    || document.getElementById('ci_ad')?.value?.trim()    || '';
   var tc    = data.tc    || document.getElementById('ci_tc')?.value?.trim()    || '';
@@ -1757,10 +1747,6 @@ window._printSozlesmeMultilang = function(dil, hedefPencere) {
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
     + 'body { font-family:"'+m.font+'",sans-serif; font-size:10px; color:#1a1a1a; padding:10px 18px; direction:'+m.dir+'; max-width:210mm; margin:0 auto; }'
-    + '.print-toolbar { position:sticky; top:0; z-index:999; display:flex; justify-content:flex-end; gap:8px; padding:8px 0 10px; background:#fff; border-bottom:1px solid #eee; margin-bottom:10px; }'
-    + '.print-toolbar button { border:1px solid #C8102E; background:#C8102E; color:#fff; padding:8px 14px; font-size:11px; font-weight:700; letter-spacing:1px; cursor:pointer; }'
-    + '.print-toolbar .ghost { background:#fff; color:#666; border-color:#ddd; }'
-    + '@media print { .print-toolbar { display:none !important; } }'
     + '.header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #C8102E; padding-bottom:8px; margin-bottom:10px; }'
     + '.logo { font-size:16px; font-weight:700; color:#C8102E; letter-spacing:2px; }'
     + '.meta { font-size:9px; color:#666; text-align:'+(m.dir==='rtl'?'left':'right')+'; }'
@@ -1781,7 +1767,6 @@ window._printSozlesmeMultilang = function(dil, hedefPencere) {
     + '@page { size:A4; margin:6mm; }'
     + '@media print { html,body { height:auto !important; } }'
     + '</style></head><body>'
-    + '<div class="print-toolbar"><button onclick="window.print()">YAZDIR / PRINT</button><button class="ghost" onclick="window.close()">KAPAT</button></div>'
     + '<div class="header"><div class="logo"><em>Swiss</em> HOUSE</div>'
     + '<div class="meta"><div><strong>'+m.sozNo+':</strong> '+no+'</div><div><strong>'+m.tarihLbl+':</strong> '+tarih+'</div></div></div>'
     + '<div class="baslik">'+m.baslik+'</div>'
@@ -1806,19 +1791,88 @@ window._printSozlesmeMultilang = function(dil, hedefPencere) {
     + '<div class="imza-box"><div class="imza-label">'+m.imzaKV+'</div></div>'
     + '</div>'
     + '<div class="footer">'+m.footer+' · '+no+'</div>'
-    + '</body></html>';
+    + '
+<script id="sozlesme-yeni-sekme-kesin">
+(function(){
+  function q(id){ return document.getElementById(id); }
+  function val(id){ var el=q(id); return el ? String(el.value || '').trim() : ''; }
+  function txt(id){ var el=q(id); return el ? String(el.textContent || '').trim() : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+  function trDate(d){
+    if(!d) return '—';
+    var p=String(d).split('-');
+    return p.length===3 ? (p[2]+'.'+p[1]+'.'+p[0]) : d;
+  }
+  function getRoomNo(){
+    var title = txt('checkinTitle') || '';
+    var m = title.match(/(?:Oda|Room)\s*([0-9]+)/i);
+    if(m) return m[1];
+    var hidden = val('masraf_oda_no') || val('durum_oda_no');
+    return hidden || '—';
+  }
+  function buildContractHtml(dil){
+    var ad=val('ci_ad') || '—';
+    var tc=val('ci_tc') || '—';
+    var tel=val('ci_tel') || '—';
+    var giris=val('ci_giris');
+    var cikis=val('ci_cikis');
+    var gece=parseInt(val('ci_gece') || '1',10) || 1;
+    var fiyat=Number(val('ci_fiyat') || '0') || 0;
+    var toplam=gece*fiyat;
+    var oda=getRoomNo();
+    var no='SH-'+Date.now().toString().slice(-6);
+    var bugun=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+    var rtl = dil === 'fa';
+    var L = {
+      tr:{lang:'tr',title:'GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ',no:'Sözleşme No',date:'Tarih',guest:'Misafir Bilgileri',name:'Ad Soyad',id:'TC Kimlik No',phone:'Telefon',stay:'Konaklama Bilgileri',room:'Oda',checkin:'Giriş Tarihi',checkout:'Çıkış Tarihi',nights:'Gece',total:'Toplam Tutar',terms:'Sözleşme Koşulları',print:'YAZDIR',close:'KAPAT',tenant:'Misafir İmzası',hotel:'Otel Yetkilisi',items:['Misafir, belirtilen tarihler arasında ilgili odada konaklamayı kabul eder.','Oda temiz ve eksiksiz teslim edilir; çıkışta aynı şekilde teslim alınır.','Oda ve otel eşyalarında oluşabilecek hasarlar misafirden tahsil edilir.','Otel kurallarına uyulması zorunludur.','Misafir bu sözleşmeyi okuyup kabul ettiğini beyan eder.']},
+      en:{lang:'en',title:'TEMPORARY ACCOMMODATION AGREEMENT',no:'Contract No',date:'Date',guest:'Guest Information',name:'Full Name',id:'ID Number',phone:'Phone',stay:'Stay Details',room:'Room',checkin:'Check-in Date',checkout:'Check-out Date',nights:'Nights',total:'Total Amount',terms:'Terms And Conditions',print:'PRINT',close:'CLOSE',tenant:'Guest Signature',hotel:'Hotel Representative',items:['The guest agrees to stay in the specified room between the stated dates.','The room is delivered clean and complete and must be returned in the same condition.','Any damage to the room or hotel property may be charged to the guest.','Hotel rules must be followed.','The guest declares that this agreement has been read and accepted.']},
+      fa:{lang:'fa',title:'قرارداد اقامت موقت',no:'شماره قرارداد',date:'تاریخ',guest:'اطلاعات مهمان',name:'نام و نام خانوادگی',id:'شماره شناسایی',phone:'تلفن',stay:'جزئیات اقامت',room:'اتاق',checkin:'تاریخ ورود',checkout:'تاریخ خروج',nights:'شب',total:'مبلغ کل',terms:'شرایط قرارداد',print:'چاپ',close:'بستن',tenant:'امضای مهمان',hotel:'نماینده هتل',items:['مهمان موافقت می‌کند در تاریخ‌های مشخص شده در اتاق مربوطه اقامت داشته باشد.','اتاق تمیز و کامل تحویل داده می‌شود و باید به همان شکل بازگردانده شود.','هرگونه خسارت به اتاق یا اموال هتل می‌تواند از مهمان دریافت شود.','رعایت قوانین هتل الزامی است.','مهمان اعلام می‌کند که این قرارداد را خوانده و پذیرفته است.']}
+    }[dil] || null;
+    if(!L) L = arguments.callee('tr');
+    var dir = rtl ? 'rtl' : 'ltr';
+    var fontLink = rtl ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">';
+    return '<!doctype html><html lang="'+esc(L.lang)+'" dir="'+dir+'"><head><meta charset="utf-8"><title>'+esc(L.title)+'</title>'+fontLink+
+    '<style>*{box-sizing:border-box}body{font-family:'+(rtl?'Vazirmatn':'Jost')+',Arial,sans-serif;margin:0;background:#f4f5f7;color:#1a1d23;direction:'+dir+'}.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;z-index:10}.toolbar button{border:1px solid #C8102E;background:#C8102E;color:#fff;padding:10px 18px;font-weight:700;letter-spacing:1px;cursor:pointer}.toolbar button.secondary{background:#fff;color:#555;border-color:#ddd}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}.head{display:flex;justify-content:space-between;border-bottom:2px solid #C8102E;padding-bottom:12px;margin-bottom:18px}.logo{font-size:22px;font-weight:700;letter-spacing:2px;color:#C8102E}.meta{font-size:12px;color:#555;text-align:'+(rtl?'left':'right')+'}.title{text-align:center;font-size:18px;font-weight:700;color:#C8102E;margin:18px 0 22px}.section{margin:16px 0}.section-title{font-size:12px;font-weight:700;color:#C8102E;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f8f8f8;border:1px solid #eee;padding:10px 12px}.label{font-size:10px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:3px}.value{font-size:14px;font-weight:700}.terms li{margin:8px 0;line-height:1.5}.sign{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:55px}.sigbox{border-top:1px solid #222;padding-top:8px;min-height:50px;font-weight:700;color:#555}.footer{text-align:center;border-top:1px solid #eee;color:#999;font-size:11px;margin-top:25px;padding-top:10px}@page{size:A4;margin:8mm}@media print{body{background:#fff}.toolbar{display:none!important}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:8mm}}</style></head><body>'+ 
+    '<div class="toolbar"><button onclick="window.print()">'+esc(L.print)+'</button><button class="secondary" onclick="window.close()">'+esc(L.close)+'</button></div>'+ 
+    '<div class="page"><div class="head"><div class="logo">SWISS HOUSE</div><div class="meta"><div><b>'+esc(L.no)+':</b> '+esc(no)+'</div><div><b>'+esc(L.date)+':</b> '+esc(bugun)+'</div></div></div>'+ 
+    '<div class="title">'+esc(L.title)+'</div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.guest)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.name)+'</div><div class="value">'+esc(ad)+'</div></div><div class="box"><div class="label">'+esc(L.id)+'</div><div class="value">'+esc(tc)+'</div></div><div class="box"><div class="label">'+esc(L.phone)+'</div><div class="value">'+esc(tel)+'</div></div></div></div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.stay)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.room)+'</div><div class="value">'+esc(oda)+'</div></div><div class="box"><div class="label">'+esc(L.nights)+'</div><div class="value">'+esc(gece)+'</div></div><div class="box"><div class="label">'+esc(L.checkin)+'</div><div class="value">'+esc(trDate(giris))+'</div></div><div class="box"><div class="label">'+esc(L.checkout)+'</div><div class="value">'+esc(trDate(cikis))+'</div></div><div class="box"><div class="label">'+esc(L.total)+'</div><div class="value" style="color:#C8102E">'+esc(toplam.toLocaleString('tr-TR'))+' ₺</div></div></div></div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.terms)+'</div><ol class="terms">'+L.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>'+ 
+    '<div class="sign"><div class="sigbox">'+esc(L.tenant)+'</div><div class="sigbox">'+esc(L.hotel)+'</div></div><div class="footer">Swiss House · '+esc(no)+'</div></div></body></html>';
+  }
+  function openContractTab(dil){
+    var html = buildContractHtml(dil);
+    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} try{ a.remove(); }catch(e){} }, 60000);
+    var modal=q('dilSecimModal');
+    if(modal) modal.classList.remove('active');
+  }
+  window.sozlesmeDiliSec = function(dil){
+    try { openContractTab(dil || 'tr'); }
+    catch(e) { alert('Sözleşme sekmesi açılamadı: ' + (e && e.message ? e.message : e)); }
+  };
+  window.printSozlesme = function(){ openContractTab('tr'); };
+})();
+</script>
 
-  var w = hedefPencere || window.open('', '_blank');
-  if(!w) { toast('Yeni sekme engellendi. Tarayıcıdan bu site için açılır pencereye izin ver.', 'error'); return; }
-  w.document.open();
+</body></html>';
+
+  var w = window.open('', '_blank');
+  if(!w) { toast('Popup engellendi, tarayıcı izni ver', 'error'); return; }
   w.document.write(html);
   w.document.close();
-  try { w.focus(); } catch(e) {}
-
-  // Otomatik yazdırma yapmıyoruz. Kullanıcı yeni sekmede kontrol edip YAZDIR butonuna basacak.
   setTimeout(function() {
+    w.print();
     if(typeof openModal === 'function') openModal('sozlesmeOnayModal');
-  }, 300);
+  }, 600);
 };
 
 // ── HARCAMA DROPDOWN ──
@@ -1845,6 +1899,78 @@ window.openModal = function(id) {
     }, 150);
   }
 };
+</script>
+
+
+<script id="sozlesme-yeni-sekme-kesin">
+(function(){
+  function q(id){ return document.getElementById(id); }
+  function val(id){ var el=q(id); return el ? String(el.value || '').trim() : ''; }
+  function txt(id){ var el=q(id); return el ? String(el.textContent || '').trim() : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+  function trDate(d){
+    if(!d) return '—';
+    var p=String(d).split('-');
+    return p.length===3 ? (p[2]+'.'+p[1]+'.'+p[0]) : d;
+  }
+  function getRoomNo(){
+    var title = txt('checkinTitle') || '';
+    var m = title.match(/(?:Oda|Room)\s*([0-9]+)/i);
+    if(m) return m[1];
+    var hidden = val('masraf_oda_no') || val('durum_oda_no');
+    return hidden || '—';
+  }
+  function buildContractHtml(dil){
+    var ad=val('ci_ad') || '—';
+    var tc=val('ci_tc') || '—';
+    var tel=val('ci_tel') || '—';
+    var giris=val('ci_giris');
+    var cikis=val('ci_cikis');
+    var gece=parseInt(val('ci_gece') || '1',10) || 1;
+    var fiyat=Number(val('ci_fiyat') || '0') || 0;
+    var toplam=gece*fiyat;
+    var oda=getRoomNo();
+    var no='SH-'+Date.now().toString().slice(-6);
+    var bugun=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+    var rtl = dil === 'fa';
+    var L = {
+      tr:{lang:'tr',title:'GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ',no:'Sözleşme No',date:'Tarih',guest:'Misafir Bilgileri',name:'Ad Soyad',id:'TC Kimlik No',phone:'Telefon',stay:'Konaklama Bilgileri',room:'Oda',checkin:'Giriş Tarihi',checkout:'Çıkış Tarihi',nights:'Gece',total:'Toplam Tutar',terms:'Sözleşme Koşulları',print:'YAZDIR',close:'KAPAT',tenant:'Misafir İmzası',hotel:'Otel Yetkilisi',items:['Misafir, belirtilen tarihler arasında ilgili odada konaklamayı kabul eder.','Oda temiz ve eksiksiz teslim edilir; çıkışta aynı şekilde teslim alınır.','Oda ve otel eşyalarında oluşabilecek hasarlar misafirden tahsil edilir.','Otel kurallarına uyulması zorunludur.','Misafir bu sözleşmeyi okuyup kabul ettiğini beyan eder.']},
+      en:{lang:'en',title:'TEMPORARY ACCOMMODATION AGREEMENT',no:'Contract No',date:'Date',guest:'Guest Information',name:'Full Name',id:'ID Number',phone:'Phone',stay:'Stay Details',room:'Room',checkin:'Check-in Date',checkout:'Check-out Date',nights:'Nights',total:'Total Amount',terms:'Terms And Conditions',print:'PRINT',close:'CLOSE',tenant:'Guest Signature',hotel:'Hotel Representative',items:['The guest agrees to stay in the specified room between the stated dates.','The room is delivered clean and complete and must be returned in the same condition.','Any damage to the room or hotel property may be charged to the guest.','Hotel rules must be followed.','The guest declares that this agreement has been read and accepted.']},
+      fa:{lang:'fa',title:'قرارداد اقامت موقت',no:'شماره قرارداد',date:'تاریخ',guest:'اطلاعات مهمان',name:'نام و نام خانوادگی',id:'شماره شناسایی',phone:'تلفن',stay:'جزئیات اقامت',room:'اتاق',checkin:'تاریخ ورود',checkout:'تاریخ خروج',nights:'شب',total:'مبلغ کل',terms:'شرایط قرارداد',print:'چاپ',close:'بستن',tenant:'امضای مهمان',hotel:'نماینده هتل',items:['مهمان موافقت می‌کند در تاریخ‌های مشخص شده در اتاق مربوطه اقامت داشته باشد.','اتاق تمیز و کامل تحویل داده می‌شود و باید به همان شکل بازگردانده شود.','هرگونه خسارت به اتاق یا اموال هتل می‌تواند از مهمان دریافت شود.','رعایت قوانین هتل الزامی است.','مهمان اعلام می‌کند که این قرارداد را خوانده و پذیرفته است.']}
+    }[dil] || null;
+    if(!L) L = arguments.callee('tr');
+    var dir = rtl ? 'rtl' : 'ltr';
+    var fontLink = rtl ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">';
+    return '<!doctype html><html lang="'+esc(L.lang)+'" dir="'+dir+'"><head><meta charset="utf-8"><title>'+esc(L.title)+'</title>'+fontLink+
+    '<style>*{box-sizing:border-box}body{font-family:'+(rtl?'Vazirmatn':'Jost')+',Arial,sans-serif;margin:0;background:#f4f5f7;color:#1a1d23;direction:'+dir+'}.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;z-index:10}.toolbar button{border:1px solid #C8102E;background:#C8102E;color:#fff;padding:10px 18px;font-weight:700;letter-spacing:1px;cursor:pointer}.toolbar button.secondary{background:#fff;color:#555;border-color:#ddd}.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}.head{display:flex;justify-content:space-between;border-bottom:2px solid #C8102E;padding-bottom:12px;margin-bottom:18px}.logo{font-size:22px;font-weight:700;letter-spacing:2px;color:#C8102E}.meta{font-size:12px;color:#555;text-align:'+(rtl?'left':'right')+'}.title{text-align:center;font-size:18px;font-weight:700;color:#C8102E;margin:18px 0 22px}.section{margin:16px 0}.section-title{font-size:12px;font-weight:700;color:#C8102E;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f8f8f8;border:1px solid #eee;padding:10px 12px}.label{font-size:10px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:3px}.value{font-size:14px;font-weight:700}.terms li{margin:8px 0;line-height:1.5}.sign{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:55px}.sigbox{border-top:1px solid #222;padding-top:8px;min-height:50px;font-weight:700;color:#555}.footer{text-align:center;border-top:1px solid #eee;color:#999;font-size:11px;margin-top:25px;padding-top:10px}@page{size:A4;margin:8mm}@media print{body{background:#fff}.toolbar{display:none!important}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:8mm}}</style></head><body>'+ 
+    '<div class="toolbar"><button onclick="window.print()">'+esc(L.print)+'</button><button class="secondary" onclick="window.close()">'+esc(L.close)+'</button></div>'+ 
+    '<div class="page"><div class="head"><div class="logo">SWISS HOUSE</div><div class="meta"><div><b>'+esc(L.no)+':</b> '+esc(no)+'</div><div><b>'+esc(L.date)+':</b> '+esc(bugun)+'</div></div></div>'+ 
+    '<div class="title">'+esc(L.title)+'</div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.guest)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.name)+'</div><div class="value">'+esc(ad)+'</div></div><div class="box"><div class="label">'+esc(L.id)+'</div><div class="value">'+esc(tc)+'</div></div><div class="box"><div class="label">'+esc(L.phone)+'</div><div class="value">'+esc(tel)+'</div></div></div></div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.stay)+'</div><div class="grid"><div class="box"><div class="label">'+esc(L.room)+'</div><div class="value">'+esc(oda)+'</div></div><div class="box"><div class="label">'+esc(L.nights)+'</div><div class="value">'+esc(gece)+'</div></div><div class="box"><div class="label">'+esc(L.checkin)+'</div><div class="value">'+esc(trDate(giris))+'</div></div><div class="box"><div class="label">'+esc(L.checkout)+'</div><div class="value">'+esc(trDate(cikis))+'</div></div><div class="box"><div class="label">'+esc(L.total)+'</div><div class="value" style="color:#C8102E">'+esc(toplam.toLocaleString('tr-TR'))+' ₺</div></div></div></div>'+ 
+    '<div class="section"><div class="section-title">'+esc(L.terms)+'</div><ol class="terms">'+L.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>'+ 
+    '<div class="sign"><div class="sigbox">'+esc(L.tenant)+'</div><div class="sigbox">'+esc(L.hotel)+'</div></div><div class="footer">Swiss House · '+esc(no)+'</div></div></body></html>';
+  }
+  function openContractTab(dil){
+    var html = buildContractHtml(dil);
+    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} try{ a.remove(); }catch(e){} }, 60000);
+    var modal=q('dilSecimModal');
+    if(modal) modal.classList.remove('active');
+  }
+  window.sozlesmeDiliSec = function(dil){
+    try { openContractTab(dil || 'tr'); }
+    catch(e) { alert('Sözleşme sekmesi açılamadı: ' + (e && e.message ? e.message : e)); }
+  };
+  window.printSozlesme = function(){ openContractTab('tr'); };
+})();
 </script>
 
 </body>
