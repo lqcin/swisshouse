@@ -1632,7 +1632,8 @@ window.sozlesmeDiliSec = function(dil) {
   };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
-  setTimeout(function() { _printSozlesmeMultilang(dil); }, 200);
+  // Yazdırma penceresi kullanıcı tıklaması içinde açılmalı; aksi halde tarayıcı popup/yazdırma engelleyebilir.
+  _printSozlesmeMultilang(dil);
 };
 
 // Check-in sözleşme onay butonunu dil seçimine yönlendir
@@ -1795,12 +1796,20 @@ window._printSozlesmeMultilang = function(dil) {
 
   var w = window.open('', '_blank');
   if(!w) { toast('Popup engellendi, tarayıcı izni ver', 'error'); return; }
+  w.document.open();
   w.document.write(html);
   w.document.close();
-  setTimeout(function() {
-    w.print();
+  try { w.focus(); } catch(e) {}
+  function yazdirVeOnayAc(){
+    try { w.focus(); w.print(); } catch(e) { toast('Yazdırma penceresi açılamadı', 'error'); }
     if(typeof openModal === 'function') openModal('sozlesmeOnayModal');
-  }, 600);
+  }
+  if(w.document.readyState === 'complete') {
+    setTimeout(yazdirVeOnayAc, 300);
+  } else {
+    w.onload = function(){ setTimeout(yazdirVeOnayAc, 300); };
+    setTimeout(yazdirVeOnayAc, 900);
+  }
 };
 
 // ── HARCAMA DROPDOWN ──
