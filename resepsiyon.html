@@ -1484,7 +1484,8 @@ window.sozlesmeDiliSec = function(dil) {
     gece: parseInt(document.getElementById('ci_gece') ? document.getElementById('ci_gece').value : 1) || 1,
     fiyat: Number(document.getElementById('ci_fiyat') ? document.getElementById('ci_fiyat').value : 0) || 0,
     not_: document.getElementById('ci_not') ? document.getElementById('ci_not').value.trim() : '',
-    odeme: document.getElementById('ci_odeme') ? document.getElementById('ci_odeme').value : 'nakit'
+    odeme: document.getElementById('ci_odeme') ? document.getElementById('ci_odeme').value : 'nakit',
+    odemeDurum: document.getElementById('rd_odeme_durum') ? document.getElementById('rd_odeme_durum').value : 'odenmedi'
   };
   var dilModal = document.getElementById('dilSecimModal');
   if(dilModal) dilModal.classList.remove('active');
@@ -1510,8 +1511,14 @@ window._printSozlesmeMultilang = function(dil) {
   var toplam = gece * fiyat;
   var not_ = data.not_ || document.getElementById('ci_not')?.value?.trim() || '';
   var odeme = data.odeme || document.getElementById('ci_odeme')?.value || 'nakit';
+  var odemeDurum = data.odemeDurum || document.getElementById('rd_odeme_durum')?.value || 'odenmedi';
   var odemeMap = {nakit:'Nakit', kart:'Kredi Kartı', havale:'Havale / EFT'};
   var odemelbl = odemeMap[odeme] || odeme;
+  var odemeDurumMapTR = {odenmedi:'Ödenmedi', odendi:'Ödendi', depozito:'Depozito Alındı', kismi:'Kısmi Ödeme'};
+  var odemeDurumMapEN = {odenmedi:'Unpaid', odendi:'Paid', depozito:'Deposit Taken', kismi:'Partial Payment'};
+  var odemeDurumMapFA = {odenmedi:'پرداخت نشده', odendi:'پرداخت شده', depozito:'ودیعه دریافت شده', kismi:'پرداخت جزئی'};
+  var odemeDurumIconMap = {odenmedi:'⚠', odendi:'✓', depozito:'🔑', kismi:'◑'};
+  var odemeDurumColorMap = {odenmedi:'#cc0000', odendi:'#2a7a2a', depozito:'#b36200', kismi:'#b36200'};
   var odaNo = (typeof currentCheckinOda !== 'undefined' && currentCheckinOda) 
     ? currentCheckinOda 
     : (document.getElementById('checkinTitle')?.textContent?.match(/Oda\s+(\S+)/)?.[1] || '?');
@@ -1637,7 +1644,7 @@ window._printSozlesmeMultilang = function(dil) {
     + '<div class="kira-box"><div class="etiket">'+m.girisLbl+'</div><div class="deger">'+fmt2(giris)+'</div></div>'
     + '<div class="kira-box"><div class="etiket">'+m.cikisLbl+'</div><div class="deger">'+fmt2(cikis)+'</div></div>'
     + '<div class="kira-box"><div class="etiket">'+m.tutarLbl+'</div><div class="deger" style="color:#C8102E">'+toplam.toLocaleString('tr-TR')+' ₺</div></div>'
-    + '<div class="kira-box"><div class="etiket">'+m.odemeLbl+'</div><div class="deger">'+odemelbl+' <span style="color:#2a7a2a;font-size:10px">✓ '+m.pesinOdendi+'</span></div></div>'
+    + '<div class="kira-box"><div class="etiket">'+m.odemeLbl+'</div><div class="deger">'+odemelbl+' <span style="color:'+(odemeDurumColorMap[odemeDurum]||\'#666\')+';font-size:10px">'+(odemeDurumIconMap[odemeDurum]||\'\')+' '+(dil===\'fa\'?odemeDurumMapFA[odemeDurum]:dil===\'en\'?odemeDurumMapEN[odemeDurum]:odemeDurumMapTR[odemeDurum]||odemeDurum)+'</span></div></div>'
     + (not_ ? '<div class="kira-box" style="grid-column:span 2"><div class="etiket">'+m.notLbl+'</div><div class="deger" style="font-size:11px;font-weight:400">'+not_+'</div></div>' : '')
     + '</div></div>'
     + '<div class="bolum"><div class="bolum-baslik">'+m.b3+'</div>'
