@@ -1229,5 +1229,282 @@ window.openModal = function(id) {
   }
 };
 </script>
+
+
+<style id="floor-layout-style">
+/* Kat Kat Oda Görünümü — Sade, Modern Resepsiyon Yerleşimi */
+#roomsGridWrapper.floor-layout-active {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.floor-section {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 0;
+  overflow: hidden;
+}
+.floor-section-header {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 10px 16px;
+  border-bottom: 1px solid rgba(226,230,235,.85);
+  background: linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
+}
+.floor-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.floor-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(22,163,74,.18);
+  flex-shrink: 0;
+}
+.floor-section:first-of-type .floor-icon {
+  background: var(--red-bg);
+  color: var(--primary);
+  border-color: rgba(200,16,46,.18);
+}
+.floor-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--dark);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.floor-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .7px;
+  white-space: nowrap;
+}
+.floor-rooms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 16px 14px 16px;
+}
+.floor-room-card.room-card {
+  min-height: 72px;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border-radius: 3px;
+  overflow: visible;
+}
+.floor-room-card.room-card:hover {
+  transform: translateY(-1px);
+}
+.floor-room-card .room-no {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.floor-room-card .room-status-text {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+}
+.floor-room-card .room-guest,
+.floor-room-card .room-info,
+.floor-room-card .room-price {
+  max-width: 210px;
+}
+.room-visual {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  flex-shrink: 0;
+  background: var(--green-bg);
+  color: var(--green);
+}
+.room-card.dolu .room-visual {
+  background: var(--red-bg);
+  color: var(--red);
+}
+.room-card.temizlik .room-visual {
+  background: var(--orange-bg);
+  color: var(--orange);
+}
+.room-card.rezerve .room-visual {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.room-chevron {
+  color: #8a94a6;
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+@media(max-width:1024px) {
+  .floor-section-header { grid-template-columns: 1fr; gap: 4px; }
+  .floor-rooms { grid-template-columns: 1fr; }
+  .floor-room-card.room-card { min-height: 66px; }
+}
+@media(max-width:768px) {
+  #roomsGridWrapper.floor-layout-active { gap: 10px; }
+  .floor-section-header { padding: 12px 12px 8px; }
+  .floor-rooms { padding: 0 12px 12px; gap: 8px; }
+  .floor-title { font-size: 13px; }
+  .floor-subtitle { font-size: 11px; }
+  .floor-room-card.room-card { padding: 12px; grid-template-columns: 1fr auto; }
+  .floor-room-card .room-chevron { display: none; }
+}
+</style>
+<script id="floor-layout-script">
+(function(){
+  var FLOOR_LIST = [
+    { kat: 1, odalar: ['101','102','103'] },
+    { kat: 2, odalar: ['201','202','203'] },
+    { kat: 3, odalar: ['301','302','303'] },
+    { kat: 4, odalar: ['401','402','403'] }
+  ];
+  var busy = false;
+  var timer = null;
+
+  function roomNumberFromCard(card) {
+    var el = card.querySelector('.room-no');
+    if(el) {
+      var t = (el.textContent || '').trim();
+      var m = t.match(/\d{3}/);
+      if(m) return m[0];
+    }
+    var txt = (card.textContent || '').trim();
+    var mm = txt.match(/\b(101|102|103|201|202|203|301|302|303|401|402|403)\b/);
+    return mm ? mm[1] : '';
+  }
+
+  function roomIconFor(card) {
+    if(card.classList.contains('dolu')) return '▣';
+    if(card.classList.contains('temizlik')) return '♜';
+    if(card.classList.contains('rezerve')) return '▣';
+    return '▣';
+  }
+
+  function decorateCard(card) {
+    card.classList.add('floor-room-card');
+    var visual = card.querySelector('.room-visual');
+    if(!visual) {
+      visual = document.createElement('span');
+      visual.className = 'room-visual';
+      card.appendChild(visual);
+    }
+    visual.textContent = roomIconFor(card);
+    var chevron = card.querySelector('.room-chevron');
+    if(!chevron) {
+      chevron = document.createElement('span');
+      chevron.className = 'room-chevron';
+      chevron.textContent = '›';
+      card.appendChild(chevron);
+    }
+  }
+
+  function applyFloorLayout() {
+    if(busy) return;
+    var wrapper = document.getElementById('roomsGridWrapper');
+    var grid = document.getElementById('roomsGrid');
+    if(!wrapper || !grid) return;
+
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.room-card'));
+    if(!cards.length) return;
+
+    busy = true;
+    try {
+      wrapper.querySelectorAll('.floor-section').forEach(function(el){ el.remove(); });
+      var byNo = {};
+      cards.forEach(function(card){
+        var no = roomNumberFromCard(card);
+        if(no) byNo[no] = card;
+      });
+
+      grid.style.display = 'none';
+      wrapper.classList.add('floor-layout-active');
+
+      FLOOR_LIST.forEach(function(floor){
+        var section = document.createElement('section');
+        section.className = 'floor-section';
+
+        var header = document.createElement('div');
+        header.className = 'floor-section-header';
+
+        var titleWrap = document.createElement('div');
+        titleWrap.className = 'floor-title-wrap';
+        var icon = document.createElement('span');
+        icon.className = 'floor-icon';
+        icon.textContent = '▥';
+        var title = document.createElement('div');
+        title.className = 'floor-title';
+        title.textContent = floor.kat + '. Kat';
+        titleWrap.appendChild(icon);
+        titleWrap.appendChild(title);
+
+        var subtitle = document.createElement('div');
+        subtitle.className = 'floor-subtitle';
+        subtitle.textContent = floor.odalar.join(' - ');
+
+        header.appendChild(titleWrap);
+        header.appendChild(subtitle);
+
+        var roomWrap = document.createElement('div');
+        roomWrap.className = 'floor-rooms';
+        floor.odalar.forEach(function(no){
+          var card = byNo[no];
+          if(card) {
+            decorateCard(card);
+            roomWrap.appendChild(card);
+          }
+        });
+
+        section.appendChild(header);
+        section.appendChild(roomWrap);
+        wrapper.appendChild(section);
+      });
+    } finally {
+      busy = false;
+    }
+  }
+
+  function scheduleApply() {
+    clearTimeout(timer);
+    timer = setTimeout(applyFloorLayout, 80);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    scheduleApply();
+    var grid = document.getElementById('roomsGrid');
+    if(grid) {
+      new MutationObserver(function(){ if(!busy) scheduleApply(); }).observe(grid, { childList:true, subtree:true });
+    }
+    var attempts = 0;
+    var intv = setInterval(function(){
+      scheduleApply();
+      attempts++;
+      if(attempts > 20) clearInterval(intv);
+    }, 250);
+  });
+})();
+</script>
+
 </body>
 </html>
