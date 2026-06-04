@@ -1718,7 +1718,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Oda adlarını Firebase'den yükle (opsiyonel — .ad alanı yoksa ODA_ADLARI fallback devreye girer)
-onSnapshot(doc(db, 'meta', 'odalar'), function(snap) {
+onSnapshot(doc(db, 'meta', 'odaOzellikleri'), function(snap) {
   window._odaAdlari = {};
   window._odaAdNo = {};
   if(snap.exists()) {
