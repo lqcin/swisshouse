@@ -146,7 +146,14 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .stat-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .stat-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--dark);line-height:1;}
 
-.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.rooms-grid{display:flex;flex-direction:column;gap:20px;}
+.kat-blok{background:var(--white);border:1px solid var(--border);border-radius:2px;overflow:hidden;box-shadow:var(--shadow);}
+.kat-baslik{padding:10px 18px;background:var(--parchment);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.kat-baslik span{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dark);}
+.kat-baslik small{font-size:11px;color:var(--muted);}
+.kat-odalar{display:grid;grid-template-columns:repeat(3,1fr);}
+.kat-odalar .room-card{border:none;border-right:1px solid var(--border);border-radius:0;box-shadow:none;padding:20px 18px;}
+.kat-odalar .room-card:last-child{border-right:none;}
 .room-card{background:var(--white);border:1px solid var(--border);padding:18px 14px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow);}
 .room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--border);}
 .room-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
@@ -814,6 +821,23 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
     <input type="hidden" id="rev_fiyat">
     <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
+    <div class="form-row">
+      <div class="form-group"><label>Ödeme Durumu</label>
+        <select id="rev_odeme_durum">
+          <option value="odenmedi">Ödenmedi</option>
+          <option value="odendi">Ödendi</option>
+          <option value="depozito">Depozito Alındı</option>
+          <option value="kismi">Kısmi Ödeme</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ödeme Türü</label>
+        <select id="rev_odeme_tip">
+          <option value="nakit">Nakit</option>
+          <option value="kart">Kredi Kartı</option>
+          <option value="havale">Havale / EFT</option>
+        </select>
+      </div>
+    </div>
     <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('rezervModal')">Vazgeç</button>
@@ -1331,43 +1355,70 @@ window.renderOdalar = function() {
   const todayStr = today();
   let dolu=0, bos=0, temizlik=0, rezerve=0;
 
-  grid.innerHTML = '';
+  // Katları grupla: 1xx → Kat 1, 2xx → Kat 2 vb.
+  const KATLAR = [
+    { kat: 1, odalar: [101,102,103] },
+    { kat: 2, odalar: [201,202,203] },
+    { kat: 3, odalar: [301,302,303] },
+    { kat: 4, odalar: [401,402,403] },
+  ];
+
+  // Önce stat say
   for(const i of HOTEL_ODALAR) {
-    const o  = window._O['oda'+i] || {durum:'bos'};
-    const oz = window._OZ?.['oda'+i] || {};
+    const o = window._O['oda'+i] || {durum:'bos'};
     const aktifRev    = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
     const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
-
     let durum = o.durum;
     if(durum==='dolu') dolu++;
     else if(durum==='temizlik') temizlik++;
-    else if(aktifRev) { durum='dolu'; dolu++; }
-    else if(bekleyenRev) { rezerve++; }
+    else if(aktifRev) dolu++;
+    else if(bekleyenRev) rezerve++;
     else bos++;
-
-    const div = document.createElement('div');
-    div.className = `room-card ${durum}${bekleyenRev&&durum==='bos'?' rezerve':''}`;
-
-    // Kart içeriği
-    let icerik = `<div class="room-no">${i}${oz.ad?`<span style="display:block;font-size:10px;color:var(--gold);font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.5px;margin-top:-2px">${oz.ad}</span>`:''}</div>`;
-    icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':bekleyenRev?'Rezerveli':'Boş'}</div>`;
-    if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
-    if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
-    if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
-    if(bekleyenRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bekleyenRev.misafir||'—'}</div><div class="room-info">${bekleyenRev.giris}</div>`;
-
-    // Hover popup
-    icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
-
-    div.innerHTML = icerik;
-    div.onclick = () => odaKliklandi(i);
-    grid.appendChild(div);
   }
 
   document.getElementById('stat-dolu').textContent = dolu;
   document.getElementById('stat-bos').textContent = bos;
   document.getElementById('stat-temizlik').textContent = temizlik;
   document.getElementById('stat-rezerve').textContent = rezerve;
+
+  // Kat bazlı render
+  grid.innerHTML = '';
+  for(const { kat, odalar } of KATLAR) {
+    const blok = document.createElement('div');
+    blok.className = 'kat-blok';
+    blok.innerHTML = `<div class="kat-baslik"><span>${kat}. KAT</span><small>${odalar.join(' · ')}</small></div>`;
+
+    const odalarDiv = document.createElement('div');
+    odalarDiv.className = 'kat-odalar';
+
+    for(const i of odalar) {
+      const o  = window._O['oda'+i] || {durum:'bos'};
+      const oz = window._OZ?.['oda'+i] || {};
+      const aktifRev    = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
+      const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
+
+      let durum = o.durum;
+      if(durum!=='dolu' && durum!=='temizlik' && aktifRev) durum='dolu';
+
+      const div = document.createElement('div');
+      div.className = `room-card ${durum}${bekleyenRev&&durum==='bos'?' rezerve':''}`;
+
+      let icerik = `<div class="room-no">${i}${oz.ad?`<span style="display:block;font-size:10px;color:var(--gold);font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.5px;margin-top:-2px">${oz.ad}</span>`:''}</div>`;
+      icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':bekleyenRev?'Rezerveli':'Boş'}</div>`;
+      if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
+      if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
+      if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
+      if(bekleyenRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bekleyenRev.misafir||'—'}</div><div class="room-info">${bekleyenRev.giris}</div>`;
+      icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
+
+      div.innerHTML = icerik;
+      div.onclick = () => odaKliklandi(i);
+      odalarDiv.appendChild(div);
+    }
+
+    blok.appendChild(odalarDiv);
+    grid.appendChild(blok);
+  }
 };
 
 function buildPopup(no, o, oz, durum, aktifRev, bekleyenRev) {
@@ -2433,6 +2484,8 @@ window.saveRezervasyon = async function() {
   const kaynak  = document.getElementById('rev_kaynak').value;
   const fiyatTip= Number(document.getElementById('rev_fiyat_tip').value)||1;
   const fiyat   = Number(document.getElementById('rev_fiyat').value)||0;
+  const odemeDurum = document.getElementById('rev_odeme_durum').value;
+  const odemeTip   = document.getElementById('rev_odeme_tip').value;
   const not_    = document.getElementById('rev_not').value;
   const now     = nowISO();
 
@@ -2444,7 +2497,7 @@ window.saveRezervasyon = async function() {
   await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
-    fiyat,durum:'bekliyor',not:not_,kayitTarih:now
+    fiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,kayitTarih:now
   });
 
   ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
