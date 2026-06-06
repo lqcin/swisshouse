@@ -1702,37 +1702,34 @@ window.checkinSozlesmeOnayla = function() {
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden devam edilemez','error'); return; }
 
-  const oz = window._OZ?.['oda'+no] || {};
-  const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
+  // Check-in verisini geçici olarak _O'ya yaz, sözleşme oradan okusun
+  const now = nowISO();
+  const odeme = document.getElementById('ci_odeme').value;
+  const kaynak = document.getElementById('ci_kaynak').value;
   const gece = geceSayisi(giris, cikis);
-  const toplam = gece * fiyat;
+  const yetiskin = parseInt(document.getElementById('ci_yetiskin').value)||1;
+  const cocuk    = parseInt(document.getElementById('ci_cocuk').value)||0;
+  const not_     = document.getElementById('ci_not').value;
+  const email    = document.getElementById('ci_email')?.value.trim()||'';
+  const plaka    = document.getElementById('ci_plaka')?.value.trim()||'';
+  const fiyatTip = Number(document.getElementById('ci_fiyat_tip')?.value)||1;
   const refakatciler = getRefakatciler();
-  const bugun = new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const sozNo = `SW-${Date.now().toString().slice(-6)}`;
 
-  const fmtT = (t) => { if(!t) return '—'; const [y,m,d]=t.split('-'); return `${d}.${m}.${y}`; };
+  // Geçici set — saveCheckin kalıcı yazar
+  window._O['oda'+no] = {
+    durum:'dolu', misafir:ad, tc, tel: document.getElementById('ci_tel').value.trim(),
+    email, plaka, kaynak, fiyatTip, fiyat, odemeTuru:odeme,
+    giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
+    refakatciler, guncelleme:now
+  };
 
-  let refSatirlar = `<div class="kiraci-satir"><div class="kh">Sorumlu</div><div class="kd">${ad}</div><div class="kd tc">${tc||'—'}</div><div class="kd">—</div></div>`;
-  refakatciler.forEach((r,i) => {
-    refSatirlar += `<div class="kiraci-satir"><div class="kh">Refakatçi ${i+1}</div><div class="kd">${r.ad||'—'}</div><div class="kd tc">${r.tc||'—'}</div><div class="kd">${r.dt?fmtT(r.dt):'—'}</div></div>`;
-  });
+  // 2915'teki printSozlesme'yi kullan
+  printSozlesme(no);
 
-  const css = `*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Jost',sans-serif;background:#f7f8fa;padding:40px;color:#1a1d23;font-size:13px;}.page{background:#fff;max-width:780px;margin:0 auto;padding:52px 60px;box-shadow:0 2px 24px rgba(0,0,0,.08);}.header{text-align:center;padding-bottom:24px;margin-bottom:28px;border-bottom:2px solid #C8102E;}.header .logo{font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C8102E;margin-bottom:12px;}.header h1{font-size:18px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a1d23;margin-bottom:4px;}.header .altyazi{font-size:10px;color:#6b7280;letter-spacing:1px;}.meta-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}.meta-box{background:#f0f2f5;padding:10px 14px;border-left:3px solid #C8102E;}.meta-box .etiket{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;margin-bottom:3px;}.meta-box .deger{font-size:13px;font-weight:600;color:#1a1d23;}.bolum{margin-bottom:22px;}.bolum-baslik{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8102E;padding-bottom:6px;border-bottom:1px solid #e2e6eb;margin-bottom:12px;}.bilgi-tablo{width:100%;border-collapse:collapse;margin-bottom:12px;}.bilgi-tablo th{background:#f0f2f5;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;padding:7px 12px;text-align:left;border:1px solid #e2e6eb;}.bilgi-tablo td{padding:8px 12px;border:1px solid #e2e6eb;font-size:12px;color:#1a1d23;}.kiraci-satir{display:grid;grid-template-columns:90px 1fr 130px 120px;gap:0;border:1px solid #e2e6eb;margin-bottom:4px;}.kiraci-satir .kh{background:#f0f2f5;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;padding:6px 10px;display:flex;align-items:center;}.kiraci-satir .kd{font-size:12px;font-weight:500;color:#1a1d23;padding:6px 10px;display:flex;align-items:center;}.kiraci-satir .kd.tc{border-left:1px solid #e2e6eb;border-right:1px solid #e2e6eb;}.kira-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}.kira-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}.kira-box{background:#f0f2f5;padding:10px 14px;}.kira-box .etiket{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;margin-bottom:3px;}.kira-box .deger{font-size:13px;font-weight:600;color:#1a1d23;}.kira-box.vurgulu{background:#fff0f2;border-left:3px solid #C8102E;}.kira-box.vurgulu .deger{color:#C8102E;font-size:15px;}.maddeler{counter-reset:madde;}.madde{counter-increment:madde;display:grid;grid-template-columns:24px 1fr;gap:8px;margin-bottom:8px;line-height:1.7;font-size:12px;color:#2c3040;}.madde::before{content:counter(madde)".";font-weight:700;color:#C8102E;font-size:11px;padding-top:2px;}.imza-alan{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:40px;padding-top:28px;border-top:1px solid #e2e6eb;}.imza-blok{text-align:center;}.imza-blok .baslik{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a1d23;margin-bottom:60px;}.imza-blok .cizgi{border-top:1px solid #1a1d23;padding-top:8px;font-size:11px;color:#6b7280;}.footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e2e6eb;font-size:10px;color:#9ca3af;letter-spacing:1px;}@media print{body{background:#fff;padding:0;}.page{box-shadow:none;padding:24px 32px;max-width:100%;}@page{margin:1cm;size:A4;}}`;
-
-  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Sözleşme ${sozNo}</title><link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><div class="page">
-  <div class="header"><div class="logo">Swiss House · Yönetim Sistemi</div><h1>Geçici Konut Kiralama Sözleşmesi</h1><div class="altyazi">Bu sözleşme 6098 sayılı Türk Borçlar Kanunu çerçevesinde düzenlenmiştir.</div></div>
-  <div class="meta-row"><div class="meta-box"><div class="etiket">Sözleşme No</div><div class="deger">${sozNo}</div></div><div class="meta-box"><div class="etiket">Düzenleme Tarihi</div><div class="deger">${bugun}</div></div></div>
-  <div class="bolum"><div class="bolum-baslik">1. Taraflar</div><table class="bilgi-tablo"><tr><th style="width:140px">Kiraya Veren</th><td><strong>Swiss House</strong></td></tr></table><div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Kiracılar</div><div class="kiraci-satir" style="background:#f0f2f5;"><div class="kh">Kişi</div><div class="kh">Ad Soyad</div><div class="kh" style="border-left:1px solid #e2e6eb;border-right:1px solid #e2e6eb;">TC Kimlik No</div><div class="kh">Doğum Tarihi</div></div>${refSatirlar}</div>
-  <div class="bolum"><div class="bolum-baslik">2. Kiralama Bilgileri</div><div class="kira-grid"><div class="kira-box"><div class="etiket">Oda</div><div class="deger">${odaAdi}</div></div><div class="kira-box"><div class="etiket">Giriş Tarihi</div><div class="deger">${fmtT(giris)}</div></div><div class="kira-box"><div class="etiket">Çıkış Tarihi</div><div class="deger">${fmtT(cikis)}</div></div></div><div class="kira-grid-2"><div class="kira-box"><div class="etiket">Konaklama Süresi</div><div class="deger">${gece} Gece</div></div><div class="kira-box vurgulu"><div class="etiket">Toplam Kira Bedeli</div><div class="deger">${toplam.toLocaleString('tr-TR')} ₺</div></div></div></div>
-  <div class="bolum"><div class="bolum-baslik">3. Genel Hükümler</div><div class="maddeler"><div class="madde">İşbu sözleşme, yukarıda belirtilen taraflar arasında, belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</div><div class="madde">Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.</div><div class="madde">Kiracı, kiralama süresi dolmadan erken çıkış yapması halinde kalan günlere ait kira bedelinin iadesini talep edemez.</div><div class="madde">Konutun demirbaşlarına verilecek zarar kiracı tarafından tazmin edilecektir.</div><div class="madde">Belirlenen kira bedeli, sözleşme imzalanırken peşin olarak ödenecektir.</div><div class="madde">Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.</div><div class="madde">Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız edecek davranışlarda bulunmak yasaktır.</div><div class="madde">Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.</div><div class="madde">Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</div></div></div>
-  <div class="imza-alan"><div class="imza-blok"><div class="baslik">Kiraya Veren</div><div class="cizgi">Swiss House · İmza / Kaşe</div></div><div class="imza-blok"><div class="baslik">Kiracı</div><div class="cizgi">${ad} · İmza</div></div></div>
-  <div class="footer">Swiss House · Geçici Konut Kiralama Sözleşmesi · ${sozNo}</div>
-</div><script>window.onload=()=>window.print();<\/script></body></html>`;
-
-  const w = window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
+  // Sözleşme yazdırıldıktan sonra check-in onay modalı
   setTimeout(() => openModal('sozlesmeOnayModal'), 500);
+};
+
 };
 
 // ── CHECK-IN ──
