@@ -3072,8 +3072,8 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   ${o.tel ? '<button class="btn-wa" onclick="whatsapp()">📲 WhatsApp</button>' : ''}
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
+\u003Cscript src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">\u003C/script\u003E
+\u003Cscript\u003E
 function indir(){
   const btn=document.getElementById('pdfBtn');
   btn.textContent='⏳ Hazırlanıyor...';btn.disabled=true;
@@ -3092,7 +3092,7 @@ function whatsapp(){
   const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\\nNo: ${sozNo}\\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');
   window.open('https://wa.me/'+num+'?text='+txt,'_blank');
 }
-<\/script>
+\u003C/script\u003E
 </body></html>`;
 
   const w = window.open('', '_blank');
