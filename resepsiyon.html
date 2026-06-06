@@ -490,6 +490,10 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="ib-sub" id="ci_fiyat_toplam_sub"></div>
       <input type="hidden" id="ci_fiyat">
     </div>
+    <div class="form-group">
+      <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
+      <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil sözleşme fiyatı...">
+    </div>
 
     <div class="form-group"><label>Giriş Saati (Otomatik)</label><input type="text" id="ci_saat" readonly></div>
     <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
@@ -828,6 +832,10 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="ib-sub" id="rev_fiyat_toplam_sub"></div>
     </div>
     <input type="hidden" id="rev_fiyat">
+    <div class="form-group">
+      <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
+      <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil sözleşme fiyatı...">
+    </div>
     <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
     <div class="form-row">
       <div class="form-group"><label>Ödeme Durumu</label>
@@ -1726,7 +1734,9 @@ window.checkinSozlesmeOnayla = function() {
   // Geçici set — saveCheckin kalıcı yazar
   window._O['oda'+no] = {
     durum:'dolu', misafir:ad, tc, tel: document.getElementById('ci_tel').value.trim(),
-    email, plaka, kaynak, fiyatTip, fiyat, odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
+    email, plaka, kaynak, fiyatTip, fiyat,
+    sozlesmeFiyat: document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,
+    odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
     refakatciler, guncelleme:now
   };
@@ -1908,7 +1918,7 @@ window.saveCheckin = async function() {
 
   // Oda güncelle
   const refakatciler = getRefakatciler();
-  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,guncelleme:now};
+  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   // Gelir kaydı
@@ -2497,10 +2507,12 @@ window.saveRezervasyon = async function() {
   const carpisan = window._R.find(r=>Number(r.odaNo)===Number(odaNo)&&r.giris<cikis&&r.cikis>giris&&r.durum!=='iptal');
   if(carpisan) { toast(`Oda ${odaNo} bu tarihlerde dolu!`,'error'); return; }
 
+  const sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
+
   await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
-    fiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,kayitTarih:now
+    fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,kayitTarih:now
   });
 
   ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2923,6 +2935,7 @@ window.printSozlesme = function(no) {
   const gece   = geceSayisi(o.giris, o.cikis);
   const sozNo  = `SW-${Date.now().toString().slice(-6)}`;
   const resNo  = `RES-${Date.now().toString().slice(-5)}`;
+  const gorunenFiyat = o.sozlesmeFiyat || o.fiyat || 0;
 
   const fmtTarih = (t) => {
     if(!t) return '—';
@@ -3010,7 +3023,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
     <div class="box"><div class="label">Giriş Tarihi</div><div class="value">${fmtTarih(o.giris)}</div></div>
     <div class="box"><div class="label">Çıkış Tarihi</div><div class="value">${fmtTarih(o.cikis)}</div></div>
     <div class="box"><div class="label">Konaklama Süresi</div><div class="value">${gece} Gece</div></div>
-    <div class="box"><div class="label">Gecelik Ücret</div><div class="value">${(o.fiyat||0).toLocaleString('tr-TR')} ₺</div></div>
+    <div class="box"><div class="label">Ücret</div><div class="value">${gorunenFiyat.toLocaleString('tr-TR')} ₺</div></div>
     <div class="box"><div class="label">Ödeme Durumu</div><div class="value" style="color:#0b3d91">${odemeDurum}</div></div>
   </div>
 
@@ -3056,7 +3069,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
 <div class="aksiyon-bar">
   <button class="btn-print" onclick="window.print()">🖨 Yazdır</button>
   <button class="btn-pdf" id="pdfBtn" onclick="indir()">⬇ PDF İndir</button>
-  ${o.tel ? `<button class="btn-wa" onclick="whatsapp()">📲 WhatsApp</button>` : ''}
+  ${o.tel ? '<button class="btn-wa" onclick="whatsapp()">📲 WhatsApp</button>' : ''}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
