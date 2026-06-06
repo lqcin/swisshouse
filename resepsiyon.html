@@ -471,6 +471,14 @@ input[type="number"], input[type="date"], input[type="password"] {
           <option value="havale">Havale / EFT</option>
         </select>
       </div>
+      <div class="form-group"><label>Ödeme Durumu</label>
+        <select id="ci_odeme_durum">
+          <option value="odenmedi">Ödenmedi</option>
+          <option value="odendi">Ödendi</option>
+          <option value="depozito">Depozito Alındı</option>
+          <option value="kismi">Kısmi Ödeme</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-group"><label>Fiyat Tipi</label>
@@ -1718,7 +1726,7 @@ window.checkinSozlesmeOnayla = function() {
   // Geçici set — saveCheckin kalıcı yazar
   window._O['oda'+no] = {
     durum:'dolu', misafir:ad, tc, tel: document.getElementById('ci_tel').value.trim(),
-    email, plaka, kaynak, fiyatTip, fiyat, odemeTuru:odeme,
+    email, plaka, kaynak, fiyatTip, fiyat, odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
     refakatciler, guncelleme:now
   };
@@ -1900,7 +1908,7 @@ window.saveCheckin = async function() {
 
   // Oda güncelle
   const refakatciler = getRefakatciler();
-  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,odemeTuru:odeme,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,guncelleme:now};
+  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   // Gelir kaydı
@@ -2912,160 +2920,163 @@ window.printSozlesme = function(no) {
   if(!o || o.durum !== 'dolu') { toast('Sadece dolu odalar için sözleşme oluşturulabilir','error'); return; }
   const oz = window._OZ?.['oda'+no] || {};
   const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
-  const gece = geceSayisi(o.giris, o.cikis);
-  const toplam = gece * (o.fiyat||0);
-  const refakatciler = o.refakatciler || [];
-  const bugun = new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric'});
-  const sozNo = `SW-${Date.now().toString().slice(-6)}`;
+  const gece   = geceSayisi(o.giris, o.cikis);
+  const sozNo  = `SW-${Date.now().toString().slice(-6)}`;
+  const resNo  = `RES-${Date.now().toString().slice(-5)}`;
 
-  // Tarih formatla
   const fmtTarih = (t) => {
     if(!t) return '—';
     const [y,m,d] = t.split('-');
     return `${d}.${m}.${y}`;
   };
 
-  // Refakatçi satırları
-  let refSatirlar = `
-    <div class="kiraci-satir">
-      <div class="kh">Sorumlu</div>
-      <div class="kd">${o.misafir||'—'}</div>
-      <div class="kd tc">${o.tc||'—'}</div>
-      <div class="kd">—</div>
-    </div>`;
-  refakatciler.forEach((r, i) => {
-    const dtFmt = r.dt ? fmtTarih(r.dt) : '—';
-    refSatirlar += `
-    <div class="kiraci-satir">
-      <div class="kh">Refakatçi ${i+1}</div>
-      <div class="kd">${r.ad||'—'}</div>
-      <div class="kd tc">${r.tc||'—'}</div>
-      <div class="kd">${dtFmt}</div>
-    </div>`;
-  });
+  const odemeDurumMap = {
+    odenmedi:'Ödenmedi', odendi:'Ödendi',
+    depozito:'Depozito Alındı', kismi:'Kısmi Ödeme'
+  };
+  const odemeDurum = odemeDurumMap[o.odemeDurum] || odemeDurumMap[o.odemeDurumu] || 'Ödenmedi';
 
-  const html = `<!DOCTYPE html><html lang="tr"><head>
+  const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
 <meta charset="UTF-8">
-<title>Sözleşme ${sozNo}</title>
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>Swiss House Sözleşme</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Jost',sans-serif;background:#f7f8fa;padding:40px;color:#1a1d23;font-size:13px;}
-.page{background:#fff;max-width:780px;margin:0 auto;padding:52px 60px;box-shadow:0 2px 24px rgba(0,0,0,.08);}
-.header{text-align:center;padding-bottom:24px;margin-bottom:28px;border-bottom:2px solid #C8102E;}
-.header .logo{font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#C8102E;margin-bottom:12px;}
-.header h1{font-size:18px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a1d23;margin-bottom:4px;}
-.header .altyazi{font-size:10px;color:#6b7280;letter-spacing:1px;}
-.meta-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
-.meta-box{background:#f0f2f5;padding:10px 14px;border-left:3px solid #C8102E;}
-.meta-box .etiket{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;margin-bottom:3px;}
-.meta-box .deger{font-size:13px;font-weight:600;color:#1a1d23;}
-.bolum{margin-bottom:22px;}
-.bolum-baslik{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8102E;padding-bottom:6px;border-bottom:1px solid #e2e6eb;margin-bottom:12px;}
-.bilgi-tablo{width:100%;border-collapse:collapse;margin-bottom:12px;}
-.bilgi-tablo th{background:#f0f2f5;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;padding:7px 12px;text-align:left;border:1px solid #e2e6eb;}
-.bilgi-tablo td{padding:8px 12px;border:1px solid #e2e6eb;font-size:12px;color:#1a1d23;}
-.kiraci-satir{display:grid;grid-template-columns:90px 1fr 130px 120px;gap:0;border:1px solid #e2e6eb;margin-bottom:4px;}
-.kiraci-satir .kh{background:#f0f2f5;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;padding:6px 10px;display:flex;align-items:center;}
-.kiraci-satir .kd{font-size:12px;font-weight:500;color:#1a1d23;padding:6px 10px;display:flex;align-items:center;}
-.kiraci-satir .kd.tc{border-left:1px solid #e2e6eb;border-right:1px solid #e2e6eb;}
-.kira-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
-.kira-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-.kira-box{background:#f0f2f5;padding:10px 14px;}
-.kira-box .etiket{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;margin-bottom:3px;}
-.kira-box .deger{font-size:13px;font-weight:600;color:#1a1d23;}
-.kira-box.vurgulu{background:#fff0f2;border-left:3px solid #C8102E;}
-.kira-box.vurgulu .deger{color:#C8102E;font-size:15px;}
-.maddeler{counter-reset:madde;}
-.madde{counter-increment:madde;display:grid;grid-template-columns:24px 1fr;gap:8px;margin-bottom:8px;line-height:1.7;font-size:12px;color:#2c3040;}
-.madde::before{content:counter(madde)".";font-weight:700;color:#C8102E;font-size:11px;padding-top:2px;}
-.imza-alan{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:40px;padding-top:28px;border-top:1px solid #e2e6eb;}
-.imza-blok{text-align:center;}
-.imza-blok .baslik{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a1d23;margin-bottom:60px;}
-.imza-blok .cizgi{border-top:1px solid #1a1d23;padding-top:8px;font-size:11px;color:#6b7280;}
-.footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e2e6eb;font-size:10px;color:#9ca3af;letter-spacing:1px;}
-@media print{body{background:#fff;padding:0;}.page{box-shadow:none;padding:24px 32px;max-width:100%;}@page{margin:1cm;size:A4;}}
-</style></head><body>
+@page{size:A4;margin:8mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#111;background:#fff;font-size:11px}
+.page{width:100%;max-width:190mm;margin:0 auto}
+.header{text-align:center;margin-bottom:8px}
+.logo{font-size:26px;font-weight:800;letter-spacing:1px}
+.logo span{color:#c8102e}
+.sub{font-size:10px;letter-spacing:3px;margin-top:2px}
+h1{font-size:21px;margin:10px 0 6px 0;letter-spacing:.5px}
+.red-line{border-top:2px solid #c8102e;margin:8px 0 12px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.3fr;gap:8px;margin-bottom:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.box{border:1px solid #ccc;padding:8px 10px;min-height:48px}
+.label{font-size:9px;letter-spacing:1.3px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+.value{font-size:14px;font-weight:700}
+.section-title{color:#c8102e;font-size:15px;font-weight:800;letter-spacing:1px;margin:12px 0 8px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+td,th{border:1px solid #ccc;padding:7px 8px;font-size:10.5px}
+th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;font-size:11px;line-height:1.45}
+.rule{display:flex;gap:8px;margin-bottom:7px}
+.rule b{color:#c8102e;min-width:16px}
+.note{border:1px solid #ccc;min-height:45px;padding:8px;font-size:11px}
+.signatures{border-top:2px solid #c8102e;margin-top:10px;padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:60px;text-align:center}
+.sig-title{color:#c8102e;font-weight:800;font-size:11px;letter-spacing:1px}
+.sig-name{margin:8px 0 28px;font-weight:700}
+.sig-line{border-top:1px solid #999;padding-top:6px;font-size:10px}
+.footer{border-top:2px solid #c8102e;margin-top:12px;padding-top:9px;display:flex;justify-content:space-around;font-size:10.5px}
+.aksiyon-bar{position:fixed;bottom:0;left:0;right:0;background:#1a1d23;padding:12px 24px;display:flex;gap:12px;justify-content:center;z-index:999;box-shadow:0 -2px 12px rgba(0,0,0,.3)}
+.aksiyon-bar button{padding:10px 22px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none}
+.btn-print{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3)!important}
+.btn-pdf{background:#c8102e;color:#fff}
+.btn-wa{background:#25D366;color:#fff}
+@media print{.aksiyon-bar{display:none}body{font-size:10px}}
+</style>
+</head>
+<body>
+
 <div class="page">
   <div class="header">
-    <div class="logo">Swiss House · Yönetim Sistemi</div>
-    <h1>Geçici Konut Kiralama Sözleşmesi</h1>
-    <div class="altyazi">Bu sözleşme 6098 sayılı Türk Borçlar Kanunu çerçevesinde düzenlenmiştir.</div>
+    <div class="logo"><span>SWISS</span> HOUSE</div>
+    <div class="sub">YÖNETİM SİSTEMİ</div>
+    <h1>GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ</h1>
   </div>
-  <div class="meta-row">
-    <div class="meta-box"><div class="etiket">Sözleşme No</div><div class="deger">${sozNo}</div></div>
-    <div class="meta-box"><div class="etiket">Düzenleme Tarihi</div><div class="deger">${bugun}</div></div>
+  <div class="red-line"></div>
+
+  <div class="grid4">
+    <div class="box"><div class="label">Sözleşme No</div><div class="value">${sozNo}</div></div>
+    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(o.giris)}</div></div>
+    <div class="box"><div class="label">Rezervasyon No</div><div class="value">${resNo}</div></div>
+    <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:11px">Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div></div>
   </div>
-  <div class="bolum">
-    <div class="bolum-baslik">1. Taraflar</div>
-    <table class="bilgi-tablo">
-      <tr><th style="width:140px">Kiraya Veren</th><td><strong>Swiss House</strong></td></tr>
-    </table>
-    <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Kiracılar</div>
-    <div class="kiraci-satir" style="background:#f0f2f5;">
-      <div class="kh">Kişi</div>
-      <div class="kh">Ad Soyad</div>
-      <div class="kh" style="border-left:1px solid #e2e6eb;border-right:1px solid #e2e6eb;">TC Kimlik No</div>
-      <div class="kh">Doğum Tarihi</div>
-    </div>
-    ${refSatirlar}
+
+  <div class="section-title">1. TARAFLAR</div>
+  <table>
+    <tr><th>Kiraya Veren</th><td><b>Swiss House Yönetimi</b></td></tr>
+  </table>
+  <table>
+    <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC Kimlik No</th><th>Doğum Tarihi</th></tr>
+    <tr><td>Sorumlu</td><td><b>${o.misafir||'—'}</b></td><td><b>${o.tc||'—'}</b></td><td>—</td></tr>
+  </table>
+
+  <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
+  <div class="grid3">
+    <div class="box"><div class="label">Oda No</div><div class="value">${odaAdi}</div></div>
+    <div class="box"><div class="label">Giriş Tarihi</div><div class="value">${fmtTarih(o.giris)}</div></div>
+    <div class="box"><div class="label">Çıkış Tarihi</div><div class="value">${fmtTarih(o.cikis)}</div></div>
+    <div class="box"><div class="label">Konaklama Süresi</div><div class="value">${gece} Gece</div></div>
+    <div class="box"><div class="label">Gecelik Ücret</div><div class="value">${(o.fiyat||0).toLocaleString('tr-TR')} ₺</div></div>
+    <div class="box"><div class="label">Ödeme Durumu</div><div class="value" style="color:#0b3d91">${odemeDurum}</div></div>
   </div>
-  <div class="bolum">
-    <div class="bolum-baslik">2. Kiralama Bilgileri</div>
-    <div class="kira-grid">
-      <div class="kira-box"><div class="etiket">Oda</div><div class="deger">${odaAdi}</div></div>
-      <div class="kira-box"><div class="etiket">Giriş Tarihi</div><div class="deger">${fmtTarih(o.giris)}</div></div>
-      <div class="kira-box"><div class="etiket">Çıkış Tarihi</div><div class="deger">${fmtTarih(o.cikis)}</div></div>
+
+  <div class="section-title">3. GENEL HÜKÜMLER</div>
+  <div class="rules">
+    <div>
+      <div class="rule"><b>1.</b><span>İşbu sözleşme, taraflar arasında belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</span></div>
+      <div class="rule"><b>2.</b><span>Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.</span></div>
+      <div class="rule"><b>3.</b><span>Kiracı, kiralama süresi dolmadan erken çıkış yaparsa kalan günlere ait kira bedelinin iadesini talep edemez.</span></div>
+      <div class="rule"><b>4.</b><span>Konutun demirbaşlarına verilecek zarar kiracı tarafından tazmin edilecektir.</span></div>
+      <div class="rule"><b>5.</b><span>Belirlenen kira bedeli, sözleşme imzalanırken peşin olarak ödenecektir.</span></div>
     </div>
-    <div class="kira-grid-2">
-      <div class="kira-box"><div class="etiket">Konaklama Süresi</div><div class="deger">${gece} Gece</div></div>
-      <div class="kira-box vurgulu"><div class="etiket">Toplam Kira Bedeli</div><div class="deger">${toplam.toLocaleString('tr-TR')} ₺</div></div>
-    </div>
-  </div>
-  <div class="bolum">
-    <div class="bolum-baslik">3. Genel Hükümler</div>
-    <div class="maddeler">
-      <div class="madde">İşbu sözleşme, yukarıda belirtilen taraflar arasında, belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</div>
-      <div class="madde">Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.</div>
-      <div class="madde">Kiracı, kiralama süresi dolmadan erken çıkış yapması halinde kalan günlere ait kira bedelinin iadesini talep edemez.</div>
-      <div class="madde">Konutun demirbaşlarına verilecek zarar kiracı tarafından tazmin edilecektir.</div>
-      <div class="madde">Belirlenen kira bedeli, sözleşme imzalanırken peşin olarak ödenecektir.</div>
-      <div class="madde">Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.</div>
-      <div class="madde">Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız edecek davranışlarda bulunmak yasaktır.</div>
-      <div class="madde">Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.</div>
-      <div class="madde">Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</div>
-    </div>
-  </div>
-  <div class="imza-alan">
-    <div class="imza-blok">
-      <div class="baslik">Kiraya Veren</div>
-      <div class="cizgi">Swiss House · İmza / Kaşe</div>
-    </div>
-    <div class="imza-blok">
-      <div class="baslik">Kiracı</div>
-      <div class="cizgi">${o.misafir||'—'} · İmza</div>
+    <div>
+      <div class="rule"><b>6.</b><span>Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.</span></div>
+      <div class="rule"><b>7.</b><span>Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız etmek yasaktır.</span></div>
+      <div class="rule"><b>8.</b><span>Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.</span></div>
+      <div class="rule"><b>9.</b><span>Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
     </div>
   </div>
-  <div class="footer">Swiss House · Geçici Konut Kiralama Sözleşmesi · ${sozNo}</div>
+
+  <div class="section-title">4. NOT / DETAY</div>
+  <div class="note">${o.not||'—'}</div>
+
+  <div class="signatures">
+    <div>
+      <div class="sig-title">KİRAYA VEREN</div>
+      <div class="sig-name">Swiss House Yönetimi</div>
+      <div class="sig-line">İMZA</div>
+    </div>
+    <div>
+      <div class="sig-title">KİRACI</div>
+      <div class="sig-name">${o.misafir||'—'}</div>
+      <div class="sig-line">İMZA</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>📍 Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div>
+    <div>☎ +90 506 150 83 00</div>
+  </div>
 </div>
-<div id='aksiyon-bar' style='position:fixed;bottom:0;left:0;right:0;background:#1a1d23;padding:14px 24px;display:flex;gap:12px;justify-content:center;z-index:999;box-shadow:0 -2px 12px rgba(0,0,0,.3)'><button onclick='window.print()' style='background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>🖨 Yazdır</button><button id='pdfBtn' onclick='indir()' style='background:#C8102E;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>⬇ PDF İndir</button>${o.tel ? `<button onclick='whatsapp()' style='background:#25D366;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>📲 WhatsApp</button>` : ''}</div><script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script><script>function indir(){const btn=document.getElementById('pdfBtn');btn.textContent='⏳ Hazırlanıyor...';btn.disabled=true;html2pdf().set({margin:[8,8,8,8],filename:'sozlesme-${sozNo}.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.querySelector('.page')).save().then(()=>{btn.textContent='✓ İndirildi';btn.style.background='#16a34a';});}function whatsapp(){const raw='${o.tel||""}'.replace(/[^0-9]/g,'');const num=raw.startsWith('0')?('90'+raw.slice(1)):raw.length===10?('90'+raw):raw;const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\nNo: ${sozNo}\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');window.open('https://wa.me/'+num+'?text='+txt,'_blank');}<\/script>
-  <button onclick=\"window.print()\" style=\"background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">🖨 Yazdır</button>
-  <button id=\"pdfBtn\" onclick=\"indir()\" style=\"background:#C8102E;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">⬇ PDF İndir</button>
-  ${o.tel ? `<button onclick=\"whatsapp()\" style=\"background:#25D366;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">📲 WhatsApp</button>` : ''}
+
+<div class="aksiyon-bar">
+  <button class="btn-print" onclick="window.print()">🖨 Yazdır</button>
+  <button class="btn-pdf" id="pdfBtn" onclick="indir()">⬇ PDF İndir</button>
+  ${o.tel ? `<button class="btn-wa" onclick="whatsapp()">📲 WhatsApp</button>` : ''}
 </div>
-<script src=\"https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js\"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 function indir(){
   const btn=document.getElementById('pdfBtn');
   btn.textContent='⏳ Hazırlanıyor...';btn.disabled=true;
-  html2pdf().set({margin:[8,8,8,8],filename:'sozlesme-${sozNo}.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}})
-    .from(document.querySelector('.page')).save()
-    .then(()=>{btn.textContent='✓ İndirildi';btn.style.background='#16a34a';});
+  html2pdf().set({
+    margin:[8,8,8,8],
+    filename:'sozlesme-${sozNo}.pdf',
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+  }).from(document.querySelector('.page')).save()
+  .then(()=>{btn.textContent='✓ İndirildi';btn.style.background='#16a34a';});
 }
 function whatsapp(){
   const raw='${o.tel||""}'.replace(/[^0-9]/g,'');
   const num=raw.startsWith('0')?('90'+raw.slice(1)):raw.length===10?('90'+raw):raw;
-  const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\nNo: ${sozNo}\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');
+  const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\\nNo: ${sozNo}\\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');
   window.open('https://wa.me/'+num+'?text='+txt,'_blank');
 }
 <\/script>
