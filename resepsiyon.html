@@ -3048,7 +3048,27 @@ body{font-family:'Jost',sans-serif;background:#f7f8fa;padding:40px;color:#1a1d23
   </div>
   <div class="footer">Swiss House · Geçici Konut Kiralama Sözleşmesi · ${sozNo}</div>
 </div>
-<script>window.onload=()=>window.print();<\/script>
+<div id='aksiyon-bar' style='position:fixed;bottom:0;left:0;right:0;background:#1a1d23;padding:14px 24px;display:flex;gap:12px;justify-content:center;z-index:999;box-shadow:0 -2px 12px rgba(0,0,0,.3)'><button onclick='window.print()' style='background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>🖨 Yazdır</button><button id='pdfBtn' onclick='indir()' style='background:#C8102E;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>⬇ PDF İndir</button>${o.tel ? `<button onclick='whatsapp()' style='background:#25D366;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer'>📲 WhatsApp</button>` : ''}</div><script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script><script>function indir(){const btn=document.getElementById('pdfBtn');btn.textContent='⏳ Hazırlanıyor...';btn.disabled=true;html2pdf().set({margin:[8,8,8,8],filename:'sozlesme-${sozNo}.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.querySelector('.page')).save().then(()=>{btn.textContent='✓ İndirildi';btn.style.background='#16a34a';});}function whatsapp(){const raw='${o.tel||""}'.replace(/[^0-9]/g,'');const num=raw.startsWith('0')?('90'+raw.slice(1)):raw.length===10?('90'+raw):raw;const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\nNo: ${sozNo}\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');window.open('https://wa.me/'+num+'?text='+txt,'_blank');}<\/script>
+  <button onclick=\"window.print()\" style=\"background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">🖨 Yazdır</button>
+  <button id=\"pdfBtn\" onclick=\"indir()\" style=\"background:#C8102E;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">⬇ PDF İndir</button>
+  ${o.tel ? `<button onclick=\"whatsapp()\" style=\"background:#25D366;color:#fff;border:none;padding:10px 22px;font-family:Jost,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer\">📲 WhatsApp</button>` : ''}
+</div>
+<script src=\"https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js\"></script>
+<script>
+function indir(){
+  const btn=document.getElementById('pdfBtn');
+  btn.textContent='⏳ Hazırlanıyor...';btn.disabled=true;
+  html2pdf().set({margin:[8,8,8,8],filename:'sozlesme-${sozNo}.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}})
+    .from(document.querySelector('.page')).save()
+    .then(()=>{btn.textContent='✓ İndirildi';btn.style.background='#16a34a';});
+}
+function whatsapp(){
+  const raw='${o.tel||""}'.replace(/[^0-9]/g,'');
+  const num=raw.startsWith('0')?('90'+raw.slice(1)):raw.length===10?('90'+raw):raw;
+  const txt=encodeURIComponent('Merhaba, Swiss House sözleşmeniz hazır.\nNo: ${sozNo}\nGiriş: ${fmtTarih(o.giris)} · Çıkış: ${fmtTarih(o.cikis)}\nPDF indirip bu pencereden dosya olarak gönderebilirsiniz.');
+  window.open('https://wa.me/'+num+'?text='+txt,'_blank');
+}
+<\/script>
 </body></html>`;
 
   const w = window.open('', '_blank');
