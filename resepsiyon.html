@@ -2935,7 +2935,8 @@ window.printSozlesme = function(no) {
   const gece   = geceSayisi(o.giris, o.cikis);
   const sozNo  = `SW-${Date.now().toString().slice(-6)}`;
   const resNo  = `RES-${Date.now().toString().slice(-5)}`;
-  const gorunenFiyat = o.sozlesmeFiyat || o.fiyat || 0;
+  const gecelikFiyat = o.sozlesmeFiyat || o.fiyat || 0;
+  const toplamFiyat  = gecelikFiyat * gece;
 
   const fmtTarih = (t) => {
     if(!t) return '—';
@@ -3018,12 +3019,15 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   </table>
 
   <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
-  <div class="grid3">
+  <div class="grid3" style="margin-bottom:8px">
     <div class="box"><div class="label">Oda No</div><div class="value">${odaAdi}</div></div>
     <div class="box"><div class="label">Giriş Tarihi</div><div class="value">${fmtTarih(o.giris)}</div></div>
     <div class="box"><div class="label">Çıkış Tarihi</div><div class="value">${fmtTarih(o.cikis)}</div></div>
+  </div>
+  <div class="grid4" style="margin-bottom:8px">
     <div class="box"><div class="label">Konaklama Süresi</div><div class="value">${gece} Gece</div></div>
-    <div class="box"><div class="label">Ücret</div><div class="value">${gorunenFiyat.toLocaleString('tr-TR')} ₺</div></div>
+    <div class="box"><div class="label">Gecelik Ücret</div><div class="value">${gecelikFiyat.toLocaleString('tr-TR')} ₺</div></div>
+    <div class="box" style="border-left:3px solid #c8102e"><div class="label">Toplam Tutar</div><div class="value" style="color:#c8102e">${toplamFiyat.toLocaleString('tr-TR')} ₺</div></div>
     <div class="box"><div class="label">Ödeme Durumu</div><div class="value" style="color:#0b3d91">${odemeDurum}</div></div>
   </div>
 
