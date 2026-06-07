@@ -3394,7 +3394,7 @@ window.saveHarcama = async function() {
 
 // ── HATIRLATMA SİSTEMİ ──
 // Rezervasyonlar değişince banner'ı güncelle
-function renderHatirlatma() {
+window.renderHatirlatma = function renderHatirlatma() {
   const todayStr = today();
   const gun1 = addDays(todayStr, 1);
   const gun2 = addDays(todayStr, 2);
@@ -3490,7 +3490,7 @@ window.takvimDetay = function(data) {
   document.getElementById('td_baslik').textContent = oz.ad ? `Oda ${data.odaNo} — ${oz.ad}` : `Oda ${data.odaNo}`;
   document.getElementById('td_badge').innerHTML = isDolu
     ? '<span style="background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;font-size:10px;font-weight:700">DOLU</span>'
-    : '<span style="background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;font-size:10px;font-weight:700">REZERVASYONiLU</span>';
+    : '<span style="background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;font-size:10px;font-weight:700">REZERVELİ</span>';
 
   const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi', '':'—'};
   const satırlar = [
