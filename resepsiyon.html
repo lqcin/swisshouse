@@ -642,6 +642,15 @@ input[type="number"], input[type="date"], input[type="password"] {
         <option value="havale">Havale / EFT</option>
       </select>
     </div>
+    <div class="form-group">
+      <label>Ödeme Durumu</label>
+      <select id="coz_odeme_durum">
+        <option value="odendi">Ödendi</option>
+        <option value="kismi">Kısmi Ödeme</option>
+        <option value="odenmedi">Ödenmedi</option>
+        <option value="depozito">Depozito Alındı</option>
+      </select>
+    </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('checkoutOzetModal')">Vazgeç</button>
@@ -892,6 +901,22 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 </div>
 
+<!-- TAKVİM DETAY MINI MODAL -->
+<div class="modal-overlay" id="takvimDetayModal">
+  <div class="modal" style="max-width:380px">
+    <div id="td_header" style="background:var(--dark);color:#fff;padding:14px 18px;margin:-32px -36px 20px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700" id="td_baslik">—</div>
+      <div id="td_badge"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="td_grid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('takvimDetayModal')">Kapat</button>
+      <button class="btn btn-success" id="td_checkin_btn" style="display:none" onclick="closeModal('takvimDetayModal');openCheckin(window._tdOda)">Check-in</button>
+      <button class="btn btn-warning" id="td_checkout_btn" style="display:none" onclick="closeModal('takvimDetayModal');openCheckoutMenu(window._tdOda)">Check-out</button>
+    </div>
+  </div>
+</div>
+
 <!-- DURUM DEĞİŞTİR MODAL -->
 <div class="modal-overlay" id="durumModal">
   <div class="modal" style="max-width:360px">
@@ -964,6 +989,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="nav-tab" id="tab-takvim" onclick="showPage('takvim',this)">📅 Takvim</div>
     <div class="nav-tab" id="tab-rezervasyonlar" onclick="showPage('rezervasyonlar',this)">📋 Rezervasyonlar</div>
     <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">💳 Masraflar</div>
+    <div class="nav-tab" id="tab-rapor" onclick="showPage('rapor',this)">📊 Rapor</div>
   </div>
 </nav>
 
@@ -1183,6 +1209,75 @@ input[type="number"], input[type="date"], input[type="password"] {
       </table>
     </div>
     <div class="total-row" id="masrafToplam"></div>
+  </div>
+</div>
+
+<!-- RAPOR SAYFASI -->
+<div class="page" id="page-rapor">
+  <div class="section-head">
+    <h2>Aylık <em>Rapor</em></h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="rapor-ay" onchange="renderRapor()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border)">
+        <option value="">Bu Ay</option>
+      </select>
+      <button class="btn btn-ghost" onclick="renderRapor()">Yenile</button>
+    </div>
+  </div>
+
+  <!-- Özet kartlar -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="rapor-ozet-kartlar">
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--red);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Gelir</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--dark)" id="rapor-toplam-gelir">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--blue);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Doluluk Oranı</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--blue)" id="rapor-doluluk">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--green);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Check-in Sayısı</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--green)" id="rapor-checkin-say">—</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--gold);padding:16px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Komisyon</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold2)" id="rapor-komisyon">—</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <!-- Aylık doluluk tablosu -->
+    <div class="table-card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Oda Bazlı Doluluk</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Doluluk</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gelir</th>
+          </tr>
+        </thead>
+        <tbody id="rapor-doluluk-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Komisyon tablosu -->
+    <div class="table-card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Sözleşme</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyon</th>
+          </tr>
+        </thead>
+        <tbody id="rapor-komisyon-body"></tbody>
+      </table>
+      <div class="total-row" id="rapor-komisyon-toplam"></div>
+    </div>
   </div>
 </div>
 
@@ -1921,6 +2016,10 @@ window.saveCheckin = async function() {
   window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
+  // Komisyon farkı hesapla
+  const sozlesmeFiyatVal = document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null;
+  const komisyonFark = sozlesmeFiyatVal ? (sozlesmeFiyatVal - fiyat) * gece : 0;
+
   // Gelir kaydı
   if(toplam > 0) {
     await addDoc(collection(db,'gelirler'),{
@@ -1928,7 +2027,19 @@ window.saveCheckin = async function() {
       odemeTuru:odeme, misafir:ad, tc, kaynak,
       fiyatTip, fiyatTipAd:getTipAd(fiyatTip),
       girisSaati, yetiskin, cocuk,
+      sozlesmeFiyat: sozlesmeFiyatVal || null,
+      komisyonFark: komisyonFark || null,
       aciklama:`Oda ${no} · ${gece} gece · ${getTipAd(fiyatTip)} · ${kaynak}`,
+      kayitTarih:now
+    });
+  }
+
+  // Komisyon kaydı (ayrı takip için)
+  if(komisyonFark > 0) {
+    await addDoc(collection(db,'komisyonlar'),{
+      tarih:giris, odaNo:String(no), misafir:ad, tc, kaynak,
+      gece, gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
+      komisyonFark, toplamKomisyon:komisyonFark,
       kayitTarih:now
     });
   }
@@ -1970,6 +2081,13 @@ window.checkindenRezervasyon = function(rev) {
   document.getElementById('ci_not').value = rev.not || '';
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
   document.getElementById('musteriBulundu').style.display = 'none';
+
+  // Ödeme durumu ve sözleşme fiyatını rezervasyondan getir
+  const odDurumEl = document.getElementById('ci_odeme_durum');
+  if(odDurumEl) odDurumEl.value = rev.odemeDurum || 'odenmedi';
+  const sozFiyatEl = document.getElementById('ci_sozlesme_fiyat');
+  if(sozFiyatEl) sozFiyatEl.value = rev.sozlesmeFiyat || '';
+
   clearRefakatciler();
   const eski = document.getElementById('tc_uyari');
   if(eski) eski.remove();
@@ -2096,6 +2214,7 @@ window.saveCheckoutFromOzet = async function() {
   if(!o) return;
   const oz = window._OZ?.['oda'+no] || {};
   const odeme = document.getElementById('coz_odeme').value;
+  const odemeDurum = document.getElementById('coz_odeme_durum')?.value || 'odendi';
   // Erken çıkış: kullanıcının girdiği gece sayısını kullan
   const faturaGeceEl = document.getElementById('coz_fatura_gece');
   const gece = (faturaGeceEl && parseInt(faturaGeceEl.value) > 0)
@@ -2114,7 +2233,7 @@ window.saveCheckoutFromOzet = async function() {
     await updateDoc(doc(db,'odaMasraflari',m.id), {odemeDurumu:'checkout_odendi', checkoutTarih:now});
     await addDoc(collection(db,'gelirler'), {
       tarih: today(), tutar: Number(m.tutar),
-      odaNo: String(no), odemeTuru: odeme,
+      odaNo: String(no), odemeTuru: odeme, odemeDurum,
       misafir: o.misafir, tc: o.tc||'',
       kaynak: 'oda-masrafi',
       aciklama: `${odaAdi} · Masraf · ${m.aciklama}`,
@@ -2126,7 +2245,7 @@ window.saveCheckoutFromOzet = async function() {
   if(konaklama > 0) {
     await addDoc(collection(db,'gelirler'), {
       tarih: today(), tutar: konaklama,
-      odaNo: String(no), odemeTuru: odeme,
+      odaNo: String(no), odemeTuru: odeme, odemeDurum,
       misafir: o.misafir, tc: o.tc||'',
       kaynak: o.kaynak||'walk-in',
       fiyatTip: o.fiyatTip||1,
@@ -2550,6 +2669,9 @@ window.renderRezervasyonlar = function() {
   const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red'};
   const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal'};
 
+  const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi'};
+  const odDurumCls = {odendi:'badge-green', odenmedi:'badge-red', depozito:'badge-gold', kismi:'badge-orange'};
+
   document.getElementById('rezervBody').innerHTML = d.length ? d.map(r=>`
     <tr>
       <td>${r.giris||'—'}</td>
@@ -2560,7 +2682,10 @@ window.renderRezervasyonlar = function() {
       <td style="font-size:11px;color:var(--muted)">${r.tc||'—'}</td>
       <td style="font-size:11px">${(r.yetiskin||1)+(r.cocuk||0)} kişi</td>
       <td>${r.kaynak?`<span class="badge badge-blue">${r.kaynak}</span>`:'—'}</td>
-      <td class="amount-pos">${r.fiyat?fmt(r.fiyat)+'/gece':'—'}</td>
+      <td>
+        <div class="amount-pos" style="font-size:12px">${r.fiyat?fmt(r.fiyat)+'/gece':'—'}</div>
+        ${r.odemeDurum?`<span class="badge ${odDurumCls[r.odemeDurum]||'badge-gray'}" style="font-size:9px;margin-top:2px">${odDurumMap[r.odemeDurum]||r.odemeDurum}</span>`:''}
+      </td>
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
         ${r._durum==='bekliyor'||r._durum==='aktif'?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
@@ -2721,7 +2846,120 @@ window.showPage = function(id, tab) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
   tab.classList.add('active');
-  if(id === 'takvim') setTimeout(renderTakvim, 50);
+  if(id==='takvim') setTimeout(renderTakvim,50);
+  if(id==='rapor') { renderRapor(); fillRaporAy(); }
+};
+
+// ── RAPOR ──
+window._KOM = []; // komisyonlar cache
+onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
+  window._KOM = s.docs.map(d=>({id:d.id,...d.data()}));
+});
+
+function fillRaporAy() {
+  const sel = document.getElementById('rapor-ay');
+  if(!sel || sel.children.length > 1) return;
+  const aylar = [...new Set([
+    ...window._G.map(g=>g.tarih?.slice(0,7)),
+    ...(window._R||[]).map(r=>r.giris?.slice(0,7))
+  ].filter(Boolean))].sort().reverse();
+  aylar.forEach(ay => {
+    const o = document.createElement('option');
+    o.value = ay; o.textContent = ay;
+    sel.appendChild(o);
+  });
+}
+
+window.renderRapor = function() {
+  const secilenAy = document.getElementById('rapor-ay')?.value || thisMonth();
+  const ay = secilenAy || thisMonth();
+
+  // Ay içindeki rezervasyonlar
+  const ayRezervler = (window._R||[]).filter(r => {
+    if(r.durum==='iptal') return false;
+    return (r.giris||'').slice(0,7) === ay || (r.cikis||'').slice(0,7) === ay;
+  });
+
+  // Ay içindeki gelirler
+  const ayGelirler = (window._G||[]).filter(g => (g.tarih||'').startsWith(ay));
+  const toplamGelir = ayGelirler.reduce((a,b)=>a+Number(b.tutar||0), 0);
+
+  // Check-in sayısı (aktivite logdan değil, rezervasyon girişlerinden)
+  const checkinSay = ayRezervler.filter(r => (r.giris||'').slice(0,7) === ay).length;
+
+  // Komisyon
+  const ayKomisyon = (window._KOM||[]).filter(k => (k.tarih||'').startsWith(ay));
+  const toplamKomisyon = ayKomisyon.reduce((a,b)=>a+Number(b.toplamKomisyon||0), 0);
+
+  // Doluluk — ay kaç gün?
+  const [yil, mNo] = ay.split('-').map(Number);
+  const ayGunSayisi = new Date(yil, mNo, 0).getDate();
+  const toplamOdaGun = HOTEL_ODALAR.length * ayGunSayisi;
+
+  // Oda bazlı dolu gün sayısı
+  const odaDolu = {};
+  HOTEL_ODALAR.forEach(no => odaDolu[no] = 0);
+  ayRezervler.forEach(r => {
+    const g = geceSayisi(r.giris, r.cikis);
+    if(odaDolu[r.odaNo] !== undefined) odaDolu[r.odaNo] += g;
+  });
+  const toplamDoluGun = Object.values(odaDolu).reduce((a,b)=>a+b, 0);
+  const dolulukOrani = toplamOdaGun > 0 ? Math.round(toplamDoluGun / toplamOdaGun * 100) : 0;
+
+  // Özet kartlar
+  const fmt2 = n => Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:0}) + ' ₺';
+  document.getElementById('rapor-toplam-gelir').textContent = fmt2(toplamGelir);
+  document.getElementById('rapor-doluluk').textContent = dolulukOrani + '%';
+  document.getElementById('rapor-checkin-say').textContent = checkinSay;
+  document.getElementById('rapor-komisyon').textContent = toplamKomisyon > 0 ? fmt2(toplamKomisyon) : '—';
+
+  // Oda bazlı doluluk tablosu
+  const odaGelir = {};
+  ayGelirler.forEach(g => {
+    const k = String(g.odaNo);
+    odaGelir[k] = (odaGelir[k]||0) + Number(g.tutar||0);
+  });
+
+  document.getElementById('rapor-doluluk-body').innerHTML = HOTEL_ODALAR.map(no => {
+    const gece = odaDolu[no] || 0;
+    const oran = ayGunSayisi > 0 ? Math.round(gece / ayGunSayisi * 100) : 0;
+    const gelir = odaGelir[String(no)] || 0;
+    const oz = window._OZ?.['oda'+no] || {};
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">
+        <strong style="font-family:'Cormorant Garamond',serif">${no}</strong>
+        ${oz.ad ? `<span style="font-size:10px;color:var(--gold);display:block">${oz.ad}</span>` : ''}
+      </td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${gece}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+          <div style="width:60px;height:6px;background:var(--border);border-radius:3px">
+            <div style="width:${oran}%;height:100%;background:${oran>70?'var(--green)':oran>40?'var(--gold)':'var(--red)'};border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;font-weight:600">${oran}%</span>
+        </div>
+      </td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-weight:600">${gelir > 0 ? gelir.toLocaleString('tr-TR') + ' ₺' : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Komisyon tablosu
+  if(ayKomisyon.length === 0) {
+    document.getElementById('rapor-komisyon-body').innerHTML =
+      '<tr class="empty-row"><td colspan="5">Bu ay komisyon kaydı yok</td></tr>';
+    document.getElementById('rapor-komisyon-toplam').textContent = '';
+  } else {
+    document.getElementById('rapor-komisyon-body').innerHTML = ayKomisyon.map(k => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${k.odaNo}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.gercekFiyat?.toLocaleString('tr-TR')||'—'} ₺/gece</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.sozlesmeFiyat?.toLocaleString('tr-TR')||'—'} ₺/gece</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--gold2)">${fmt2(k.toplamKomisyon)}</td>
+      </tr>`).join('');
+    document.getElementById('rapor-komisyon-toplam').textContent =
+      `${ayKomisyon.length} kayıt · Toplam Komisyon: ${fmt2(toplamKomisyon)}`;
+  }
 };
 
 // Rezervasyon oda select
@@ -2803,13 +3041,23 @@ function renderTakvimAyHafta(grid, todayStr) {
       // Temizlik sadece bugün göster, gelecek günlerde boş göster
       const temizlik = oda.durum==='temizlik' && isToday;
 
-      let cls='t-bos', label='', tooltip='';
-      if(rev) { cls='t-rezerve'; label=rev.misafir||'Rezervasyon'; tooltip=`title="${(rev.misafir||'').replace(/"/g,"'")} · ${rev.giris}→${rev.cikis}"`; }
-      else if(fiiliDolu||bugunDolu) { cls='t-dolu'; label=oda.misafir||'Dolu'; }
+      let cls='t-bos', label='', tooltip='', onclick='';
+      if(rev) {
+        cls='t-rezerve';
+        label=rev.misafir||'Rezervasyon';
+        tooltip=`title="${(rev.misafir||'').replace(/"/g,"'")} · ${rev.giris}→${rev.cikis}"`;
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:rev.fiyat,kaynak:rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+      }
+      else if(fiiliDolu||bugunDolu) {
+        cls='t-dolu';
+        label=oda.misafir||'Dolu';
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:oda.misafir,giris:oda.giris,cikis:oda.cikis,odaNo:i,gece:geceSayisi(oda.giris,oda.cikis),fiyat:oda.fiyat,kaynak:oda.kaynak,odemeDurum:oda.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+      }
       else if(temizlik) { cls='t-temizlik'; label='Temizlik'; }
       else if(isToday) { cls='t-bugun'; }
 
-      html += `<td class="${cls}" ${tooltip}>`;
+      html += `<td class="${cls}" ${tooltip} ${onclick} style="${onclick?'cursor:pointer':''}">`;
+
       if(label) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
         const prevRev = prevG ? window._R.find(r=>Number(r.odaNo)===i&&(r.giris||'')<=prevG&&(r.cikis||'')>prevG&&r.durum!=='iptal') : null;
@@ -3149,33 +3397,68 @@ window.saveHarcama = async function() {
 function renderHatirlatma() {
   const todayStr = today();
   const gun1 = addDays(todayStr, 1);
+  const gun2 = addDays(todayStr, 2);
   const gun3 = addDays(todayStr, 3);
 
-  // 3 gün içinde gelen + bugün gelen, iptal/noshow olmayan, henüz check-in yapılmamış
+  // Bugün çıkışı olan dolu odalar
+  const bugunCikis = HOTEL_ODALAR.map(no => {
+    const oda = window._O?.['oda'+no];
+    if(!oda || oda.durum !== 'dolu') return null;
+    if(oda.cikis !== todayStr) return null;
+    return { _tip:'cikis', odaNo: no, misafir: oda.misafir, cikis: oda.cikis, giris: oda.giris, tel: oda.tel, id:'oda_'+no, aramaDurumu: oda.cikisArama||'' };
+  }).filter(Boolean);
+
+  // 3 gün içinde gelen, iptal/noshow/checkin yapılmamış
   const yaklaşan = (window._R || []).filter(r => {
     if(r.durum === 'iptal' || r.durum === 'noshow') return false;
-    if(r.giris < todayStr) return false; // geçmiş
-    // Bugün, 1 gün sonra veya 3 gün sonra
-    return r.giris === todayStr || r.giris === gun1 || r.giris === gun3;
-  });
+    if(r.giris < todayStr) return false;
+    const oda = window._O?.['oda' + r.odaNo];
+    if(oda?.durum === 'dolu' && oda?.giris === r.giris) return false;
+    return r.giris === todayStr || r.giris === gun1 || r.giris === gun2 || r.giris === gun3;
+  }).map(r => ({...r, _tip:'giris'}));
+
+  const tumListe = [...bugunCikis, ...yaklaşan];
 
   const banner = document.getElementById('hatirlatmaBanner');
-  if(!yaklaşan.length) { banner.style.display = 'none'; return; }
+  if(!tumListe.length) { banner.style.display = 'none'; return; }
   banner.style.display = 'block';
 
   const etiketler = {
     [todayStr]: {cls:'gun0', txt:'BUGÜN GİRİŞ'},
     [gun1]:     {cls:'gun1', txt:'YARIN GİRİŞ'},
+    [gun2]:     {cls:'gun1', txt:'2 GÜN SONRA'},
     [gun3]:     {cls:'gun3', txt:'3 GÜN SONRA'},
   };
 
-  document.getElementById('hatrListe').innerHTML = yaklaşan.map(r => {
-    const et = etiketler[r.giris] || {cls:'gun3', txt:r.giris};
+  document.getElementById('hatrListe').innerHTML = tumListe.map(r => {
     const oz = window._OZ?.['oda'+r.odaNo] || {};
     const odaLabel = oz.ad ? `Oda ${r.odaNo} — ${oz.ad}` : `Oda ${r.odaNo}`;
     const durumRenk = {arandi:'color:#4caf50', ulasilamadi:'color:var(--gold2)', '':'color:rgba(255,255,255,.3)'};
     const durumTxt  = {arandi:'✓ Arandı', ulasilamadi:'⚠ Ulaşılamadı', '':''};
     const mevcut = r.aramaDurumu || '';
+
+    // Çıkış uyarısı
+    if(r._tip === 'cikis') {
+      return `
+        <div class="hatr-item gun0" style="border-left:3px solid var(--gold2)">
+          <div class="hatr-info">
+            <span class="hatr-etiket gun0" style="background:var(--gold2);color:#1a1d23">⏰ BUGÜN ÇIKIŞ · 10:00</span>
+            <span class="hatr-oda">${odaLabel}</span>
+            <span class="hatr-misafir">${r.misafir||'—'}</span>
+            ${r.tel?`<span class="hatr-tel">📞 ${r.tel}</span>`:''}
+            <span class="hatr-tarih">${r.giris||'?'} → ${r.cikis} · Check-out bekleniyor</span>
+            ${mevcut?`<span class="hatr-durum" style="${durumRenk[mevcut]||''}">${durumTxt[mevcut]||''}</span>`:''}
+          </div>
+          <div class="hatr-actions">
+            <button class="hatr-btn arandi" onclick="cikisAramaDurum(${r.odaNo},'arandi')">✓ Arandı</button>
+            <button class="hatr-btn ulasilamadi" onclick="cikisAramaDurum(${r.odaNo},'ulasilamadi')">Ulaşılamadı</button>
+            <button class="btn btn-warning btn-sm" style="margin-left:4px" onclick="openCheckoutMenu(${r.odaNo})">Check-out →</button>
+          </div>
+        </div>`;
+    }
+
+    // Giriş uyarısı
+    const et = etiketler[r.giris] || {cls:'gun3', txt:r.giris};
     return `
       <div class="hatr-item ${et.cls}">
         <div class="hatr-info">
@@ -3195,10 +3478,55 @@ function renderHatirlatma() {
   }).join('');
 }
 
+window.takvimDetay = function(data) {
+  if(typeof data === 'string') { try { data = JSON.parse(data); } catch(e) { return; } }
+  window._tdOda = data.odaNo;
+
+  const isDolu = data.tip === 'dolu';
+  const hdr = document.getElementById('td_header');
+  hdr.style.background = isDolu ? 'var(--red)' : 'var(--blue)';
+
+  const oz = window._OZ?.['oda'+data.odaNo] || {};
+  document.getElementById('td_baslik').textContent = oz.ad ? `Oda ${data.odaNo} — ${oz.ad}` : `Oda ${data.odaNo}`;
+  document.getElementById('td_badge').innerHTML = isDolu
+    ? '<span style="background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;font-size:10px;font-weight:700">DOLU</span>'
+    : '<span style="background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;font-size:10px;font-weight:700">REZERVASYONiLU</span>';
+
+  const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi', '':'—'};
+  const satırlar = [
+    ['Misafir', data.misafir||'—'],
+    ['Giriş',   data.giris||'—'],
+    ['Çıkış',   data.cikis||'—'],
+    ['Gece',    (data.gece||'—') + (data.gece ? ' gece' : '')],
+    ['Gecelik', data.fiyat ? data.fiyat.toLocaleString('tr-TR') + ' ₺' : '—'],
+    ['Kaynak',  data.kaynak||'—'],
+    ['Ödeme',   odDurumMap[data.odemeDurum||''] || '—'],
+    ['Toplam',  (data.fiyat && data.gece) ? (data.fiyat * data.gece).toLocaleString('tr-TR') + ' ₺' : '—'],
+  ];
+
+  document.getElementById('td_grid').innerHTML = satırlar.map(([k,v]) => `
+    <div style="background:var(--parchment);border:1px solid var(--border);padding:8px 12px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px">${k}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--dark)">${v}</div>
+    </div>`).join('');
+
+  document.getElementById('td_checkin_btn').style.display  = isDolu ? 'none' : '';
+  document.getElementById('td_checkout_btn').style.display = isDolu ? '' : 'none';
+
+  openModal('takvimDetayModal');
+};
+
 window.hatirlatmaDurum = async function(id, durum) {
   await updateDoc(doc(db,'rezervasyonlar',id), {aramaDurumu: durum, aramaZamani: nowISO()});
   await logAktivite('hatirlatma', `Rezervasyon arama durumu: ${durum}`, '');
-  // Banner'ı güncelle (onSnapshot zaten tetikler)
+};
+
+window.cikisAramaDurum = async function(odaNo, durum) {
+  if(!window._O['oda'+odaNo]) return;
+  window._O['oda'+odaNo].cikisArama = durum;
+  await setDoc(doc(db,'meta','odalar'), window._O);
+  renderHatirlatma();
+  toast(`Oda ${odaNo} çıkış arama durumu: ${durum}`, 'success');
 };
 
 // ── MÜŞTERİ KARTI ──
