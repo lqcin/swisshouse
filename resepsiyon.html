@@ -153,16 +153,15 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .kat-baslik small{font-size:11px;color:var(--muted);}
 .kat-odalar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px;}
 .kat-odalar .room-card{border:1px solid var(--border);border-radius:3px;box-shadow:var(--shadow);padding:20px 18px;}
-.room-card{background:var(--white);border:1px solid var(--border);padding:18px 14px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow);}
-.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--border);}
-.room-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
-.room-card:active{transform:scale(.97);}
-.room-card.dolu{background:#fff8f7;}
+.room-card{background:var(--white);border:1px solid var(--border);padding:24px 18px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow);min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:var(--border);}
+.room-card.dolu{background:#ffeeed;border-color:rgba(200,16,46,.2);}
 .room-card.dolu::before{background:var(--red);}
+.room-card.bos{background:#edfbf2;border-color:rgba(22,163,74,.2);}
 .room-card.bos::before{background:var(--green);}
-.room-card.temizlik{background:#fdf8ee;}
+.room-card.temizlik{background:#fdf8ee;border-color:rgba(154,124,63,.2);}
 .room-card.temizlik::before{background:var(--gold2);}
-.room-card.rezerve{background:#f0f3fa;}
+.room-card.rezerve{background:#eef1fb;border-color:rgba(29,78,216,.2);}
 .room-card.rezerve::before{background:var(--blue);}
 .room-no{font-family:'Big Shoulders Display',sans-serif;font-size:32px;font-weight:600;color:var(--dark);margin-bottom:5px;letter-spacing:3px;}
 .room-status-text{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;}
