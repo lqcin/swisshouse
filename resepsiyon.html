@@ -1475,13 +1475,13 @@ window.renderOdalar = function() {
   // Önce stat say
   for(const i of HOTEL_ODALAR) {
     const o = window._O['oda'+i] || {durum:'bos'};
-    const aktifRev    = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
-    const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
+    const aktifRev = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
+    const bugunRev = window._R.find(r => Number(r.odaNo)===i && r.giris===todayStr && r.durum!=='iptal');
     let durum = o.durum;
     if(durum==='dolu') dolu++;
     else if(durum==='temizlik') temizlik++;
     else if(aktifRev) dolu++;
-    else if(bekleyenRev) rezerve++;
+    else if(bugunRev) rezerve++;
     else bos++;
   }
 
@@ -1504,20 +1504,22 @@ window.renderOdalar = function() {
       const o  = window._O['oda'+i] || {durum:'bos'};
       const oz = window._OZ?.['oda'+i] || {};
       const aktifRev    = window._R.find(r => Number(r.odaNo)===i && r.giris<=todayStr && r.cikis>todayStr && r.durum!=='iptal');
+      const bugunRev    = window._R.find(r => Number(r.odaNo)===i && r.giris===todayStr && r.durum!=='iptal');
       const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
 
       let durum = o.durum;
       if(durum!=='dolu' && durum!=='temizlik' && aktifRev) durum='dolu';
 
       const div = document.createElement('div');
-      div.className = `room-card ${durum}${bekleyenRev&&durum==='bos'?' rezerve':''}`;
+      // Sadece bugün girişi varsa "rezerve" rengi göster, gelecek rezervasyonlar görünmez
+      div.className = `room-card ${durum}${bugunRev&&durum==='bos'?' rezerve':''}`;
 
       let icerik = `<div class="room-no">${i}${oz.ad?`<span style="display:block;font-size:10px;color:var(--gold);font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.5px;margin-top:-2px">${oz.ad}</span>`:''}</div>`;
-      icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':bekleyenRev?'Rezerveli':'Boş'}</div>`;
+      icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':bugunRev?'Bugün Giriş':'Boş'}</div>`;
       if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
       if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
-      if(bekleyenRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bekleyenRev.misafir||'—'}</div><div class="room-info">${bekleyenRev.giris}</div>`;
+      if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Giriş bugün</div>`;
       icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
 
       div.innerHTML = icerik;
