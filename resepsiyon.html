@@ -899,6 +899,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-ghost" onclick="closeModal('odaDetayModal')">Kapat</button>
       <button class="btn btn-ghost" id="od_btn_durum" onclick="closeModal('odaDetayModal');setTimeout(()=>openDurumModal(window._curOdaDetay),100)">Durum Değiştir</button>
       <button class="btn btn-ghost" id="od_btn_rezerv" onclick="closeModal('odaDetayModal');openModal('rezervModal')">+ Rezervasyon</button>
+      <button class="btn btn-ghost" id="od_btn_sozlesme" style="display:none" onclick="sozlesmeOnaysiziGonder(window._curOdaDetay)">📄 Sözleşme Gönder</button>
       <button class="btn btn-ghost" id="od_btn_masraf" onclick="closeModal('odaDetayModal');openMasrafModal(window._curOdaDetay)">+ Masraf</button>
       <button class="btn btn-warning" id="od_btn_checkout" onclick="closeModal('odaDetayModal');openCheckoutMenu(window._curOdaDetay)">Check-out</button>
       <button class="btn btn-primary" id="od_btn_checkin" onclick="closeModal('odaDetayModal');openCheckin(window._curOdaDetay)">Check-in</button>
@@ -1596,38 +1597,69 @@ window.odaKliklandi = function(no) {
 
 window.openOdaDetay = function(no) {
   window._curOdaDetay = no;
-  const o   = window._O['oda'+no]  || {durum:'bos'};
+  const oda = window._O['oda'+no]  || {durum:'bos'};
   const oz  = window._OZ?.['oda'+no] || {};
   const td  = today();
+
+  // Aktif rezervasyon var mı?
+  const aktifRev = window._R.find(r =>
+    Number(r.odaNo)===Number(no) && r.giris<=td && r.cikis>td && r.durum!=='iptal'
+  );
+
+  // Efektif durum — Firebase dolu ise dolu, değilse gerçek durum
+  const d = oda.durum === 'dolu' ? 'dolu' : oda.durum;
+  const o = oda;
 
   // Başlık
   const baslik = 'Oda ' + no + (oz.ad ? ' — ' + oz.ad : '');
   document.getElementById('od_baslik').textContent = baslik;
 
   // Durum & renk
-  const renkMap = {bos:'var(--green)',temizlik:'var(--gold)',rezerve:'var(--blue)'};
-  const lblMap  = {bos:'🟢 Boş',temizlik:'🟡 Temizlik',rezerve:'🔵 Rezerveli'};
-  const d = o.durum;
+  const renkMap = {dolu:'var(--red)',bos:'var(--green)',temizlik:'var(--gold)',rezerve:'var(--blue)'};
+  const lblMap  = {dolu:'🔴 Dolu',bos:'🟢 Boş',temizlik:'🟡 Temizlik',rezerve:'🔵 Rezerveli'};
   document.getElementById('od_header').style.background = renkMap[d] || 'var(--dark)';
   document.getElementById('od_durum').innerHTML =
     `<span style="background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:1px">${lblMap[d]||d}</span>`;
 
   // Bilgi
   let bilgi = '';
-  if(d==='dolu' && oda.misafir) {
-    const gece = geceSayisi(oda.giris, oda.cikis);
+  if(d==='dolu') {
+    const misafir = o.misafir || '';
+    const giris   = o.giris   || '';
+    const cikis   = o.cikis   || '';
+    const fiyat   = o.fiyat   || 0;
+    const kaynak  = o.kaynak  || '';
+    const gece    = geceSayisi(giris, cikis);
     bilgi = `<div style="background:var(--parchment);border:1px solid var(--border);padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Misafir</div>
-        <div style="font-size:15px;font-weight:600;color:var(--dark)">${oda.misafir}</div>
-        ${oda.tc ? `<div style="font-size:11px;color:var(--muted)">TC: ${oda.tc}</div>` : ''}
-        ${oda.tel ? `<div style="font-size:11px;color:var(--muted)">📞 ${oda.tel}</div>` : ''}
+        <div style="font-size:15px;font-weight:600;color:var(--dark)">${misafir||'—'}</div>
+        ${o.tc ? `<div style="font-size:11px;color:var(--muted)">TC: ${o.tc}</div>` : ''}
+        ${o.tel ? `<div style="font-size:11px;color:var(--muted)">📞 ${o.tel}</div>` : ''}
       </div>
       <div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Konaklama</div>
-        <div style="font-size:13px;font-weight:600;color:var(--dark)">${oda.giris||'?'} → ${oda.cikis||'?'}</div>
-        <div style="font-size:11px;color:var(--muted)">${gece} gece · ${oda.fiyat ? oda.fiyat.toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
-        <div style="font-size:11px;color:var(--muted)">${oda.kaynak||'walk-in'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--dark)">${giris||'?'} → ${cikis||'?'}</div>
+        <div style="font-size:11px;color:var(--muted)">${gece} gece · ${fiyat ? fiyat.toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
+        <div style="font-size:11px;color:var(--muted)">${kaynak||'walk-in'}</div>
+      </div>
+    </div>`;
+  } else if(aktifRev) {
+    // Oda boş ama aktif rezervasyon var — check-in bekleniyor
+    const gece = geceSayisi(aktifRev.giris, aktifRev.cikis);
+    bilgi = `<div style="background:#eef6ff;border:1px solid rgba(29,78,216,.2);padding:14px 18px">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">⏳ Check-in Bekliyor</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Misafir</div>
+          <div style="font-size:14px;font-weight:600;color:var(--dark)">${aktifRev.misafir||'—'}</div>
+          ${aktifRev.tel ? `<div style="font-size:11px;color:var(--muted)">📞 ${aktifRev.tel}</div>` : ''}
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Rezervasyon</div>
+          <div style="font-size:13px;font-weight:600;color:var(--dark)">${aktifRev.giris} → ${aktifRev.cikis}</div>
+          <div style="font-size:11px;color:var(--muted)">${gece} gece · ${aktifRev.fiyat ? aktifRev.fiyat.toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
+        </div>
       </div>
     </div>`;
   } else if(d==='temizlik') {
@@ -1698,6 +1730,9 @@ window.openOdaDetay = function(no) {
   document.getElementById('od_btn_masraf').style.display   = isDolu ? '' : 'none';
   document.getElementById('od_btn_rezerv').style.display   = isDolu ? 'none' : '';
   document.getElementById('od_btn_durum').style.display    = '';
+  // Sözleşme butonu — aktif rezervasyon varsa (check-in öncesi) göster
+  const sozBtn = document.getElementById('od_btn_sozlesme');
+  if(sozBtn) sozBtn.style.display = (!isDolu && aktifRev) ? '' : 'none';
 
   openModal('odaDetayModal');
 };
@@ -3202,19 +3237,16 @@ window.printSozlesme = function(no) {
   const resNo  = `RES-${Date.now().toString().slice(-5)}`;
   const gecelikFiyat = o.sozlesmeFiyat || o.fiyat || 0;
   const toplamFiyat  = gecelikFiyat * gece;
-
-  const fmtTarih = (t) => {
-    if(!t) return '—';
-    const [y,m,d] = t.split('-');
-    return `${d}.${m}.${y}`;
-  };
-
-  const odemeDurumMap = {
-    odenmedi:'Ödenmedi', odendi:'Ödendi',
-    depozito:'Depozito Alındı', kismi:'Kısmi Ödeme'
-  };
+  const fmtTarih = (t) => { if(!t) return '—'; const [y,m,d]=t.split('-'); return `${d}.${m}.${y}`; };
+  const odemeDurumMap = {odenmedi:'Ödenmedi',odendi:'Ödendi',depozito:'Depozito Alındı',kismi:'Kısmi Ödeme'};
   const odemeDurum = odemeDurumMap[o.odemeDurum] || odemeDurumMap[o.odemeDurumu] || 'Ödenmedi';
+  const w = window.open('', '_blank');
+  if(!w) { toast('Popup engellendi','error'); return; }
+  w.document.write(sozlesmeHtmlOlustur(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih));
+  w.document.close();
+};
 
+window.sozlesmeHtmlOlustur = function(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih) {
   const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -3364,10 +3396,10 @@ function whatsapp(){
 \u003C/script\u003E
 </body></html>`;
 
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+  return html;
 };
+
+
 async function logAktivite(islem, detay, odaNo='') {
   try {
     await addDoc(collection(db,'aktiviteLog'), {
@@ -3549,6 +3581,50 @@ window.sozlesmeToplam = function(prefix) {
   } else {
     toplamEl.style.display = 'none';
   }
+};
+
+window.sozlesmeOnaysiziGonder = function(odaNo) {
+  const td = today();
+  const rev = window._R.find(r =>
+    Number(r.odaNo)===Number(odaNo) && r.giris<=td && r.cikis>td && r.durum!=='iptal'
+  );
+  if(!rev) { toast('Aktif rezervasyon bulunamadı','error'); return; }
+
+  const oz = window._OZ?.['oda'+odaNo] || {};
+  const odaAdi = oz.ad ? `Oda ${odaNo} — ${oz.ad}` : `Oda ${odaNo}`;
+  const gece = geceSayisi(rev.giris, rev.cikis);
+  const sozNo = `SW-${Date.now().toString().slice(-6)}`;
+  const resNo = `RES-${Date.now().toString().slice(-5)}`;
+  const gecelikFiyat = rev.sozlesmeFiyat || rev.fiyat || 0;
+  const toplamFiyat  = gecelikFiyat * gece;
+
+  const fmtTarih = (t) => {
+    if(!t) return '—';
+    const [y,m,d2] = t.split('-');
+    return `${d2}.${m}.${y}`;
+  };
+
+  const odemeDurumMap = {odenmedi:'Ödenmedi', odendi:'Ödendi', depozito:'Depozito Alındı', kismi:'Kısmi Ödeme'};
+  const odemeDurum = odemeDurumMap[rev.odemeDurum] || 'Ödenmedi';
+
+  // printSozlesme ile aynı şablonu kullan ama rev verisinden
+  const fakeO = {
+    misafir: rev.misafir, tc: rev.tc, tel: rev.tel,
+    giris: rev.giris, cikis: rev.cikis,
+    fiyat: rev.fiyat, sozlesmeFiyat: rev.sozlesmeFiyat,
+    kaynak: rev.kaynak, not: rev.not,
+    odemeDurum: rev.odemeDurum, odemeTuru: rev.odemeTuru,
+  };
+  window._O['_onay_oncesi_' + odaNo] = fakeO;
+  printSozlesmeFromData(fakeO, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih);
+};
+
+window.printSozlesmeFromData = function(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih) {
+  if(!fmtTarih) fmtTarih = (t) => { if(!t) return '—'; const [y,m,d2]=t.split('-'); return `${d2}.${m}.${y}`; };
+  const w = window.open('', '_blank');
+  if(!w) { toast('Popup engellendi, lütfen izin verin','error'); return; }
+  w.document.write(sozlesmeHtmlOlustur(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih));
+  w.document.close();
 };
 
 window.hatirlatmaDurum = async function(id, durum) {
