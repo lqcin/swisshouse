@@ -923,6 +923,26 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 </div>
 
+<!-- RAPOR PIN MODAL -->
+<div class="modal-overlay" id="raporPinModal">
+  <div class="modal" style="max-width:320px;text-align:center">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:6px">📊 Rapor</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;letter-spacing:.5px">Erişim kodu gereklidir</div>
+    <div class="form-group" style="text-align:left">
+      <label>PIN</label>
+      <input type="password" id="rapor_pin" maxlength="10" inputmode="numeric"
+        placeholder="••••"
+        style="font-size:22px;letter-spacing:6px;text-align:center"
+        onkeydown="if(event.key==='Enter')raporPinDogrula()">
+    </div>
+    <div id="rapor_pin_hata" style="color:var(--red);font-size:12px;margin-bottom:8px;display:none">Hatalı kod</div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('raporPinModal')">İptal</button>
+      <button class="btn btn-primary" onclick="raporPinDogrula()">Giriş</button>
+    </div>
+  </div>
+</div>
+
 <!-- DURUM DEĞİŞTİR MODAL -->
 <div class="modal-overlay" id="durumModal">
   <div class="modal" style="max-width:360px">
@@ -995,7 +1015,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="nav-tab" id="tab-takvim" onclick="showPage('takvim',this)">📅 Takvim</div>
     <div class="nav-tab" id="tab-rezervasyonlar" onclick="showPage('rezervasyonlar',this)">📋 Rezervasyonlar</div>
     <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">💳 Masraflar</div>
-    <div class="nav-tab" id="tab-rapor" onclick="showPage('rapor',this)">📊 Rapor</div>
+    <div class="nav-tab" id="tab-rapor" onclick="raporPinIste(this)">📊 Rapor</div>
   </div>
 </nav>
 
@@ -2900,6 +2920,36 @@ window.openModal = function(id) {
 };
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');}));
+
+const RAPOR_PIN_HASH = 'a8c42a5a10da46f05265436854dc4e59d412d694214bbe67d22c656e481d97bf';
+let _raporKilitli = true;
+let _raporTab = null;
+
+window.raporPinIste = function(tab) {
+  if(!_raporKilitli) { showPage('rapor', tab); return; }
+  _raporTab = tab;
+  document.getElementById('rapor_pin').value = '';
+  document.getElementById('rapor_pin_hata').style.display = 'none';
+  openModal('raporPinModal');
+  setTimeout(() => document.getElementById('rapor_pin').focus(), 150);
+};
+
+window.raporPinDogrula = async function() {
+  const pin = document.getElementById('rapor_pin').value.trim();
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hash === RAPOR_PIN_HASH) {
+    _raporKilitli = false;
+    closeModal('raporPinModal');
+    showPage('rapor', _raporTab);
+    // 30 dakika sonra tekrar kilitle
+    setTimeout(() => { _raporKilitli = true; }, 30 * 60 * 1000);
+  } else {
+    document.getElementById('rapor_pin_hata').style.display = 'block';
+    document.getElementById('rapor_pin').value = '';
+    document.getElementById('rapor_pin').focus();
+  }
+};
 
 window.showPage = function(id, tab) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
