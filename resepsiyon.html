@@ -1314,7 +1314,7 @@ onAuthStateChanged(auth, user => {
 });
 
 // Global veri
-window._O = {}; window._F = {}; window._R = []; window._M = [];
+window._O = {}; window._F = {}; window._R = []; window._M = []; window._G = [];
 window._OZ = {}; // Oda özellikleri
 let currentCheckinOda = null;
 let currentCheckoutOda = null;
@@ -1464,6 +1464,14 @@ onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => 
 onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), s => {
   window._M = s.docs.map(d=>({id:d.id,...d.data()}));
   renderMasraflar();
+});
+
+onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
+  window._G = s.docs.map(d=>({id:d.id,...d.data()}));
+});
+
+onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
+  window._KOM = s.docs.map(d=>({id:d.id,...d.data()}));
 });
 
 // ── RENDER ODALAR ──
@@ -2903,10 +2911,6 @@ window.showPage = function(id, tab) {
 };
 
 // ── RAPOR ──
-window._KOM = []; // komisyonlar cache
-onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
-  window._KOM = s.docs.map(d=>({id:d.id,...d.data()}));
-});
 
 function fillRaporAy() {
   const sel = document.getElementById('rapor-ay');
