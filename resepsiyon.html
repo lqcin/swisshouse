@@ -2926,6 +2926,11 @@ function fillRaporAy() {
   });
 }
 
+function thisMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
 window.renderRapor = function() {
   const secilenAy = document.getElementById('rapor-ay')?.value || thisMonth();
   const ay = secilenAy || thisMonth();
