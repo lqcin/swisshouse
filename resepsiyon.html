@@ -1752,13 +1752,25 @@ window.openOdaDetay = function(no) {
   document.getElementById('od_rezerv').innerHTML = rezHtml;
 
   // Butonlar — duruma göre göster/gizle
+  // Butonlar — duruma göre göster/gizle
   const isDolu = d === 'dolu';
   document.getElementById('od_btn_checkin').style.display  = isDolu ? 'none' : '';
   document.getElementById('od_btn_checkout').style.display = isDolu ? '' : 'none';
   document.getElementById('od_btn_masraf').style.display   = isDolu ? '' : 'none';
   document.getElementById('od_btn_rezerv').style.display   = isDolu ? 'none' : '';
   document.getElementById('od_btn_durum').style.display    = '';
-  // Sözleşme butonu — aktif rezervasyon varsa (check-in öncesi) göster
+
+  // Check-in butonu — aktif rezervasyon varsa oradan getir, yoksa boş form
+  const checkinBtn = document.getElementById('od_btn_checkin');
+  if(!isDolu) {
+    if(aktifRev) {
+      checkinBtn.onclick = () => { closeModal('odaDetayModal'); checkindenRezervasyon(aktifRev); };
+    } else {
+      checkinBtn.onclick = () => { closeModal('odaDetayModal'); openCheckin(window._curOdaDetay); };
+    }
+  }
+
+  // Sözleşme butonu — aktif rezervasyon varsa göster
   const sozBtn = document.getElementById('od_btn_sozlesme');
   if(sozBtn) sozBtn.style.display = (!isDolu && aktifRev) ? '' : 'none';
 
