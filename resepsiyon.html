@@ -2213,7 +2213,21 @@ window.checkindenRezervasyon = function(rev) {
   const sel = document.getElementById('ci_fiyat_tip');
   sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==(rev.fiyatTip||1)?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
 
-  hesaplaKonaklama();
+  // Rezervasyondaki fiyatı direkt yaz — sabit fiyatı değil elle girileni kullan
+  const fiyatEl = document.getElementById('ci_fiyat');
+  if(fiyatEl && rev.fiyat) {
+    fiyatEl.value = rev.fiyat;
+    fiyatEl.dataset.manuelDegisim = '1';
+  }
+
+  // Sözleşme fiyatı da varsa getir
+  const sozFiyatEl2 = document.getElementById('ci_sozlesme_fiyat');
+  if(sozFiyatEl2 && rev.sozlesmeFiyat) {
+    sozFiyatEl2.value = rev.sozlesmeFiyat;
+    sozlesmeToplam('ci');
+  }
+
+  ciFiyatGuncelle();
   kisilerGuncelle();
   openModal('checkinModal');
 };
