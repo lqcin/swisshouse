@@ -483,13 +483,12 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
 
     <div class="form-group"><label>Fiyat Tipi</label>
-      <select id="ci_fiyat_tip" onchange="fiyatTipGuncelle()"></select>
+      <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()"></select>
     </div>
-    <div class="info-box" id="ci_fiyat_info">
-      <div class="ib-label">Gecelik Ücret</div>
-      <div class="ib-val" id="ci_fiyat_val">—</div>
-      <div class="ib-sub" id="ci_fiyat_toplam_sub"></div>
-      <input type="hidden" id="ci_fiyat">
+    <div class="form-group">
+      <label>Gecelik Ücret <span style="font-size:10px;color:var(--muted);font-weight:400">(fiyat tipinden otomatik gelir, değiştirilebilir)</span></label>
+      <input type="number" id="ci_fiyat" min="0" placeholder="Gecelik fiyat..." oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()">
+      <div id="ci_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
     </div>
     <div class="form-group">
       <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
@@ -835,14 +834,13 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="form-group"><label>Çocuk</label><input type="number" id="rev_cocuk" min="0" value="0"></div>
     </div>
     <div class="form-group"><label>Fiyat Tipi</label>
-      <select id="rev_fiyat_tip" onchange="revFiyatGuncelle()"></select>
+      <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
     </div>
-    <div class="info-box" id="rev_fiyat_info" style="display:none">
-      <div class="ib-label">Gecelik Ücret</div>
-      <div class="ib-val" id="rev_fiyat_val">—</div>
-      <div class="ib-sub" id="rev_fiyat_toplam_sub"></div>
+    <div class="form-group">
+      <label>Gecelik Ücret <span style="font-size:10px;color:var(--muted);font-weight:400">(fiyat tipinden otomatik gelir, değiştirilebilir)</span></label>
+      <input type="number" id="rev_fiyat" min="0" placeholder="Gecelik fiyat..." oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
+      <div id="rev_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
     </div>
-    <input type="hidden" id="rev_fiyat">
     <div class="form-group">
       <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
       <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik fiyat..." oninput="sozlesmeToplam('rev')">
@@ -1295,9 +1293,11 @@ input[type="number"], input[type="date"], input[type="password"] {
           <tr>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Sözleşme</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyon</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
           </tr>
         </thead>
         <tbody id="rapor-komisyon-body"></tbody>
@@ -1937,6 +1937,9 @@ window.openCheckin = function(no) {
   document.getElementById('ci_odeme').value = 'nakit';
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
   document.getElementById('musteriBulundu').style.display = 'none';
+  // Manuel fiyat flag'ini sıfırla
+  const cifEl = document.getElementById('ci_fiyat');
+  if(cifEl) { cifEl.value=''; cifEl.dataset.manuelDegisim=''; }
 
   // Fiyat tipi doldur
   const sel = document.getElementById('ci_fiyat_tip');
@@ -1982,17 +1985,22 @@ window.fiyatTipGuncelle = function() {
   const tip   = Number(document.getElementById('ci_fiyat_tip')?.value)||1;
   const gece  = parseInt(document.getElementById('ci_gece')?.value)||1;
   const fiyat = getOdaFiyat(no, tip);
-  const toplam = fiyat * gece;
-  document.getElementById('ci_fiyat').value = fiyat;
-  const valEl = document.getElementById('ci_fiyat_val');
-  if(fiyat === 0) {
-    valEl.innerHTML = `<span style="color:var(--red);font-weight:600">⚠ Fiyat girilmemiş — Fiyatlandırma sekmesinden ayarlayın</span>`;
-  } else {
-    valEl.textContent = fiyat.toLocaleString('tr-TR') + ' ₺';
+  const fiyatEl = document.getElementById('ci_fiyat');
+  // Sadece kullanıcı değiştirmediyse otomatik doldur
+  if(!fiyatEl.dataset.manuelDegisim) {
+    fiyatEl.value = fiyat || '';
   }
-  document.getElementById('ci_fiyat_toplam_sub').textContent = fiyat > 0
-    ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)}`
-    : '';
+  ciFiyatGuncelle();
+};
+
+window.ciFiyatGuncelle = function() {
+  const gece  = parseInt(document.getElementById('ci_gece')?.value)||1;
+  const fiyat = Number(document.getElementById('ci_fiyat')?.value)||0;
+  const toplam = fiyat * gece;
+  const subEl = document.getElementById('ci_fiyat_toplam_sub');
+  if(subEl) {
+    subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)} ₺` : '';
+  }
 };
 
 // TC doğrulama (Türkiye Cumhuriyeti kimlik algoritması)
@@ -2097,13 +2105,14 @@ window.saveCheckin = async function() {
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   const sozlesmeFiyatVal = window._O['oda'+no]?.sozlesmeFiyat || null;
-  const komisyonFark = sozlesmeFiyatVal ? (sozlesmeFiyatVal - fiyat) * gece : 0;
+  const komisyonFark = (sozlesmeFiyatVal && sozlesmeFiyatVal > fiyat) ? (sozlesmeFiyatVal - fiyat) * gece : 0;
 
   // Gelir kaydı
   if(toplam > 0) {
     await addDoc(collection(db,'gelirler'),{
       tarih:giris, tutar:toplam, odaNo:String(no),
-      odemeTuru:odeme, misafir:ad, tc, kaynak,
+      odemeTuru:odeme, odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',
+      misafir:ad, tc, kaynak,
       fiyatTip, fiyatTipAd:getTipAd(fiyatTip),
       girisSaati, yetiskin, cocuk,
       sozlesmeFiyat: sozlesmeFiyatVal || null,
@@ -2113,13 +2122,27 @@ window.saveCheckin = async function() {
     });
   }
 
-  // Komisyon kaydı (ayrı takip için)
+  // Komisyon kaydı
   if(komisyonFark > 0) {
     await addDoc(collection(db,'komisyonlar'),{
       tarih:giris, odaNo:String(no), misafir:ad, tc, kaynak,
       gece, gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
       komisyonFark, toplamKomisyon:komisyonFark,
       kayitTarih:now
+    });
+  }
+
+  // Aktif rezervasyonu güncelle — durum:aktif, fiyat ve sozlesmeFiyat koru
+  const aktifRevDoc = window._R.find(r =>
+    Number(r.odaNo)===Number(no) && r.giris<=giris && r.cikis>giris && r.durum!=='iptal'
+  );
+  if(aktifRevDoc?.id) {
+    await updateDoc(doc(db,'rezervasyonlar', aktifRevDoc.id), {
+      durum: 'aktif',
+      fiyat: fiyat,
+      sozlesmeFiyat: sozlesmeFiyatVal || aktifRevDoc.sozlesmeFiyat || null,
+      odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
+      odemeTuru: odeme,
     });
   }
 
@@ -2648,14 +2671,15 @@ window.revFiyatGuncelle = function() {
   const odaNo = document.getElementById('rev_oda').value;
   const tip   = Number(document.getElementById('rev_fiyat_tip').value)||1;
   const gece  = parseInt(document.getElementById('rev_gece').value)||1;
-  const fiyat = getOdaFiyat(odaNo, tip);
-  document.getElementById('rev_fiyat').value = fiyat;
-  const infoEl = document.getElementById('rev_fiyat_info');
-  if(odaNo && fiyat>0) {
-    infoEl.style.display='block';
-    document.getElementById('rev_fiyat_val').textContent = fiyat.toLocaleString('tr-TR')+' ₺';
-    document.getElementById('rev_fiyat_toplam_sub').textContent = `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(gece*fiyat)}`;
-  } else infoEl.style.display='none';
+  const fiyatEl = document.getElementById('rev_fiyat');
+  // Manuel değişim yoksa otomatik doldur
+  if(!fiyatEl.dataset.manuelDegisim) {
+    const fiyat = getOdaFiyat(odaNo, tip);
+    fiyatEl.value = fiyat || '';
+  }
+  const fiyat = Number(fiyatEl.value)||0;
+  const subEl = document.getElementById('rev_fiyat_toplam_sub');
+  if(subEl) subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(gece*fiyat)} ₺` : '';
 };
 
 window.revCarpısmaKontrol = function() {
@@ -3060,14 +3084,20 @@ window.renderRapor = function() {
       '<tr class="empty-row"><td colspan="5">Bu ay komisyon kaydı yok</td></tr>';
     document.getElementById('rapor-komisyon-toplam').textContent = '';
   } else {
-    document.getElementById('rapor-komisyon-body').innerHTML = ayKomisyon.map(k => `
-      <tr>
+    document.getElementById('rapor-komisyon-body').innerHTML = ayKomisyon.map(k => {
+      const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi', '':'—'};
+      const odDurumCls = {odendi:'color:var(--green)', odenmedi:'color:var(--red)', depozito:'color:var(--gold2)', kismi:'color:var(--orange)'};
+      const odDurum = k.odemeDurum || '';
+      return `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${k.odaNo}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.gercekFiyat?.toLocaleString('tr-TR')||'—'} ₺/gece</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.sozlesmeFiyat?.toLocaleString('tr-TR')||'—'} ₺/gece</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${k.gece||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.gercekFiyat?.toLocaleString('tr-TR')||'—'} ₺</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.sozlesmeFiyat?.toLocaleString('tr-TR')||'—'} ₺</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--gold2)">${fmt2(k.toplamKomisyon)}</td>
-      </tr>`).join('');
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;${odDurumCls[odDurum]||''}">${odDurumMap[odDurum]||'—'}</td>
+      </tr>`;
+    }).join('');
     document.getElementById('rapor-komisyon-toplam').textContent =
       `${ayKomisyon.length} kayıt · Toplam Komisyon: ${fmt2(toplamKomisyon)}`;
   }
