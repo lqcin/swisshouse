@@ -728,6 +728,83 @@ input[type="number"], input[type="date"], input[type="password"] {
 </div>
 
 <!-- NO-SHOW MODAL -->
+<!-- REZERVASYON DÜZENLE MODAL -->
+<div class="modal-overlay" id="revDuzenleModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">Rezervasyon Düzenle</div>
+    <input type="hidden" id="rd_id">
+    <div class="form-row">
+      <div class="form-group"><label>Giriş Tarihi *</label>
+        <input type="date" id="rd_giris" onchange="rdGunGuncelle()">
+      </div>
+      <div class="form-group"><label>Kaç Gece *</label>
+        <input type="number" id="rd_gece" min="1" value="1" oninput="rdGunGuncelle()">
+      </div>
+    </div>
+    <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label>
+      <div class="info-box" style="padding:10px 14px" id="rd_cikis_lbl">—</div>
+      <input type="hidden" id="rd_cikis">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fiyat Tipi</label>
+        <select id="rd_fiyat_tip" onchange="rdFiyatGuncelle()"></select>
+      </div>
+      <div class="form-group"><label>Gecelik Ücret</label>
+        <input type="number" id="rd_fiyat" min="0" oninput="rdFiyatGuncelle()">
+      </div>
+    </div>
+    <div id="rd_fiyat_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-bottom:12px"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Ödeme Durumu</label>
+        <select id="rd_odeme_durum">
+          <option value="odenmedi">Ödenmedi</option>
+          <option value="odendi">Ödendi</option>
+          <option value="depozito">Depozito Alındı</option>
+          <option value="kismi">Kısmi Ödeme</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ödeme Türü</label>
+        <select id="rd_odeme_tip">
+          <option value="nakit">Nakit</option>
+          <option value="kart">Kredi Kartı</option>
+          <option value="havale">Havale / EFT</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Not</label>
+      <input type="text" id="rd_not" placeholder="Özel istek...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('revDuzenleModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="revDuzenleKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- SÜRE DEĞİŞTİR MODAL -->
+<div class="modal-overlay" id="sureDegistirModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title" id="sure_baslik">Konaklama Süresini Değiştir</div>
+    <input type="hidden" id="sure_oda_no">
+    <div class="form-group"><label>Mevcut Çıkış Tarihi</label>
+      <div class="info-box" style="padding:10px 14px" id="sure_mevcut_cikis">—</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Yeni Çıkış Tarihi *</label>
+        <input type="date" id="sure_yeni_cikis" onchange="sureHesapla()">
+      </div>
+      <div class="form-group"><label>Toplam Gece</label>
+        <div class="info-box" style="padding:10px 14px" id="sure_gece_lbl">—</div>
+      </div>
+    </div>
+    <div id="sure_fark_lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('sureDegistirModal')">Vazgeç</button>
+      <button class="btn btn-primary" onclick="sureDegistirKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="noShowModal">
   <div class="modal" style="max-width:420px">
     <div class="modal-title">No-Show İşlemi</div>
@@ -898,6 +975,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-ghost" id="od_btn_durum" onclick="closeModal('odaDetayModal');setTimeout(()=>openDurumModal(window._curOdaDetay),100)">Durum Değiştir</button>
       <button class="btn btn-ghost" id="od_btn_rezerv" onclick="closeModal('odaDetayModal');openModal('rezervModal')">+ Rezervasyon</button>
       <button class="btn btn-ghost" id="od_btn_sozlesme" style="display:none" onclick="sozlesmeOnaysiziGonder(window._curOdaDetay)">📄 Sözleşme Gönder</button>
+      <button class="btn btn-ghost" id="od_btn_sure" style="display:none" onclick="closeModal('odaDetayModal');sureDegistirAc(window._curOdaDetay)">📅 Süre Değiştir</button>
       <button class="btn btn-ghost" id="od_btn_masraf" onclick="closeModal('odaDetayModal');openMasrafModal(window._curOdaDetay)">+ Masraf</button>
       <button class="btn btn-warning" id="od_btn_checkout" onclick="closeModal('odaDetayModal');openCheckoutMenu(window._curOdaDetay)">Check-out</button>
       <button class="btn btn-primary" id="od_btn_checkin" onclick="closeModal('odaDetayModal');openCheckin(window._curOdaDetay)">Check-in</button>
@@ -1757,6 +1835,7 @@ window.openOdaDetay = function(no) {
   document.getElementById('od_btn_checkin').style.display  = isDolu ? 'none' : '';
   document.getElementById('od_btn_checkout').style.display = isDolu ? '' : 'none';
   document.getElementById('od_btn_masraf').style.display   = isDolu ? '' : 'none';
+  document.getElementById('od_btn_sure').style.display     = isDolu ? '' : 'none';
   document.getElementById('od_btn_rezerv').style.display   = isDolu ? 'none' : '';
   document.getElementById('od_btn_durum').style.display    = '';
 
@@ -2819,6 +2898,7 @@ window.renderRezervasyonlar = function() {
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
         ${r._durum==='bekliyor'||r._durum==='aktif'?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
+        ${r._durum==='bekliyor'||r._durum==='aktif'?`<button class="btn btn-ghost btn-sm" onclick="revDuzenleAc(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">✏ Düzenle</button>`:''}
         ${r._durum==='bekliyor'?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
         ${r._durum!=='iptal'&&r._durum!=='tamamlandi'?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
       </td>
@@ -3740,6 +3820,124 @@ window.printSozlesmeFromData = function(o, odaAdi, gece, sozNo, resNo, gecelikFi
   if(!w) { toast('Popup engellendi, lütfen izin verin','error'); return; }
   w.document.write(sozlesmeHtmlOlustur(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih));
   w.document.close();
+};
+
+// ── REZERVASYON DÜZENLE ──
+window.revDuzenleAc = function(rev) {
+  document.getElementById('rd_id').value = rev.id;
+  document.getElementById('rd_giris').value = rev.giris || today();
+  document.getElementById('rd_gece').value = rev.gece || geceSayisi(rev.giris, rev.cikis) || 1;
+  document.getElementById('rd_cikis').value = rev.cikis || '';
+  document.getElementById('rd_not').value = rev.not || '';
+  document.getElementById('rd_odeme_durum').value = rev.odemeDurum || 'odenmedi';
+  document.getElementById('rd_odeme_tip').value = rev.odemeTuru || 'nakit';
+
+  const sel = document.getElementById('rd_fiyat_tip');
+  sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==(rev.fiyatTip||1)?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  document.getElementById('rd_fiyat').value = rev.fiyat || '';
+
+  rdGunGuncelle();
+  rdFiyatGuncelle();
+  openModal('revDuzenleModal');
+};
+
+window.rdGunGuncelle = function() {
+  const giris = document.getElementById('rd_giris').value;
+  const gece  = parseInt(document.getElementById('rd_gece').value)||1;
+  if(!giris) return;
+  const cikis = addDays(giris, gece);
+  document.getElementById('rd_cikis').value = cikis;
+  const [y,m,d] = cikis.split('-');
+  document.getElementById('rd_cikis_lbl').textContent = `${d}.${m}.${y} (${gece} gece)`;
+  rdFiyatGuncelle();
+};
+
+window.rdFiyatGuncelle = function() {
+  const gece  = parseInt(document.getElementById('rd_gece').value)||1;
+  const fiyat = Number(document.getElementById('rd_fiyat').value)||0;
+  document.getElementById('rd_fiyat_toplam').textContent =
+    fiyat > 0 ? `${fiyat.toLocaleString('tr-TR')} ₺ × ${gece} gece = ${fmt(fiyat*gece)} ₺` : '';
+};
+
+window.revDuzenleKaydet = async function() {
+  const id     = document.getElementById('rd_id').value;
+  const giris  = document.getElementById('rd_giris').value;
+  const cikis  = document.getElementById('rd_cikis').value;
+  const gece   = parseInt(document.getElementById('rd_gece').value)||1;
+  const fiyat  = Number(document.getElementById('rd_fiyat').value)||0;
+  const fiyatTip = Number(document.getElementById('rd_fiyat_tip').value)||1;
+  const odemeDurum = document.getElementById('rd_odeme_durum').value;
+  const odemeTuru  = document.getElementById('rd_odeme_tip').value;
+  const not_  = document.getElementById('rd_not').value;
+
+  if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
+  if(!fiyat) { toast('Fiyat zorunlu','error'); return; }
+
+  await updateDoc(doc(db,'rezervasyonlar',id), {
+    giris, cikis, gece, fiyat, fiyatTip,
+    fiyatTipAd: getTipAd(fiyatTip),
+    odemeDurum, odemeTuru, not:not_,
+    guncelleme: nowISO()
+  });
+
+  closeModal('revDuzenleModal');
+  toast('Rezervasyon güncellendi ✓','success');
+  await logAktivite('rezervasyon_duzenle', `${giris}→${cikis} · ${gece} gece · ${fmt(fiyat)} ₺`, '');
+};
+
+// ── SÜRE DEĞİŞTİR ──
+window.sureDegistirAc = function(odaNo) {
+  const o = window._O['oda'+odaNo];
+  if(!o||o.durum!=='dolu') { toast('Oda dolu değil','error'); return; }
+  document.getElementById('sure_oda_no').value = odaNo;
+  document.getElementById('sure_baslik').textContent = `Oda ${odaNo} — Konaklama Süresini Değiştir`;
+  const [y,m,d] = (o.cikis||'').split('-');
+  document.getElementById('sure_mevcut_cikis').textContent = o.cikis ? `${d}.${m}.${y}` : '—';
+  document.getElementById('sure_yeni_cikis').value = o.cikis || '';
+  document.getElementById('sure_yeni_cikis').min = addDays(o.giris||today(), 1);
+  sureHesapla();
+  openModal('sureDegistirModal');
+};
+
+window.sureHesapla = function() {
+  const odaNo = document.getElementById('sure_oda_no').value;
+  const o = window._O['oda'+odaNo];
+  const yeniCikis = document.getElementById('sure_yeni_cikis').value;
+  if(!yeniCikis||!o?.giris) return;
+  const gece = geceSayisi(o.giris, yeniCikis);
+  const eskiGece = geceSayisi(o.giris, o.cikis);
+  const fark = gece - eskiGece;
+  document.getElementById('sure_gece_lbl').textContent = gece + ' gece';
+  const farkEl = document.getElementById('sure_fark_lbl');
+  if(fark > 0) farkEl.textContent = `+${fark} gece uzatılıyor · +${fmt((o.fiyat||0)*fark)} ₺ ek ücret`;
+  else if(fark < 0) farkEl.textContent = `${fark} gece kısaltılıyor`;
+  else farkEl.textContent = 'Değişiklik yok';
+};
+
+window.sureDegistirKaydet = async function() {
+  const odaNo = document.getElementById('sure_oda_no').value;
+  const yeniCikis = document.getElementById('sure_yeni_cikis').value;
+  const o = window._O['oda'+odaNo];
+  if(!yeniCikis||!o) return;
+
+  const eskiCikis = o.cikis;
+  const yeniGece = geceSayisi(o.giris, yeniCikis);
+
+  // _O güncelle
+  window._O['oda'+odaNo].cikis = yeniCikis;
+  await setDoc(doc(db,'meta','odalar'), window._O);
+
+  // Aktif rezervasyonu da güncelle
+  const rev = window._R.find(r => Number(r.odaNo)===Number(odaNo) && r.giris===o.giris && r.durum!=='iptal');
+  if(rev?.id) {
+    await updateDoc(doc(db,'rezervasyonlar',rev.id), {
+      cikis: yeniCikis, gece: yeniGece, guncelleme: nowISO()
+    });
+  }
+
+  closeModal('sureDegistirModal');
+  toast(`Oda ${odaNo} — Çıkış tarihi ${yeniCikis} olarak güncellendi ✓`, 'success');
+  await logAktivite('sure_degisim', `${eskiCikis} → ${yeniCikis}`, odaNo);
 };
 
 window.hatirlatmaDurum = async function(id, durum) {
