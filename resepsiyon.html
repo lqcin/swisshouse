@@ -2341,6 +2341,9 @@ window.checkindenRezervasyon = function(rev) {
 
   const gece = geceSayisi(rev.giris, rev.cikis);
   document.getElementById('ci_gece').value = gece;
+  // Çıkış tarihini rezervasyondan direkt yaz
+  document.getElementById('ci_cikis').value = rev.cikis || addDays(rev.giris || today(), gece);
+  document.getElementById('ci_cikis_goster').value = (rev.cikis || '') + ` (${gece} gece)`;
 
   const sel = document.getElementById('ci_fiyat_tip');
   sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==(rev.fiyatTip||1)?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
@@ -3705,18 +3708,20 @@ window.renderHatirlatma = function renderHatirlatma() {
   const gun2 = addDays(todayStr, 2);
   const gun3 = addDays(todayStr, 3);
 
-  // Bugün çıkışı olan dolu odalar
+  // Bugün çıkışı olan dolu odalar — "arandı" işaretlenenler gizlenir
   const bugunCikis = HOTEL_ODALAR.map(no => {
     const oda = window._O?.['oda'+no];
     if(!oda || oda.durum !== 'dolu') return null;
     if(oda.cikis !== todayStr) return null;
+    if(oda.cikisArama === 'arandi') return null; // arandıysa listeden düş
     return { _tip:'cikis', odaNo: no, misafir: oda.misafir, cikis: oda.cikis, giris: oda.giris, tel: oda.tel, id:'oda_'+no, aramaDurumu: oda.cikisArama||'' };
   }).filter(Boolean);
 
-  // 3 gün içinde gelen, iptal/noshow/checkin yapılmamış
+  // 3 gün içinde gelen, iptal/noshow/checkin yapılmamış — "arandı" işaretlenenler gizlenir
   const yaklaşan = (window._R || []).filter(r => {
     if(r.durum === 'iptal' || r.durum === 'noshow') return false;
     if(r.giris < todayStr) return false;
+    if(r.aramaDurumu === 'arandi') return false; // arandıysa listeden düş
     const oda = window._O?.['oda' + r.odaNo];
     if(oda?.durum === 'dolu' && oda?.giris === r.giris) return false;
     return r.giris === todayStr || r.giris === gun1 || r.giris === gun2 || r.giris === gun3;
@@ -3777,7 +3782,6 @@ window.renderHatirlatma = function renderHatirlatma() {
         <div class="hatr-actions">
           <button class="hatr-btn arandi" onclick="hatirlatmaDurum('${r.id}','arandi')">✓ Arandı</button>
           <button class="hatr-btn ulasilamadi" onclick="hatirlatmaDurum('${r.id}','ulasilamadi')">Ulaşılamadı</button>
-          <button class="hatr-btn aranmadi" onclick="hatirlatmaDurum('${r.id}','aranmadi')">Aranmadı</button>
         </div>
       </div>`;
   }).join('');
