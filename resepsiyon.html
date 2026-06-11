@@ -1969,6 +1969,32 @@ window.vardiyaKapat = async function() {
 };
 
 // ── SÖZLEŞME & CHECK-IN ──
+// ── ÇAKIŞMA KONTROLÜ (merkezi) ──
+// Bir oda için verilen tarih aralığında çakışan rezervasyon veya konaklama var mı?
+// excludeRevId: kendisinden check-in yapılan rezervasyonu hariç tut
+window.odaCakismaKontrol = function(odaNo, giris, cikis, excludeRevId = null) {
+  // 1) Çakışan rezervasyon var mı?
+  const carpisanRev = (window._R||[]).find(r =>
+    Number(r.odaNo) === Number(odaNo) &&
+    r.durum !== 'iptal' && r.durum !== 'noshow' && r.durum !== 'tamamlandi' &&
+    r.id !== excludeRevId &&
+    (r.giris||'') < cikis && (r.cikis||'') > giris
+  );
+  if(carpisanRev) {
+    return { cakisma: true, tip: 'rezervasyon', detay: `${carpisanRev.misafir||'?'} · ${carpisanRev.giris} → ${carpisanRev.cikis}` };
+  }
+
+  // 2) Oda şu an dolu mu ve konaklama tarihleri çakışıyor mu?
+  const oda = window._O['oda'+odaNo];
+  if(oda?.durum === 'dolu' && oda.giris && oda.cikis) {
+    if(oda.giris < cikis && oda.cikis > giris) {
+      return { cakisma: true, tip: 'konaklama', detay: `${oda.misafir||'?'} · ${oda.giris} → ${oda.cikis}` };
+    }
+  }
+
+  return { cakisma: false };
+};
+
 window.checkinSozlesmeOnayla = function() {
   const no    = currentCheckinOda;
   const ad    = document.getElementById('ci_ad').value.trim();
@@ -1982,6 +2008,14 @@ window.checkinSozlesmeOnayla = function() {
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden devam edilemez','error'); return; }
+
+  // ÇAKIŞMA KONTROLÜ — kendisinden check-in yapılan rezervasyon hariç
+  const kendiRevId = window._ciKaynakRevId || null;
+  const kontrol = odaCakismaKontrol(no, giris, cikis, kendiRevId);
+  if(kontrol.cakisma) {
+    toast(`⚠ Oda ${no} bu tarihlerde dolu! (${kontrol.tip === 'rezervasyon' ? 'Rezervasyon' : 'Konaklama'}: ${kontrol.detay})`, 'error');
+    return;
+  }
 
   // Check-in verisini geçici olarak _O'ya yaz, sözleşme oradan okusun
   const now = nowISO();
@@ -2016,6 +2050,7 @@ window.checkinSozlesmeOnayla = function() {
 // ── CHECK-IN ──
 window.openCheckin = function(no) {
   currentCheckinOda = no;
+  window._ciKaynakRevId = null; // boş check-in, rezervasyondan gelmiyor
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
   // Temizle
   ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2187,6 +2222,23 @@ window.saveCheckin = async function() {
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz — lütfen kontrol edin','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden check-in yapılamaz — Fiyat Tipi seçin veya fiyatı kontrol edin','error'); return; }
 
+  // ÇAKIŞMA KONTROLÜ — son güvenlik: kaydetmeden önce tekrar bak
+  // (checkinSozlesmeOnayla'nın geçici _O kaydı kendisiyle çakışmasın diye geçici çıkar)
+  {
+    const tempOda = window._O['oda'+no];
+    const kendiGecici = tempOda?.durum === 'dolu' && tempOda?.misafir === ad && tempOda?.giris === giris;
+    if(kendiGecici) window._O['oda'+no] = {durum:'bos'};
+
+    const kontrol = odaCakismaKontrol(no, giris, cikis, window._ciKaynakRevId || null);
+
+    if(kontrol.cakisma) {
+      toast(`⚠ Oda ${no} bu tarihlerde dolu! Check-in iptal edildi. (${kontrol.detay})`, 'error');
+      return; // _O zaten bos bırakıldı
+    }
+    // Çakışma yoksa geçici kaydı geri koy (birazdan kalıcı yazılacak)
+    if(kendiGecici) window._O['oda'+no] = tempOda;
+  }
+
   const girisSaati = new Date().toLocaleTimeString('tr-TR');
   const toplam = gece * fiyat;
 
@@ -2260,6 +2312,7 @@ window.saveCheckin = async function() {
 // Rezervasyondan check-in
 window.checkindenRezervasyon = function(rev) {
   currentCheckinOda = rev.odaNo;
+  window._ciKaynakRevId = rev.id || null; // çakışma kontrolünde bu rezervasyon hariç tutulur
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} (Rezervasyon)`;
   document.getElementById('ci_tc').value = rev.tc || '';
   document.getElementById('ci_ad').value = rev.misafir || '';
@@ -2793,8 +2846,11 @@ window.revCarpısmaKontrol = function() {
   const odaNo  = document.getElementById('rev_oda').value;
   const carpEl = document.getElementById('rev_carpısma');
   if(giris&&cikis&&odaNo) {
-    const carpisan = window._R.find(r=>Number(r.odaNo)===Number(odaNo)&&r.giris<cikis&&r.cikis>giris&&r.durum!=='iptal');
-    carpEl.style.display = carpisan ? 'block' : 'none';
+    const kontrol = odaCakismaKontrol(odaNo, giris, cikis);
+    if(kontrol.cakisma) {
+      carpEl.textContent = `⚠ Bu oda seçilen tarihlerde dolu! (${kontrol.detay})`;
+      carpEl.style.display = 'block';
+    } else carpEl.style.display = 'none';
   } else carpEl.style.display='none';
 };
 
@@ -2832,8 +2888,13 @@ window.saveRezervasyon = async function() {
 
   if(!giris||!cikis||!odaNo||!ad) { toast('Zorunlu alanları doldurun','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden rezervasyon kaydedilemez — Oda seçin ve fiyat tipini kontrol edin','error'); return; }
-  const carpisan = window._R.find(r=>Number(r.odaNo)===Number(odaNo)&&r.giris<cikis&&r.cikis>giris&&r.durum!=='iptal');
-  if(carpisan) { toast(`Oda ${odaNo} bu tarihlerde dolu!`,'error'); return; }
+
+  // ÇAKIŞMA KONTROLÜ — hem rezervasyonlar hem dolu odanın konaklaması
+  const kontrol = odaCakismaKontrol(odaNo, giris, cikis);
+  if(kontrol.cakisma) {
+    toast(`⚠ Oda ${odaNo} bu tarihlerde dolu! (${kontrol.tip === 'rezervasyon' ? 'Rezervasyon' : 'Konaklama'}: ${kontrol.detay})`, 'error');
+    return;
+  }
 
   const sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
 
@@ -3873,6 +3934,16 @@ window.revDuzenleKaydet = async function() {
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
   if(!fiyat) { toast('Fiyat zorunlu','error'); return; }
 
+  // ÇAKIŞMA KONTROLÜ — kendi kaydı hariç
+  const duzenlenenRev = window._R.find(r => r.id === id);
+  if(duzenlenenRev) {
+    const kontrol = odaCakismaKontrol(duzenlenenRev.odaNo, giris, cikis, id);
+    if(kontrol.cakisma) {
+      toast(`⚠ Oda ${duzenlenenRev.odaNo} bu tarihlerde dolu! (${kontrol.detay})`, 'error');
+      return;
+    }
+  }
+
   await updateDoc(doc(db,'rezervasyonlar',id), {
     giris, cikis, gece, fiyat, fiyatTip,
     fiyatTipAd: getTipAd(fiyatTip),
@@ -3923,12 +3994,27 @@ window.sureDegistirKaydet = async function() {
   const eskiCikis = o.cikis;
   const yeniGece = geceSayisi(o.giris, yeniCikis);
 
+  // Mevcut konaklamanın rezervasyon kaydını bul (kontrol dışı tutulacak)
+  const rev = window._R.find(r => Number(r.odaNo)===Number(odaNo) && r.giris===o.giris && r.durum!=='iptal');
+
+  // ÇAKIŞMA KONTROLÜ — uzatma sonraki rezervasyona çarpmasın
+  // (sadece rezervasyon kontrolü; mevcut konaklama kendisi olduğu için _O kontrolü atlanır)
+  const carpisanRev = (window._R||[]).find(r =>
+    Number(r.odaNo) === Number(odaNo) &&
+    r.durum !== 'iptal' && r.durum !== 'noshow' && r.durum !== 'tamamlandi' &&
+    r.id !== rev?.id &&
+    (r.giris||'') < yeniCikis && (r.cikis||'') > o.giris
+  );
+  if(carpisanRev) {
+    toast(`⚠ Uzatma yapılamaz! ${carpisanRev.giris} tarihinde rezervasyon var (${carpisanRev.misafir||'?'})`, 'error');
+    return;
+  }
+
   // _O güncelle
   window._O['oda'+odaNo].cikis = yeniCikis;
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   // Aktif rezervasyonu da güncelle
-  const rev = window._R.find(r => Number(r.odaNo)===Number(odaNo) && r.giris===o.giris && r.durum!=='iptal');
   if(rev?.id) {
     await updateDoc(doc(db,'rezervasyonlar',rev.id), {
       cikis: yeniCikis, gece: yeniGece, guncelleme: nowISO()
