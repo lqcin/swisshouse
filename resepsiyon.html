@@ -1753,8 +1753,13 @@ window.openOdaDetay = function(no) {
   } else if(aktifRev) {
     // Oda boş ama aktif rezervasyon var — check-in bekleniyor
     const gece = geceSayisi(aktifRev.giris, aktifRev.cikis);
-    bilgi = `<div style="background:#eef6ff;border:1px solid rgba(29,78,216,.2);padding:14px 18px">
-      <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">⏳ Check-in Bekliyor</div>
+    const gecikmis = aktifRev.giris < td && aktifRev.durum !== 'aktif';
+    const kutuBg = gecikmis ? '#fff5e8' : '#eef6ff';
+    const kutuBorder = gecikmis ? 'rgba(232,147,12,.35)' : 'rgba(29,78,216,.2)';
+    const baslikRenk = gecikmis ? 'var(--orange,#e8930c)' : 'var(--blue)';
+    const baslikTxt = gecikmis ? `⚠ Gecikmiş Giriş — ${geceSayisi(aktifRev.giris, td)} gündür check-in yapılmadı` : '⏳ Check-in Bekliyor';
+    bilgi = `<div style="background:${kutuBg};border:1px solid ${kutuBorder};padding:14px 18px">
+      <div style="font-size:11px;font-weight:700;color:${baslikRenk};margin-bottom:8px">${baslikTxt}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Misafir</div>
@@ -1816,13 +1821,18 @@ window.openOdaDetay = function(no) {
     rezHtml = '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Yakın Rezervasyonlar</div>';
     rezHtml += '<div style="display:flex;flex-direction:column;gap:6px">';
     yakin.forEach(r => {
+      const checkinYapildi = r.durum === 'aktif';
+      const gecikmis = !checkinYapildi && r.giris < td;
       const aktif = r.giris<=td && r.cikis>td;
-      rezHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--parchment);border:1px solid var(--border);border-left:3px solid ${aktif?'var(--green)':'var(--blue)'}">
+      const renk = checkinYapildi ? 'var(--green)' : gecikmis ? 'var(--orange,#e8930c)' : 'var(--blue)';
+      const badgeCls = checkinYapildi ? 'badge-green' : gecikmis ? 'badge-orange' : aktif ? 'badge-green' : 'badge-blue';
+      const badgeTxt = checkinYapildi ? 'Aktif' : gecikmis ? '⚠ Gecikmiş Giriş' : aktif ? 'Aktif' : 'Bekliyor';
+      rezHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--parchment);border:1px solid var(--border);border-left:3px solid ${renk}">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--dark)">${r.misafir||'—'}</div>
           <div style="font-size:11px;color:var(--muted)">${r.giris} → ${r.cikis}${r.fiyat?' · '+r.fiyat.toLocaleString('tr-TR')+' ₺/gece':''}</div>
         </div>
-        <span class="badge ${aktif?'badge-green':'badge-blue'}">${aktif?'Aktif':'Bekliyor'}</span>
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
       </div>`;
     });
     rezHtml += '</div>';
@@ -2926,7 +2936,8 @@ window.renderRezervasyonlar = function() {
     let durum = r.durum||'bekliyor';
     if(durum!=='iptal'){
       if(r.cikis&&r.cikis<todayStr) durum='tamamlandi';
-      else if(r.giris&&r.giris<=todayStr) durum='aktif';
+      else if(r.durum==='aktif') durum='aktif'; // gerçek check-in yapılmış
+      else if(r.giris&&r.giris<todayStr) durum='gecikmis'; // giriş geçti, check-in yok
       else durum='bekliyor';
     }
     return{...r,_durum:durum};
@@ -2939,8 +2950,8 @@ window.renderRezervasyonlar = function() {
   const odaSel = document.getElementById('rev-filter-oda');
   if(odaSel&&odaSel.children.length<=1) for(const i of HOTEL_ODALAR) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
 
-  const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red'};
-  const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal'};
+  const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red',gecikmis:'badge-orange'};
+  const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal',gecikmis:'⚠ Gecikmiş Giriş'};
 
   const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi'};
   const odDurumCls = {odendi:'badge-green', odenmedi:'badge-red', depozito:'badge-gold', kismi:'badge-orange'};
@@ -2961,9 +2972,9 @@ window.renderRezervasyonlar = function() {
       </td>
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
-        ${r._durum==='bekliyor'||r._durum==='aktif'?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
-        ${r._durum==='bekliyor'||r._durum==='aktif'?`<button class="btn btn-ghost btn-sm" onclick="revDuzenleAc(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">✏ Düzenle</button>`:''}
-        ${r._durum==='bekliyor'?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
+        ${['bekliyor','aktif','gecikmis'].includes(r._durum)?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
+        ${['bekliyor','aktif','gecikmis'].includes(r._durum)?`<button class="btn btn-ghost btn-sm" onclick="revDuzenleAc(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">✏ Düzenle</button>`:''}
+        ${['bekliyor','gecikmis'].includes(r._durum)?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
         ${r._durum!=='iptal'&&r._durum!=='tamamlandi'?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
       </td>
     </tr>`).join('')
