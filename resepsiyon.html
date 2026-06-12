@@ -402,21 +402,18 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 <!-- CHECK-IN MODAL -->
 <div class="modal-overlay" id="checkinModal">
-  <div class="modal" style="max-width:600px">
+  <div class="modal" style="max-width:640px">
     <div class="modal-title" id="checkinTitle">Check-in — Oda</div>
 
     <!-- TC Arama -->
     <div class="section-mini-title">Misafir Bilgileri</div>
-    <div class="form-group" style="display:flex;gap:8px">
-      <div style="flex:1">
+    <div class="form-row">
+      <div class="form-group">
         <label>TC Kimlik No</label>
-        <input type="text" id="ci_tc" placeholder="TC Kimlik No (11 hane)" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
+        <input type="text" id="ci_tc" placeholder="11 hane" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
       </div>
-      <div class="form-group"><label>Pasaport No <span style="font-size:10px;color:var(--muted);font-weight:400">(yabancı misafir)</span></label>
-        <input type="text" id="ci_pasaport" placeholder="Pasaport numarası..." maxlength="20" style="text-transform:uppercase">
-      </div>
-      <div style="display:flex;align-items:flex-end">
-        <button class="btn btn-ghost" onclick="tcTemizle()">Temizle</button>
+      <div class="form-group"><label>Pasaport No</label>
+        <input type="text" id="ci_pasaport" placeholder="Yabancı misafir" maxlength="20" style="text-transform:uppercase">
       </div>
     </div>
     <div class="musteri-bulundu" id="musteriBulundu" style="display:flex;justify-content:space-between;align-items:center">
@@ -431,20 +428,25 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="form-group"><label>Ad Soyad *</label><input type="text" id="ci_ad" placeholder="Ad Soyad" oninput="adDegistiKontrol()"></div>
       <div class="form-group"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
-      <div class="form-group"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
-    </div>
+
+    <details style="margin-bottom:10px">
+      <summary style="font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.5px">+ E-posta / Araç Plakası (opsiyonel)</summary>
+      <div class="form-row" style="margin-top:8px">
+        <div class="form-group"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
+        <div class="form-group"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
+      </div>
+    </details>
 
     <div class="separator"></div>
     <div class="section-mini-title">Konaklama Bilgileri</div>
 
-    <div class="form-row">
+    <div class="form-row-3">
       <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()" min=""></div>
       <div class="form-group"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" placeholder="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
+      <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="—"></div>
     </div>
-    <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="Giriş tarihi ve gece sayısından hesaplanır"></div>
     <input type="hidden" id="ci_cikis">
+    <input type="hidden" id="ci_saat">
 
     <div class="form-row-3">
       <div class="form-group"><label>Yetişkin *</label><input type="number" id="ci_yetiskin" min="1" value="1" inputmode="numeric"></div>
@@ -452,7 +454,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="form-group"><label>Toplam Kişi</label><input type="text" id="ci_toplam_kisi" readonly></div>
     </div>
 
-    <div class="form-row">
+    <div class="form-row-3">
       <div class="form-group"><label>Kaynak</label>
         <select id="ci_kaynak">
           <option value="walk-in">Walk-in (Kapıdan)</option>
@@ -482,25 +484,26 @@ input[type="number"], input[type="date"], input[type="password"] {
       </div>
     </div>
 
-    <div class="form-group"><label>Fiyat Tipi</label>
-      <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()"></select>
+    <div class="form-row">
+      <div class="form-group"><label>Fiyat Tipi</label>
+        <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()"></select>
+      </div>
+      <div class="form-group">
+        <label>Gecelik Ücret *</label>
+        <input type="number" id="ci_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()">
+        <div id="ci_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Gecelik Ücret <span style="font-size:10px;color:var(--muted);font-weight:400">(fiyat tipinden otomatik gelir, değiştirilebilir)</span></label>
-      <input type="number" id="ci_fiyat" min="0" placeholder="Gecelik fiyat..." oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()">
-      <div id="ci_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
-    </div>
-    <div class="form-group">
-      <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
-      <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik fiyat..." oninput="sozlesmeToplam('ci')">
-      <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(opsiyonel)</span></label>
+        <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
+        <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+      </div>
+      <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
     </div>
 
-    <div class="form-group"><label>Giriş Saati (Otomatik)</label><input type="text" id="ci_saat" readonly></div>
-    <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
-
-    <div class="separator"></div>
-    <div class="section-mini-title" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="section-mini-title" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
       <span>Yanında Kalanlar</span>
       <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle()">+ Kişi Ekle</button>
     </div>
