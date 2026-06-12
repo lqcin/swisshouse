@@ -496,7 +496,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(opsiyonel)</span></label>
+        <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil, 1 gecenin fiyatı)</span></label>
         <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
         <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
       </div>
@@ -925,7 +925,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(opsiyonel)</span></label>
+        <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil, 1 gecenin fiyatı)</span></label>
         <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
         <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
       </div>
@@ -2924,11 +2924,13 @@ window.saveRezervasyon = async function() {
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,kayitTarih:now
   });
 
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rev_oda').value='';
   document.getElementById('rev_cikis_goster').value='';
   document.getElementById('rev_carpısma').style.display='none';
-  document.getElementById('rev_fiyat_info').style.display='none';
+  const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+  const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.style.display='none';
+  const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
   closeModal('rezervModal');
   await logAktivite('rezervasyon', `${ad} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(gece*fiyat)}`, odaNo);
   toast('Rezervasyon kaydedildi ✓','success');
