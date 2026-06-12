@@ -902,8 +902,12 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
     <div class="form-row">
       <div class="form-group"><label>TC Kimlik No</label><input type="text" id="rev_tc" maxlength="11" inputmode="numeric" oninput="revTcAra(this.value)" placeholder="11 hane"></div>
-      <div class="form-group"><label>Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+      <div class="form-group"><label id="rev_ad_label">Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--dark);cursor:pointer">
+      <input type="checkbox" id="rev_araci" style="width:auto;accent-color:var(--gold2)" onchange="document.getElementById('rev_ad_label').textContent=this.checked?'Aracı / Komisyoncu Adı *':'Misafir Adı *';document.getElementById('rev_ad').placeholder=this.checked?'Aracının adı...':'Ad Soyad'">
+      🤝 Aracı (komisyoncu) adına rezervasyon — gerçek misafir bilgileri check-in'de alınır
+    </label>
     <div class="musteri-bulundu" id="revMusteriBulundu">
       <div class="mb-ad" id="rev_mb_ad"></div>
       <div class="mb-meta" id="rev_mb_meta"></div>
@@ -1836,7 +1840,7 @@ window.openOdaDetay = function(no) {
       const badgeTxt = checkinYapildi ? 'Aktif' : gecikmis ? '⚠ Gecikmiş Giriş' : aktif ? 'Aktif' : 'Bekliyor';
       rezHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--parchment);border:1px solid var(--border);border-left:3px solid ${renk}">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--dark)">${r.misafir||'—'}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--dark)">${r.aracirez?'🤝 ':''}${r.misafir||'—'}${r.aracirez?' <span style="font-size:9px;color:var(--gold2);font-weight:700">ARACI</span>':''}</div>
           <div style="font-size:11px;color:var(--muted)">${r.giris} → ${r.cikis}${r.fiyat?' · '+r.fiyat.toLocaleString('tr-TR')+' ₺/gece':''}</div>
         </div>
         <span class="badge ${badgeCls}">${badgeTxt}</span>
@@ -2023,6 +2027,7 @@ window.checkinSozlesmeOnayla = function() {
 
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
+  if(giris > today()) { toast(`Check-in yapılamaz — giriş tarihi gelecekte (${giris}). Misafir geldiği gün check-in yapın.`,'error'); return; }
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden devam edilemez','error'); return; }
 
@@ -2331,17 +2336,29 @@ window.checkindenRezervasyon = function(rev) {
   currentCheckinOda = rev.odaNo;
   window._ciKaynakRevId = rev.id || null; // çakışma kontrolünde bu rezervasyon hariç tutulur
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} (Rezervasyon)`;
-  document.getElementById('ci_tc').value = rev.tc || '';
-  document.getElementById('ci_ad').value = rev.misafir || '';
+  const araci = !!rev.aracirez;
+  if(araci) {
+    // Aracı rezervasyonu — gerçek misafir bilgileri burada girilmeli
+    document.getElementById('ci_tc').value = '';
+    document.getElementById('ci_ad').value = '';
+    document.getElementById('ci_tel').value = '';
+    document.getElementById('ci_email').value = '';
+    document.getElementById('ci_not').value = `Aracı: ${rev.araciAd || rev.misafir || '?'}${rev.not ? ' · ' + rev.not : ''}`;
+    document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} 🤝 Aracı: ${rev.araciAd || rev.misafir || '?'}`;
+    toast(`🤝 Aracı rezervasyonu (${rev.araciAd || rev.misafir}) — gerçek misafir bilgilerini girin`, 'info');
+  } else {
+    document.getElementById('ci_tc').value = rev.tc || '';
+    document.getElementById('ci_ad').value = rev.misafir || '';
+    document.getElementById('ci_tel').value = rev.tel || '';
+    document.getElementById('ci_email').value = rev.email || '';
+    document.getElementById('ci_not').value = rev.not || '';
+  }
   document.getElementById('ci_ad').dataset.kayitliAd = '';
-  document.getElementById('ci_tel').value = rev.tel || '';
-  document.getElementById('ci_email').value = rev.email || '';
   document.getElementById('ci_giris').value = rev.giris || today();
   document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
   document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
   document.getElementById('ci_yetiskin').value = rev.yetiskin || 1;
   document.getElementById('ci_cocuk').value = rev.cocuk || 0;
-  document.getElementById('ci_not').value = rev.not || '';
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
   document.getElementById('musteriBulundu').style.display = 'none';
 
@@ -2807,6 +2824,16 @@ window.saveDurum = async function() {
   window._O['oda'+no] = {...(window._O['oda'+no]||{}), durum, guncelleme:now};
   if(durum==='bos'||durum==='temizlik') {
     window._O['oda'+no] = {durum,misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:now};
+    // Yanlışlıkla aktifleşmiş GELECEK tarihli rezervasyonları "bekliyor"a döndür
+    const td = today();
+    const hataliAktifler = (window._R||[]).filter(r =>
+      Number(r.odaNo) === Number(no) && r.durum === 'aktif' && r.giris > td
+    );
+    for(const r of hataliAktifler) {
+      await updateDoc(doc(db,'rezervasyonlar', r.id), {durum:'bekliyor', guncelleme:now});
+      await logAktivite('rez_duzeltme', `Oda ${no} — ${r.misafir||'?'} rezervasyonu bekliyor durumuna döndürüldü (${r.giris})`, no);
+    }
+    if(hataliAktifler.length) toast(`${hataliAktifler.length} gelecek tarihli rezervasyon "bekliyor" durumuna döndürüldü`, 'info');
   }
   await setDoc(doc(db,'meta','odalar'), window._O);
   renderOdalar();
@@ -2904,6 +2931,7 @@ window.saveRezervasyon = async function() {
   const odemeDurum = document.getElementById('rev_odeme_durum').value;
   const odemeTip   = document.getElementById('rev_odeme_tip').value;
   const not_    = document.getElementById('rev_not').value;
+  const araci   = document.getElementById('rev_araci')?.checked || false;
   const now     = nowISO();
 
   if(!giris||!cikis||!odaNo||!ad) { toast('Zorunlu alanları doldurun','error'); return; }
@@ -2921,7 +2949,9 @@ window.saveRezervasyon = async function() {
   await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
-    fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,kayitTarih:now
+    fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
+    aracirez:araci, araciAd:araci?ad:null,
+    kayitTarih:now
   });
 
   ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2929,6 +2959,7 @@ window.saveRezervasyon = async function() {
   document.getElementById('rev_cikis_goster').value='';
   document.getElementById('rev_carpısma').style.display='none';
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+  const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
   const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.style.display='none';
   const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
   closeModal('rezervModal');
@@ -2971,7 +3002,7 @@ window.renderRezervasyonlar = function() {
       <td>${r.cikis||'—'}</td>
       <td>${r.gece||geceSayisi(r.giris,r.cikis)||'—'}</td>
       <td>Oda ${r.odaNo}</td>
-      <td>${r.misafir||'—'}</td>
+      <td>${r.aracirez?'🤝 ':''}${r.misafir||'—'}${r.aracirez?' <span style="font-size:9px;color:var(--gold2);font-weight:700">ARACI</span>':''}</td>
       <td style="font-size:11px;color:var(--muted)">${r.tc||'—'}</td>
       <td style="font-size:11px">${(r.yetiskin||1)+(r.cocuk||0)} kişi</td>
       <td>${r.kaynak?`<span class="badge badge-blue">${r.kaynak}</span>`:'—'}</td>
@@ -3781,7 +3812,7 @@ window.renderHatirlatma = function renderHatirlatma() {
           <div class="hatr-info">
             <span class="hatr-etiket gun0" style="${etiketStil}">${etiketTxt}</span>
             <span class="hatr-oda">${odaLabel}</span>
-            <span class="hatr-misafir">${r.misafir||'—'}</span>
+            <span class="hatr-misafir">${r.aracirez?'🤝 ':''}${r.misafir||'—'}</span>
             ${r.tel?`<span class="hatr-tel">📞 ${r.tel}</span>`:''}
             <span class="hatr-tarih">${r.giris||'?'} → ${r.cikis} · Check-out bekleniyor</span>
             ${mevcut?`<span class="hatr-durum" style="${durumRenk[mevcut]||''}">${durumTxt[mevcut]||''}</span>`:''}
@@ -3801,7 +3832,7 @@ window.renderHatirlatma = function renderHatirlatma() {
         <div class="hatr-info">
           <span class="hatr-etiket ${et.cls}">${et.txt}</span>
           <span class="hatr-oda">${odaLabel}</span>
-          <span class="hatr-misafir">${r.misafir||'—'}</span>
+          <span class="hatr-misafir">${r.aracirez?'🤝 ':''}${r.misafir||'—'}</span>
           ${r.tel?`<span class="hatr-tel">📞 ${r.tel}</span>`:''}
           <span class="hatr-tarih">${r.giris} → ${r.cikis} · ${r.gece||geceSayisi(r.giris,r.cikis)} gece</span>
           ${mevcut?`<span class="hatr-durum" style="${durumRenk[mevcut]||''}">${durumTxt[mevcut]||''}</span>`:''}
