@@ -879,13 +879,13 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 <!-- REZERVASYON MODAL -->
 <div class="modal-overlay" id="rezervModal">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:640px">
     <div class="modal-title">Rezervasyon Ekle</div>
-    <div class="form-row">
+    <div class="form-row-3">
       <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()" min=""></div>
       <div class="form-group"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
+      <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly placeholder="—"></div>
     </div>
-    <div class="form-group"><label>Çıkış Tarihi (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly></div>
     <input type="hidden" id="rev_cikis">
     <div class="form-row">
       <div class="form-group"><label>Oda No *</label>
@@ -900,31 +900,36 @@ input[type="number"], input[type="date"], input[type="password"] {
         </select>
       </div>
     </div>
-    <div class="form-group"><label>TC Kimlik No</label><input type="text" id="rev_tc" maxlength="11" inputmode="numeric" oninput="revTcAra(this.value)"></div>
+    <div class="form-row">
+      <div class="form-group"><label>TC Kimlik No</label><input type="text" id="rev_tc" maxlength="11" inputmode="numeric" oninput="revTcAra(this.value)" placeholder="11 hane"></div>
+      <div class="form-group"><label>Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+    </div>
     <div class="musteri-bulundu" id="revMusteriBulundu">
       <div class="mb-ad" id="rev_mb_ad"></div>
       <div class="mb-meta" id="rev_mb_meta"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+    <div class="form-row-3">
       <div class="form-group"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX..."></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label>Yetişkin</label><input type="number" id="rev_yetiskin" min="1" value="1"></div>
       <div class="form-group"><label>Çocuk</label><input type="number" id="rev_cocuk" min="0" value="0"></div>
     </div>
-    <div class="form-group"><label>Fiyat Tipi</label>
-      <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
+    <div class="form-row">
+      <div class="form-group"><label>Fiyat Tipi</label>
+        <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
+      </div>
+      <div class="form-group">
+        <label>Gecelik Ücret *</label>
+        <input type="number" id="rev_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
+        <div id="rev_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Gecelik Ücret <span style="font-size:10px;color:var(--muted);font-weight:400">(fiyat tipinden otomatik gelir, değiştirilebilir)</span></label>
-      <input type="number" id="rev_fiyat" min="0" placeholder="Gecelik fiyat..." oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
-      <div id="rev_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
-    </div>
-    <div class="form-group">
-      <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(boş bırakılırsa gerçek fiyat kullanılır)</span></label>
-      <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik fiyat..." oninput="sozlesmeToplam('rev')">
-      <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sözleşme Fiyatı <span style="font-size:10px;color:var(--muted);font-weight:400">(opsiyonel)</span></label>
+        <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
+        <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+      </div>
+      <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
     </div>
     <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
     <div class="form-row">
@@ -944,7 +949,6 @@ input[type="number"], input[type="date"], input[type="password"] {
         </select>
       </div>
     </div>
-    <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('rezervModal')">Vazgeç</button>
       <button class="btn btn-primary" onclick="saveRezervasyon()">Kaydet</button>
@@ -3614,7 +3618,8 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
       <div class="rule"><b>6.</b><span>Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.</span></div>
       <div class="rule"><b>7.</b><span>Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız etmek yasaktır.</span></div>
       <div class="rule"><b>8.</b><span>Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.</span></div>
-      <div class="rule"><b>9.</b><span>Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
+      <div class="rule"><b>9.</b><span>Konaklamada giriş (check-in) saati en erken 12:00, çıkış (check-out) saati en geç 10:00'dur.</span></div>
+      <div class="rule"><b>10.</b><span>Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
     </div>
   </div>
 
@@ -3763,10 +3768,16 @@ window.renderHatirlatma = function renderHatirlatma() {
 
     // Çıkış uyarısı
     if(r._tip === 'cikis') {
+      const saat = new Date().getHours();
+      const acil = saat >= 9 && saat < 10;   // 09:00–10:00 arası son çağrı
+      const gecikti = saat >= 10;            // 10:00 geçti, hâlâ çıkış yok
+      const etiketTxt = gecikti ? '🔴 ÇIKIŞ SAATİ GEÇTİ · 10:00' : acil ? '🔔 SON 1 SAAT — CHECK-OUT 10:00' : '⏰ BUGÜN ÇIKIŞ · 10:00';
+      const etiketStil = (acil||gecikti) ? 'background:var(--red);color:#fff' : 'background:var(--gold2);color:#1a1d23';
+      const kenarRenk = (acil||gecikti) ? 'var(--red)' : 'var(--gold2)';
       return `
-        <div class="hatr-item gun0" style="border-left:3px solid var(--gold2)">
+        <div class="hatr-item gun0" style="border-left:3px solid ${kenarRenk}${(acil||gecikti)?';background:rgba(200,16,46,.08)':''}">
           <div class="hatr-info">
-            <span class="hatr-etiket gun0" style="background:var(--gold2);color:#1a1d23">⏰ BUGÜN ÇIKIŞ · 10:00</span>
+            <span class="hatr-etiket gun0" style="${etiketStil}">${etiketTxt}</span>
             <span class="hatr-oda">${odaLabel}</span>
             <span class="hatr-misafir">${r.misafir||'—'}</span>
             ${r.tel?`<span class="hatr-tel">📞 ${r.tel}</span>`:''}
@@ -4043,6 +4054,57 @@ window.sureDegistirKaydet = async function() {
   toast(`Oda ${odaNo} — Çıkış tarihi ${yeniCikis} olarak güncellendi ✓`, 'success');
   await logAktivite('sure_degisim', `${eskiCikis} → ${yeniCikis}`, odaNo);
 };
+
+// ── OTOMATİK ODA DURUM GEÇİŞLERİ ──
+// 10:00 → bugün (veya önce) çıkışlı DOLU odalar otomatik "temizlik" durumuna geçer
+// 14:00 → temizlik durumundaki odalar, bugün girişli rezervasyon yoksa "boş" durumuna geçer
+// Her oda için günde bir kez uygulanır (oda datasında işaret tutulur)
+async function otomatikDurumGecisleri() {
+  if(!window._O || !Object.keys(window._O).length) return;
+  const simdi = new Date();
+  const saat = simdi.getHours();
+  const todayStr = today();
+  let degisti = false;
+
+  for(const no of HOTEL_ODALAR) {
+    const oda = window._O['oda'+no];
+    if(!oda) continue;
+
+    // 10:00 — çıkış günü gelen dolu oda → temizlik
+    if(saat >= 10 && oda.durum === 'dolu' && oda.cikis && oda.cikis <= todayStr && oda._otoTemizlik !== todayStr) {
+      const eskiMisafir = oda.misafir || '?';
+      // Konaklama bilgisi aktivite loguna arşivlenir, finansal kayıtlar zaten check-in'de yazıldı
+      window._O['oda'+no] = { durum:'temizlik', _otoTemizlik: todayStr, _sonMisafir: eskiMisafir, _sonCikis: oda.cikis };
+      degisti = true;
+      await logAktivite('oto_temizlik', `Oda ${no} otomatik temizliğe alındı (çıkış: ${oda.cikis}, misafir: ${eskiMisafir})`, no);
+      toast(`Oda ${no} otomatik temizlik durumuna geçti (çıkış saati 10:00 doldu)`, 'info');
+    }
+
+    // 14:00 — temizlikteki oda, bugün girişli rezervasyon yoksa → boş
+    if(saat >= 14 && oda.durum === 'temizlik' && oda._otoBos !== todayStr) {
+      const bugunGiris = (window._R||[]).some(r =>
+        Number(r.odaNo) === Number(no) &&
+        r.giris === todayStr &&
+        r.durum !== 'iptal' && r.durum !== 'noshow'
+      );
+      if(!bugunGiris) {
+        window._O['oda'+no] = { durum:'bos', _otoBos: todayStr };
+        degisti = true;
+        await logAktivite('oto_bos', `Oda ${no} otomatik boş durumuna geçti (14:00 kontrolü)`, no);
+        toast(`Oda ${no} temizlik tamamlandı sayıldı, boş durumuna geçti`, 'info');
+      }
+    }
+  }
+
+  if(degisti) {
+    await setDoc(doc(db,'meta','odalar'), window._O);
+    renderOdalar();
+    renderHatirlatma();
+  }
+}
+// Sayfa açıldığında ve her 5 dakikada bir kontrol et
+setTimeout(otomatikDurumGecisleri, 8000);
+setInterval(otomatikDurumGecisleri, 5 * 60 * 1000);
 
 window.hatirlatmaDurum = async function(id, durum) {
   await updateDoc(doc(db,'rezervasyonlar',id), {aramaDurumu: durum, aramaZamani: nowISO()});
