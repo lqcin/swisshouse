@@ -1023,6 +1023,7 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
           <tr style="background:var(--cream)">
             <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
             <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+            <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Aracı</th>
             <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
             <th style="text-align:center;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
             <th style="text-align:right;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
@@ -1091,6 +1092,7 @@ window.renderKomisyon = function() {
         return `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${k.tarih||'—'}</td>
           <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:600">${k.araciAd?'🤝 '+k.araciAd:'—'}</td>
           <td style="padding:8px 12px;border-bottom:1px solid var(--border)">Oda ${k.odaNo||'—'}</td>
           <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center">${k.gece||'—'}</td>
           <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${fmtTL(k.gercekFiyat)}/gece</td>
@@ -1100,7 +1102,7 @@ window.renderKomisyon = function() {
           <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${k.kaynak||'—'}</td>
         </tr>`;
       }).join('')
-    : '<tr class="empty-row"><td colspan="9">Komisyon kaydı yok</td></tr>';
+    : '<tr class="empty-row"><td colspan="10">Komisyon kaydı yok</td></tr>';
 };
 
 await loadFiyatlar(),await loadOdalar(),await loadOdaOzel();
