@@ -3044,6 +3044,7 @@ window.renderRezervasyonlar = function() {
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
         ${['bekliyor','aktif','gecikmis'].includes(r._durum)?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
+        ${['bekliyor','aktif','gecikmis'].includes(r._durum)?`<button class="btn btn-ghost btn-sm" onclick="sozlesmeOnaysiziGonder('${r.odaNo}','${r.id}')">📄 Sözleşme</button>`:''}
         ${['bekliyor','aktif','gecikmis'].includes(r._durum)?`<button class="btn btn-ghost btn-sm" onclick="revDuzenleAc(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">✏ Düzenle</button>`:''}
         ${['bekliyor','gecikmis'].includes(r._durum)?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
         ${r._durum!=='iptal'&&r._durum!=='tamamlandi'?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
@@ -3933,12 +3934,19 @@ window.sozlesmeToplam = function(prefix) {
   }
 };
 
-window.sozlesmeOnaysiziGonder = function(odaNo) {
-  const td = today();
-  const rev = window._R.find(r =>
-    Number(r.odaNo)===Number(odaNo) && r.giris<=td && r.cikis>td && r.durum!=='iptal'
-  );
-  if(!rev) { toast('Aktif rezervasyon bulunamadı','error'); return; }
+window.sozlesmeOnaysiziGonder = function(odaNo, revId) {
+  // revId verilmişse direkt o rezervasyonu kullan, yoksa en yakın aktif/bekleyen rezervasyonu bul
+  let rev;
+  if(revId) {
+    rev = window._R.find(r => r.id === revId);
+  } else {
+    const td = today();
+    // Önce bugün aktif, sonra gelecekte bekleyen rezervasyonu bul
+    rev = window._R.find(r =>
+      Number(r.odaNo)===Number(odaNo) && r.durum!=='iptal' && r.durum!=='noshow' && r.cikis>td
+    );
+  }
+  if(!rev) { toast('Rezervasyon bulunamadı','error'); return; }
 
   const oz = window._OZ?.['oda'+odaNo] || {};
   const odaAdi = oz.ad ? `Oda ${odaNo} — ${oz.ad}` : `Oda ${odaNo}`;
