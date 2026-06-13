@@ -1381,6 +1381,7 @@ input[type="number"], input[type="date"], input[type="password"] {
         <thead>
           <tr>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Aracı</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
             <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
@@ -2059,7 +2060,8 @@ window.checkinSozlesmeOnayla = function() {
     sozlesmeFiyat: document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,
     odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
-    refakatciler, guncelleme:now
+    refakatciler, guncelleme:now,
+    araciAd: window._ciAraciAd || null,
   };
 
   // 2915'teki printSozlesme'yi kullan
@@ -2073,6 +2075,7 @@ window.checkinSozlesmeOnayla = function() {
 window.openCheckin = function(no) {
   currentCheckinOda = no;
   window._ciKaynakRevId = null; // boş check-in, rezervasyondan gelmiyor
+  window._ciAraciAd = null;
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
   // Temizle
   ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2293,6 +2296,8 @@ window.saveCheckin = async function() {
       tarih:giris, odaNo:String(no), misafir:ad, tc, kaynak,
       gece, gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
       komisyonFark, toplamKomisyon:komisyonFark,
+      odemeDurum: document.getElementById('ci_odeme_durum')?.value||'odenmedi',
+      araciAd: window._O['oda'+no]?.araciAd || null,
       kayitTarih:now
     });
   }
@@ -2334,7 +2339,8 @@ window.saveCheckin = async function() {
 // Rezervasyondan check-in
 window.checkindenRezervasyon = function(rev) {
   currentCheckinOda = rev.odaNo;
-  window._ciKaynakRevId = rev.id || null; // çakışma kontrolünde bu rezervasyon hariç tutulur
+  window._ciKaynakRevId = rev.id || null;
+  window._ciAraciAd = rev.aracirez ? (rev.araciAd || rev.misafir || null) : null;
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} (Rezervasyon)`;
   const araci = !!rev.aracirez;
   if(araci) {
@@ -3336,6 +3342,7 @@ window.renderRapor = function() {
       const odDurum = k.odemeDurum || '';
       return `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:600">${k.araciAd?'🤝 '+k.araciAd:'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${k.odaNo}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${k.gece||'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.gercekFiyat?.toLocaleString('tr-TR')||'—'} ₺</td>
