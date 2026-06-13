@@ -984,7 +984,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('odaDetayModal')">Kapat</button>
       <button class="btn btn-ghost" id="od_btn_durum" onclick="closeModal('odaDetayModal');setTimeout(()=>openDurumModal(window._curOdaDetay),100)">Durum Değiştir</button>
-      <button class="btn btn-ghost" id="od_btn_rezerv" onclick="closeModal('odaDetayModal');openModal('rezervModal')">+ Rezervasyon</button>
+      <button class="btn btn-ghost" id="od_btn_rezerv" onclick="closeModal('odaDetayModal');openRezervModalForOda(window._curOdaDetay)">+ Rezervasyon</button>
       <button class="btn btn-ghost" id="od_btn_sozlesme" style="display:none" onclick="sozlesmeOnaysiziGonder(window._curOdaDetay)">📄 Sözleşme Gönder</button>
       <button class="btn btn-ghost" id="od_btn_sure" style="display:none" onclick="closeModal('odaDetayModal');sureDegistirAc(window._curOdaDetay)">📅 Süre Değiştir</button>
       <button class="btn btn-ghost" id="od_btn_masraf" onclick="closeModal('odaDetayModal');openMasrafModal(window._curOdaDetay)">+ Masraf</button>
@@ -2843,6 +2843,31 @@ window.saveDurum = async function() {
 };
 
 // ── REZERVASYONLAR ──
+window.openRezervModalForOda = function(odaNo) {
+  // Formu sıfırla
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('rev_gece').value = 1;
+  document.getElementById('rev_cikis_goster').value = '';
+  document.getElementById('rev_cikis').value = '';
+  document.getElementById('rev_carpısma').style.display = 'none';
+  const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+  const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
+
+  // Bugünü giriş tarihi olarak set et
+  document.getElementById('rev_giris').value = today();
+
+  openModal('rezervModal');
+
+  setTimeout(() => {
+    const sel = document.getElementById('rev_oda');
+    if(sel && odaNo) {
+      [...sel.options].forEach(o => { o.selected = Number(o.value) === Number(odaNo); });
+      revOdaSecildi();
+    }
+    revHesapla();
+  }, 80);
+};
+
 window.revHesapla = function() {
   const giris = document.getElementById('rev_giris').value;
   const gece  = parseInt(document.getElementById('rev_gece').value)||1;
