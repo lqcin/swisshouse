@@ -3595,6 +3595,7 @@ window.refakatciEkle = function(listeId = 'refakatciListesi') {
   const liste = document.getElementById(listeId);
   const idx = liste.children.length;
   const div = document.createElement('div');
+  div.className = 'ref-row';
   div.style.cssText = 'display:grid;grid-template-columns:1fr 130px 120px 32px;gap:6px;align-items:end';
   div.innerHTML = `
     <div class="form-group" style="margin:0">
@@ -3602,8 +3603,8 @@ window.refakatciEkle = function(listeId = 'refakatciListesi') {
       <input type="text" class="ref-ad" placeholder="Ad Soyad">
     </div>
     <div class="form-group" style="margin:0">
-      <label>TC Kimlik No</label>
-      <input type="text" class="ref-tc" placeholder="11 hane" maxlength="11" inputmode="numeric">
+      <label>TC / Pasaport No</label>
+      <input type="text" class="ref-tc" placeholder="TC veya Pasaport No" maxlength="20" style="text-transform:uppercase">
     </div>
     <div class="form-group" style="margin:0">
       <label>Doğum Tarihi</label>
@@ -3616,7 +3617,7 @@ window.refakatciEkle = function(listeId = 'refakatciListesi') {
 function getRefakatciler(listeId = 'refakatciListesi') {
   const liste = document.getElementById(listeId);
   const sonuc = [];
-  liste.querySelectorAll('div').forEach(row => {
+  liste.querySelectorAll('.ref-row').forEach(row => {
     const ad = row.querySelector('.ref-ad')?.value.trim();
     const tc = row.querySelector('.ref-tc')?.value.trim();
     const dt = row.querySelector('.ref-dt')?.value;
@@ -3728,9 +3729,22 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
     <tr><th>Kiraya Veren</th><td><b>Swiss House Yönetimi</b></td></tr>
   </table>
   <table>
-    <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC Kimlik No</th><th>Doğum Tarihi</th></tr>
+    <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC / Pasaport No</th><th>Doğum Tarihi</th></tr>
     <tr><td>Sorumlu</td><td><b>${o.misafir||'—'}</b></td><td><b>${o.tc || o.pasaport || '—'}</b></td><td>—</td></tr>
-    ${(o.refakatciler||[]).map(r=>`<tr><td>Yanındaki</td><td>${r.ad||'—'}</td><td>${r.tc||'—'}</td><td>${r.dt?fmtTarih(r.dt):'—'}</td></tr>`).join('')}
+    ${(()=>{
+      // Refakatçıları tekille (aynı ad + tc/pasaport varsa, dolu olanı tut)
+      const seen = new Map();
+      (o.refakatciler||[]).forEach(r=>{
+        const key = (r.ad||'').trim().toLowerCase() + '|' + (r.tc||'').trim().toLowerCase();
+        const mevcut = seen.get(key);
+        if(!mevcut) seen.set(key, r);
+        else {
+          // Daha dolu olanı tut (dt veya tc'si olan kazansın)
+          if((!mevcut.dt && r.dt) || (!mevcut.tc && r.tc)) seen.set(key, {...mevcut, ...r});
+        }
+      });
+      return [...seen.values()].map(r=>`<tr><td>Yanındaki</td><td>${r.ad||'—'}</td><td>${r.tc||'—'}</td><td>${r.dt?fmtTarih(r.dt):'—'}</td></tr>`).join('');
+    })()}
   </table>
 
   <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
