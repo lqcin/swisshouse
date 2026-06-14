@@ -936,6 +936,13 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
     </div>
     <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
+
+    <div class="section-mini-title" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span>Yanında Kalanlar</span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle('revRefakatciListesi')">+ Kişi Ekle</button>
+    </div>
+    <div id="revRefakatciListesi" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;margin-bottom:12px"></div>
+
     <div class="form-row">
       <div class="form-group"><label>Ödeme Durumu</label>
         <select id="rev_odeme_durum">
@@ -2368,6 +2375,19 @@ window.checkindenRezervasyon = function(rev) {
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
   document.getElementById('musteriBulundu').style.display = 'none';
 
+  // Yanında kalanları rezervasyondan taşı
+  clearRefakatciler('refakatciListesi');
+  (rev.refakatciler || []).forEach(r => {
+    refakatciEkle('refakatciListesi');
+    const liste = document.getElementById('refakatciListesi');
+    const son = liste.lastElementChild;
+    if(son) {
+      const adEl = son.querySelector('.ref-ad'); if(adEl) adEl.value = r.ad || '';
+      const tcEl = son.querySelector('.ref-tc'); if(tcEl) tcEl.value = r.tc || '';
+      const dtEl = son.querySelector('.ref-dt'); if(dtEl) dtEl.value = r.dt || '';
+    }
+  });
+
   // Ödeme durumunu rezervasyondan getir
   const odDurumEl = document.getElementById('ci_odeme_durum');
   if(odDurumEl) odDurumEl.value = rev.odemeDurum || 'odenmedi';
@@ -2858,6 +2878,7 @@ window.openRezervModalForOda = function(odaNo) {
   document.getElementById('rev_carpısma').style.display = 'none';
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
   const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
+  clearRefakatciler('revRefakatciListesi');
 
   // Bugünü giriş tarihi olarak set et
   document.getElementById('rev_giris').value = today();
@@ -2976,12 +2997,14 @@ window.saveRezervasyon = async function() {
   }
 
   const sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
+  const refakatciler = getRefakatciler('revRefakatciListesi');
 
   await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
     aracirez:araci, araciAd:araci?ad:null,
+    refakatciler,
     kayitTarih:now
   });
 
@@ -2989,6 +3012,7 @@ window.saveRezervasyon = async function() {
   document.getElementById('rev_oda').value='';
   document.getElementById('rev_cikis_goster').value='';
   document.getElementById('rev_carpısma').style.display='none';
+  clearRefakatciler('revRefakatciListesi');
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
   const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
   const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.style.display='none';
@@ -3520,8 +3544,8 @@ async function loadOdaOzel() {
 }
 
 // ── REFAKATÇİLER ──
-window.refakatciEkle = function() {
-  const liste = document.getElementById('refakatciListesi');
+window.refakatciEkle = function(listeId = 'refakatciListesi') {
+  const liste = document.getElementById(listeId);
   const idx = liste.children.length;
   const div = document.createElement('div');
   div.style.cssText = 'display:grid;grid-template-columns:1fr 130px 120px 32px;gap:6px;align-items:end';
@@ -3542,8 +3566,8 @@ window.refakatciEkle = function() {
   liste.appendChild(div);
 };
 
-function getRefakatciler() {
-  const liste = document.getElementById('refakatciListesi');
+function getRefakatciler(listeId = 'refakatciListesi') {
+  const liste = document.getElementById(listeId);
   const sonuc = [];
   liste.querySelectorAll('div').forEach(row => {
     const ad = row.querySelector('.ref-ad')?.value.trim();
@@ -3554,8 +3578,8 @@ function getRefakatciler() {
   return sonuc;
 }
 
-function clearRefakatciler() {
-  document.getElementById('refakatciListesi').innerHTML = '';
+function clearRefakatciler(listeId = 'refakatciListesi') {
+  document.getElementById(listeId).innerHTML = '';
 }
 
 // Sözleşme yazdır ve checkout butonunu aktif et
