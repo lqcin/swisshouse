@@ -475,12 +475,16 @@ input[type="number"], input[type="date"], input[type="password"] {
         </select>
       </div>
       <div class="form-group"><label>Ödeme Durumu</label>
-        <select id="ci_odeme_durum">
+        <select id="ci_odeme_durum" onchange="document.getElementById('ci_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
           <option value="odenmedi">Ödenmedi</option>
           <option value="odendi">Ödendi</option>
           <option value="depozito">Depozito Alındı</option>
           <option value="kismi">Kısmi Ödeme</option>
         </select>
+        <div id="ci_kismi_wrap" style="display:none;margin-top:6px">
+          <input type="number" id="ci_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="ciFiyatGuncelle()">
+          <div id="ci_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
       </div>
     </div>
 
@@ -759,12 +763,16 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div id="rd_fiyat_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-bottom:12px"></div>
     <div class="form-row">
       <div class="form-group"><label>Ödeme Durumu</label>
-        <select id="rd_odeme_durum">
+        <select id="rd_odeme_durum" onchange="document.getElementById('rd_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
           <option value="odenmedi">Ödenmedi</option>
           <option value="odendi">Ödendi</option>
           <option value="depozito">Depozito Alındı</option>
           <option value="kismi">Kısmi Ödeme</option>
         </select>
+        <div id="rd_kismi_wrap" style="display:none;margin-top:6px">
+          <input type="number" id="rd_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="rdFiyatGuncelle()">
+          <div id="rd_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
       </div>
       <div class="form-group"><label>Ödeme Türü</label>
         <select id="rd_odeme_tip">
@@ -945,12 +953,16 @@ input[type="number"], input[type="date"], input[type="password"] {
 
     <div class="form-row">
       <div class="form-group"><label>Ödeme Durumu</label>
-        <select id="rev_odeme_durum">
+        <select id="rev_odeme_durum" onchange="document.getElementById('rev_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
           <option value="odenmedi">Ödenmedi</option>
           <option value="odendi">Ödendi</option>
           <option value="depozito">Depozito Alındı</option>
           <option value="kismi">Kısmi Ödeme</option>
         </select>
+        <div id="rev_kismi_wrap" style="display:none;margin-top:6px">
+          <input type="number" id="rev_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="revFiyatGuncelle()">
+          <div id="rev_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
       </div>
       <div class="form-group"><label>Ödeme Türü</label>
         <select id="rev_odeme_tip">
@@ -2066,6 +2078,8 @@ window.checkinSozlesmeOnayla = function() {
     email, plaka, kaynak, fiyatTip, fiyat,
     sozlesmeFiyat: document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,
     odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
+    kismiTutar: document.getElementById('ci_odeme_durum')?.value === 'kismi' ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null,
+    kismiKalan: document.getElementById('ci_odeme_durum')?.value === 'kismi' ? Math.max(0,(fiyat*gece)-(Number(document.getElementById('ci_kismi_tutar')?.value)||0)) : null,
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
     refakatciler, guncelleme:now,
     araciAd: window._ciAraciAd || null,
@@ -2098,6 +2112,8 @@ window.openCheckin = function(no) {
   // Manuel fiyat flag'ini sıfırla
   const cifEl = document.getElementById('ci_fiyat');
   if(cifEl) { cifEl.value=''; cifEl.dataset.manuelDegisim=''; }
+  document.getElementById('ci_kismi_wrap').style.display='none';
+  document.getElementById('ci_kismi_tutar').value='';
 
   // Fiyat tipi doldur
   const sel = document.getElementById('ci_fiyat_tip');
@@ -2151,6 +2167,18 @@ window.fiyatTipGuncelle = function() {
   ciFiyatGuncelle();
 };
 
+// Kısmi ödeme — toplam üzerinden kalan tutarı göster
+function kismiKalanGuncelle(prefix, toplam) {
+  const kismiEl  = document.getElementById(prefix + '_kismi_tutar');
+  const kalanEl  = document.getElementById(prefix + '_kismi_kalan');
+  if(!kismiEl || !kalanEl) return;
+  const alinan = Number(kismiEl.value) || 0;
+  const kalan = Math.max(0, toplam - alinan);
+  kalanEl.textContent = toplam > 0
+    ? `Toplam: ${fmt(toplam)} ₺ · Alınan: ${fmt(alinan)} ₺ · Kalan: ${fmt(kalan)} ₺`
+    : '';
+}
+
 window.ciFiyatGuncelle = function() {
   const gece  = parseInt(document.getElementById('ci_gece')?.value)||1;
   const fiyat = Number(document.getElementById('ci_fiyat')?.value)||0;
@@ -2159,6 +2187,7 @@ window.ciFiyatGuncelle = function() {
   if(subEl) {
     subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)} ₺` : '';
   }
+  kismiKalanGuncelle('ci', toplam);
 };
 
 // TC doğrulama (Türkiye Cumhuriyeti kimlik algoritması)
@@ -2284,9 +2313,13 @@ window.saveCheckin = async function() {
 
   // Gelir kaydı
   if(toplam > 0) {
+    const odDurumVal = document.getElementById('ci_odeme_durum')?.value||'odenmedi';
+    const kismiTutarVal = odDurumVal === 'kismi' ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null;
     await addDoc(collection(db,'gelirler'),{
       tarih:giris, tutar:toplam, odaNo:String(no),
-      odemeTuru:odeme, odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',
+      odemeTuru:odeme, odemeDurum:odDurumVal,
+      kismiTutar: kismiTutarVal,
+      kismiKalan: kismiTutarVal!=null ? Math.max(0, toplam - kismiTutarVal) : null,
       misafir:ad, tc, kaynak,
       fiyatTip, fiyatTipAd:getTipAd(fiyatTip),
       girisSaati, yetiskin, cocuk,
@@ -2314,12 +2347,16 @@ window.saveCheckin = async function() {
     Number(r.odaNo)===Number(no) && r.giris<=giris && r.cikis>giris && r.durum!=='iptal'
   );
   if(aktifRevDoc?.id) {
+    const odDurumVal2 = document.getElementById('ci_odeme_durum')?.value || 'odenmedi';
+    const kismiTutarVal2 = odDurumVal2 === 'kismi' ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null;
     await updateDoc(doc(db,'rezervasyonlar', aktifRevDoc.id), {
       durum: 'aktif',
       fiyat: fiyat,
       sozlesmeFiyat: sozlesmeFiyatVal || aktifRevDoc.sozlesmeFiyat || null,
-      odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
+      odemeDurum: odDurumVal2,
       odemeTuru: odeme,
+      kismiTutar: kismiTutarVal2,
+      kismiKalan: kismiTutarVal2!=null ? Math.max(0,(fiyat*gece)-kismiTutarVal2) : null,
     });
   }
 
@@ -2391,6 +2428,10 @@ window.checkindenRezervasyon = function(rev) {
   // Ödeme durumunu rezervasyondan getir
   const odDurumEl = document.getElementById('ci_odeme_durum');
   if(odDurumEl) odDurumEl.value = rev.odemeDurum || 'odenmedi';
+  const ciKismiWrap = document.getElementById('ci_kismi_wrap');
+  if(ciKismiWrap) ciKismiWrap.style.display = rev.odemeDurum === 'kismi' ? 'block' : 'none';
+  const ciKismiTutar = document.getElementById('ci_kismi_tutar');
+  if(ciKismiTutar) ciKismiTutar.value = rev.kismiTutar ?? '';
   // Sözleşme fiyatı her zaman boş başlar — check-in anında girilmeli
   const sozFiyatEl = document.getElementById('ci_sozlesme_fiyat');
   if(sozFiyatEl) sozFiyatEl.value = '';
@@ -2871,11 +2912,12 @@ window.saveDurum = async function() {
 // ── REZERVASYONLAR ──
 window.openRezervModalForOda = function(odaNo) {
   // Formu sıfırla
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rev_gece').value = 1;
   document.getElementById('rev_cikis_goster').value = '';
   document.getElementById('rev_cikis').value = '';
   document.getElementById('rev_carpısma').style.display = 'none';
+  document.getElementById('rev_kismi_wrap').style.display = 'none';
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
   const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
   clearRefakatciler('revRefakatciListesi');
@@ -2935,8 +2977,10 @@ window.revFiyatGuncelle = function() {
     fiyatEl.value = fiyat || '';
   }
   const fiyat = Number(fiyatEl.value)||0;
+  const toplam = gece*fiyat;
   const subEl = document.getElementById('rev_fiyat_toplam_sub');
-  if(subEl) subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(gece*fiyat)} ₺` : '';
+  if(subEl) subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)} ₺` : '';
+  kismiKalanGuncelle('rev', toplam);
 };
 
 window.revCarpısmaKontrol = function() {
@@ -2998,20 +3042,23 @@ window.saveRezervasyon = async function() {
 
   const sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
   const refakatciler = getRefakatciler('revRefakatciListesi');
+  const kismiTutar = odemeDurum === 'kismi' ? (Number(document.getElementById('rev_kismi_tutar')?.value)||0) : null;
 
   await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
+    kismiTutar, kismiKalan: kismiTutar!=null ? Math.max(0,(fiyat*gece)-kismiTutar) : null,
     aracirez:araci, araciAd:araci?ad:null,
     refakatciler,
     kayitTarih:now
   });
 
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rev_oda').value='';
   document.getElementById('rev_cikis_goster').value='';
   document.getElementById('rev_carpısma').style.display='none';
+  document.getElementById('rev_kismi_wrap').style.display='none';
   clearRefakatciler('revRefakatciListesi');
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
   const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
@@ -3063,7 +3110,7 @@ window.renderRezervasyonlar = function() {
       <td>${r.kaynak?`<span class="badge badge-blue">${r.kaynak}</span>`:'—'}</td>
       <td>
         <div class="amount-pos" style="font-size:12px">${r.fiyat?fmt(r.fiyat)+'/gece':'—'}</div>
-        ${r.odemeDurum?`<span class="badge ${odDurumCls[r.odemeDurum]||'badge-gray'}" style="font-size:9px;margin-top:2px">${odDurumMap[r.odemeDurum]||r.odemeDurum}</span>`:''}
+        ${r.odemeDurum?`<span class="badge ${odDurumCls[r.odemeDurum]||'badge-gray'}" style="font-size:9px;margin-top:2px">${odDurumMap[r.odemeDurum]||r.odemeDurum}${r.odemeDurum==='kismi'&&r.kismiTutar!=null?` (${r.kismiTutar.toLocaleString('tr-TR')}₺)`:''}</span>`:''}
       </td>
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
@@ -3606,7 +3653,10 @@ window.printSozlesme = function(no) {
   const toplamFiyat  = gecelikFiyat * gece;
   const fmtTarih = (t) => { if(!t) return '—'; const [y,m,d]=t.split('-'); return `${d}.${m}.${y}`; };
   const odemeDurumMap = {odenmedi:'Ödenmedi',odendi:'Ödendi',depozito:'Depozito Alındı',kismi:'Kısmi Ödeme'};
-  const odemeDurum = odemeDurumMap[o.odemeDurum] || odemeDurumMap[o.odemeDurumu] || 'Ödenmedi';
+  let odemeDurum = odemeDurumMap[o.odemeDurum] || odemeDurumMap[o.odemeDurumu] || 'Ödenmedi';
+  if((o.odemeDurum === 'kismi' || o.odemeDurumu === 'kismi') && o.kismiTutar != null) {
+    odemeDurum += ` (${Number(o.kismiTutar).toLocaleString('tr-TR')} ₺ alındı, ${Number(o.kismiKalan||0).toLocaleString('tr-TR')} ₺ kalan)`;
+  }
   const w = window.open('', '_blank');
   if(!w) { toast('Popup engellendi','error'); return; }
   w.document.write(sozlesmeHtmlOlustur(o, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih));
@@ -3680,6 +3730,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   <table>
     <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC Kimlik No</th><th>Doğum Tarihi</th></tr>
     <tr><td>Sorumlu</td><td><b>${o.misafir||'—'}</b></td><td><b>${o.tc || o.pasaport || '—'}</b></td><td>—</td></tr>
+    ${(o.refakatciler||[]).map(r=>`<tr><td>Yanındaki</td><td>${r.ad||'—'}</td><td>${r.tc||'—'}</td><td>${r.dt?fmtTarih(r.dt):'—'}</td></tr>`).join('')}
   </table>
 
   <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
@@ -3987,7 +4038,10 @@ window.sozlesmeOnaysiziGonder = function(odaNo, revId) {
   };
 
   const odemeDurumMap = {odenmedi:'Ödenmedi', odendi:'Ödendi', depozito:'Depozito Alındı', kismi:'Kısmi Ödeme'};
-  const odemeDurum = odemeDurumMap[rev.odemeDurum] || 'Ödenmedi';
+  let odemeDurum = odemeDurumMap[rev.odemeDurum] || 'Ödenmedi';
+  if(rev.odemeDurum === 'kismi' && rev.kismiTutar != null) {
+    odemeDurum += ` (${Number(rev.kismiTutar).toLocaleString('tr-TR')} ₺ alındı, ${Number(rev.kismiKalan||0).toLocaleString('tr-TR')} ₺ kalan)`;
+  }
 
   // printSozlesme ile aynı şablonu kullan ama rev verisinden
   const fakeO = {
@@ -3996,6 +4050,7 @@ window.sozlesmeOnaysiziGonder = function(odaNo, revId) {
     fiyat: rev.fiyat, sozlesmeFiyat: rev.sozlesmeFiyat,
     kaynak: rev.kaynak, not: rev.not,
     odemeDurum: rev.odemeDurum, odemeTuru: rev.odemeTuru,
+    refakatciler: rev.refakatciler || [],
   };
   window._O['_onay_oncesi_' + odaNo] = fakeO;
   printSozlesmeFromData(fakeO, odaAdi, gece, sozNo, resNo, gecelikFiyat, toplamFiyat, odemeDurum, fmtTarih);
@@ -4018,6 +4073,8 @@ window.revDuzenleAc = function(rev) {
   document.getElementById('rd_not').value = rev.not || '';
   document.getElementById('rd_odeme_durum').value = rev.odemeDurum || 'odenmedi';
   document.getElementById('rd_odeme_tip').value = rev.odemeTuru || 'nakit';
+  document.getElementById('rd_kismi_wrap').style.display = rev.odemeDurum === 'kismi' ? 'block' : 'none';
+  document.getElementById('rd_kismi_tutar').value = rev.kismiTutar ?? '';
 
   const sel = document.getElementById('rd_fiyat_tip');
   sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==(rev.fiyatTip||1)?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
@@ -4042,8 +4099,10 @@ window.rdGunGuncelle = function() {
 window.rdFiyatGuncelle = function() {
   const gece  = parseInt(document.getElementById('rd_gece').value)||1;
   const fiyat = Number(document.getElementById('rd_fiyat').value)||0;
+  const toplam = fiyat*gece;
   document.getElementById('rd_fiyat_toplam').textContent =
-    fiyat > 0 ? `${fiyat.toLocaleString('tr-TR')} ₺ × ${gece} gece = ${fmt(fiyat*gece)} ₺` : '';
+    fiyat > 0 ? `${fiyat.toLocaleString('tr-TR')} ₺ × ${gece} gece = ${fmt(toplam)} ₺` : '';
+  kismiKalanGuncelle('rd', toplam);
 };
 
 window.revDuzenleKaydet = async function() {
@@ -4074,6 +4133,8 @@ window.revDuzenleKaydet = async function() {
     giris, cikis, gece, fiyat, fiyatTip,
     fiyatTipAd: getTipAd(fiyatTip),
     odemeDurum, odemeTuru, not:not_,
+    kismiTutar: odemeDurum==='kismi' ? (Number(document.getElementById('rd_kismi_tutar')?.value)||0) : null,
+    kismiKalan: odemeDurum==='kismi' ? Math.max(0,(fiyat*gece)-(Number(document.getElementById('rd_kismi_tutar')?.value)||0)) : null,
     guncelleme: nowISO()
   });
 
