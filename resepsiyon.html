@@ -909,7 +909,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>TC Kimlik No</label><input type="text" id="rev_tc" maxlength="11" inputmode="numeric" oninput="revTcAra(this.value)" placeholder="11 hane"></div>
+      <div class="form-group"><label>TC / Pasaport No</label><input type="text" id="rev_tc" maxlength="20" oninput="revTcAra(this.value)" placeholder="TC (11 hane) veya Pasaport No" style="text-transform:uppercase"></div>
       <div class="form-group"><label id="rev_ad_label">Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--dark);cursor:pointer">
@@ -2998,7 +2998,7 @@ window.revCarpısmaKontrol = function() {
 };
 
 window.revTcAra = async function(tc) {
-  if(tc.length!==11) { document.getElementById('revMusteriBulundu').style.display='none'; return; }
+  if(!/^\d{11}$/.test(tc)) { document.getElementById('revMusteriBulundu').style.display='none'; return; }
   const q = query(collection(db,'musteriler'), where('tc','==',tc));
   const snap = await getDocs(q);
   if(!snap.empty) {
@@ -3719,7 +3719,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
 
   <div class="grid4">
     <div class="box"><div class="label">Sözleşme No</div><div class="value">${sozNo}</div></div>
-    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(o.giris)}</div></div>
+    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(today())}</div></div>
     <div class="box"><div class="label">Rezervasyon No</div><div class="value">${resNo}</div></div>
     <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:11px">Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div></div>
   </div>
