@@ -505,6 +505,12 @@ input[type="number"], input[type="date"], input[type="password"] {
         <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
         <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
       </div>
+      <div class="form-group">
+        <label>Komisyon Alacak Kişi <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
+        <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı...">
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
     </div>
 
@@ -772,9 +778,15 @@ input[type="number"], input[type="date"], input[type="password"] {
         <input type="number" id="rd_fiyat" min="0" oninput="rdFiyatGuncelle()">
       </div>
     </div>
-    <div class="form-group">
-      <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(komisyon dahil, misafire görünen fiyat — boş = gerçek fiyatla aynı)</span></label>
-      <input type="number" id="rd_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik fiyat..." oninput="rdFiyatGuncelle()">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(komisyon dahil, misafire görünen fiyat — boş = gerçek fiyatla aynı)</span></label>
+        <input type="number" id="rd_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik fiyat..." oninput="rdFiyatGuncelle()">
+      </div>
+      <div class="form-group">
+        <label>Komisyon Alacak Kişi <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
+        <input type="text" id="rd_komisyoncu" placeholder="Aracı / komisyoncu adı...">
+      </div>
     </div>
     <div id="rd_fiyat_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-bottom:6px"></div>
     <div id="rd_komisyon_bilgi" style="display:none;font-size:11px;color:var(--gold2);background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);padding:8px 12px;margin-bottom:12px"></div>
@@ -966,6 +978,12 @@ input[type="number"], input[type="date"], input[type="password"] {
         <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
         <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
       </div>
+      <div class="form-group">
+        <label>Komisyon Alacak Kişi <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
+        <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
     </div>
     <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
@@ -1220,7 +1238,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost" id="vardiyaBtn" onclick="vardiyaAc()">⏱ Vardiya Başlat</button>
       <button class="btn btn-ghost" onclick="openModal('harcamaModal')">💸 Harcama Gir</button>
-      <button class="btn btn-primary" onclick="openModal('rezervModal')">+ Rezervasyon</button>
+      <button class="btn btn-primary" onclick="openRezervModalForOda(null)">+ Rezervasyon</button>
     </div>
   </div>
 
@@ -1272,7 +1290,7 @@ input[type="number"], input[type="date"], input[type="password"] {
 <div class="page" id="page-rezervasyonlar">
   <div class="section-head">
     <h2>Rezervasyon <em>Listesi</em></h2>
-    <button class="btn btn-primary" onclick="openModal('rezervModal')">+ Rezervasyon Ekle</button>
+    <button class="btn btn-primary" onclick="openRezervModalForOda(null)">+ Rezervasyon Ekle</button>
   </div>
 
   <div class="table-card">
@@ -2108,7 +2126,7 @@ window.checkinSozlesmeOnayla = function() {
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
     refakatciler, guncelleme:now,
     dt: document.getElementById('ci_dt')?.value || '',
-    araciAd: window._ciAraciAd || null,
+    araciAd: window._ciAraciAd || document.getElementById('ci_komisyoncu')?.value.trim() || null,
   };
 
   // 2915'teki printSozlesme'yi kullan
@@ -2125,7 +2143,7 @@ window.openCheckin = function(no) {
   window._ciAraciAd = null;
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
   // Temizle
-  ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not','ci_dt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not','ci_dt','ci_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   clearRefakatciler();;
   document.getElementById('ci_giris').value = today();
   document.getElementById('ci_gece').value = 1;
@@ -2334,7 +2352,7 @@ window.saveCheckin = async function() {
 
   // Oda güncelle
   const refakatciler = getRefakatciler();
-  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,pasaport,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',kismiTutar:document.getElementById('ci_odeme_durum')?.value==='kismi'?(Number(document.getElementById('ci_kismi_tutar')?.value)||0):null,kismiKalan:document.getElementById('ci_odeme_durum')?.value==='kismi'?Math.max(0,((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece)-(Number(document.getElementById('ci_kismi_tutar')?.value)||0)):null,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,dt:document.getElementById('ci_dt')?.value||'',araciAd:window._ciAraciAd||null,guncelleme:now};
+  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,pasaport,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',kismiTutar:document.getElementById('ci_odeme_durum')?.value==='kismi'?(Number(document.getElementById('ci_kismi_tutar')?.value)||0):null,kismiKalan:document.getElementById('ci_odeme_durum')?.value==='kismi'?Math.max(0,((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece)-(Number(document.getElementById('ci_kismi_tutar')?.value)||0)):null,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,dt:document.getElementById('ci_dt')?.value||'',araciAd:window._ciAraciAd||document.getElementById('ci_komisyoncu')?.value.trim()||null,guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   const sozlesmeFiyatVal = window._O['oda'+no]?.sozlesmeFiyat || null;
@@ -2413,7 +2431,7 @@ window.saveCheckin = async function() {
 window.checkindenRezervasyon = function(rev) {
   currentCheckinOda = rev.odaNo;
   window._ciKaynakRevId = rev.id || null;
-  window._ciAraciAd = rev.aracirez ? (rev.araciAd || rev.misafir || null) : null;
+  window._ciAraciAd = rev.aracirez ? (rev.araciAd || rev.misafir || null) : (rev.araciAd || null);
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${rev.odaNo} (Rezervasyon)`;
   const araci = !!rev.aracirez;
   if(araci) {
@@ -2434,6 +2452,7 @@ window.checkindenRezervasyon = function(rev) {
   }
   document.getElementById('ci_ad').dataset.kayitliAd = '';
   document.getElementById('ci_dt').value = rev.dt || '';
+  document.getElementById('ci_komisyoncu').value = rev.araciAd || '';
   document.getElementById('ci_giris').value = rev.giris || today();
   document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
   document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
@@ -2942,7 +2961,7 @@ window.saveDurum = async function() {
 // ── REZERVASYONLAR ──
 window.openRezervModalForOda = function(odaNo) {
   // Formu sıfırla
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt','rev_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rev_gece').value = 1;
   document.getElementById('rev_cikis_goster').value = '';
   document.getElementById('rev_cikis').value = '';
@@ -3061,6 +3080,7 @@ window.saveRezervasyon = async function() {
   const odemeTip   = document.getElementById('rev_odeme_tip').value;
   const not_    = document.getElementById('rev_not').value;
   const araci   = document.getElementById('rev_araci')?.checked || false;
+  const komisyoncuAdi = document.getElementById('rev_komisyoncu')?.value.trim() || '';
   const now     = nowISO();
 
   if(!giris||!cikis||!odaNo||!ad) { toast('Zorunlu alanları doldurun','error'); return; }
@@ -3082,13 +3102,13 @@ window.saveRezervasyon = async function() {
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
     kismiTutar, kismiKalan: kismiTutar!=null ? Math.max(0,((sozlesmeFiyat||fiyat)*gece)-kismiTutar) : null,
-    aracirez:araci, araciAd:araci?ad:null,
+    aracirez:araci, araciAd: araci ? ad : (komisyoncuAdi || null),
     refakatciler,
     dt: document.getElementById('rev_dt')?.value || '',
     kayitTarih:now
   });
 
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt','rev_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rev_oda').value='';
   document.getElementById('rev_cikis_goster').value='';
   document.getElementById('rev_carpısma').style.display='none';
@@ -4151,6 +4171,7 @@ window.revDuzenleAc = function(rev) {
   // Sözleşme fiyatı — sadece gerçek komisyon varsa göster (eşitse boş bırak)
   const sozEl = document.getElementById('rd_sozlesme_fiyat');
   sozEl.value = (rev.sozlesmeFiyat != null && rev.sozlesmeFiyat !== rev.fiyat) ? rev.sozlesmeFiyat : '';
+  document.getElementById('rd_komisyoncu').value = rev.araciAd || '';
 
   // Yanında kalanlar
   clearRefakatciler('rdRefakatciListesi');
@@ -4220,6 +4241,7 @@ window.revDuzenleKaydet = async function() {
   const odemeTuru  = document.getElementById('rd_odeme_tip').value;
   const not_  = document.getElementById('rd_not').value;
   const refakatciler = getRefakatciler('rdRefakatciListesi');
+  const komisyoncuAdi = document.getElementById('rd_komisyoncu')?.value.trim() || '';
 
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
@@ -4244,6 +4266,7 @@ window.revDuzenleKaydet = async function() {
     giris, cikis, gece, fiyat, fiyatTip,
     fiyatTipAd: getTipAd(fiyatTip),
     sozlesmeFiyat: sozlesmeFiyatVal,
+    araciAd: duzenlenenRev?.aracirez ? ad : (komisyoncuAdi || null),
     refakatciler,
     odemeDurum, odemeTuru, not:not_,
     kismiTutar: kismiTutarVal,
