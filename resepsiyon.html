@@ -102,6 +102,23 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .separator{height:1px;background:var(--border);margin:20px 0;}
 .section-mini-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--dark);margin-bottom:14px;}
 
+/* ── Yeni modal tasarımı: özet şerit + bölüm kartları ── */
+.modal-ozet-serit{display:flex;align-items:center;gap:0;background:var(--parchment);border:1px solid var(--border);padding:14px 18px;margin-bottom:22px;flex-wrap:wrap;}
+.modal-ozet-item{display:flex;flex-direction:column;padding:0 18px;border-right:1px solid var(--border);}
+.modal-ozet-item:first-child{padding-left:0;}
+.modal-ozet-item:last-child{border-right:none;margin-left:auto;background:var(--white);border:1px solid var(--gold2);padding:8px 16px;text-align:right;}
+.modal-ozet-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.modal-ozet-val{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--dark);}
+.modal-ozet-val.tutar{color:var(--gold2);font-size:20px;}
+.modal-section-card{border:1px solid var(--border);background:var(--white);padding:18px 20px;margin-bottom:16px;}
+.modal-section-head{display:flex;align-items:center;gap:8px;font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.modal-section-head .ikon{font-size:14px;color:var(--gold2);}
+.modal-sections-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:600px){.modal-sections-grid{grid-template-columns:1fr;} .modal-ozet-item{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;width:100%;} .modal-ozet-item:last-child{margin-left:0;width:100%;border:1px solid var(--gold2);}}
+.modal-aracı-checkbox{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--muted);cursor:pointer;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.modal-aracı-checkbox input{width:auto;accent-color:var(--gold2);margin-top:2px;}
+.modal-aracı-checkbox strong{color:var(--dark);display:block;font-size:12px;margin-bottom:2px;}
+
 /* BUTTONS */
 .btn{border:none;padding:10px 22px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
 .btn:active{transform:scale(.98);}
@@ -402,123 +419,156 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 <!-- CHECK-IN MODAL -->
 <div class="modal-overlay" id="checkinModal">
-  <div class="modal" style="max-width:640px">
+  <div class="modal" style="max-width:760px">
     <div class="modal-title" id="checkinTitle">Check-in — Oda</div>
 
-    <!-- TC Arama -->
-    <div class="section-mini-title">Misafir Bilgileri</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>TC Kimlik No</label>
-        <input type="text" id="ci_tc" placeholder="11 hane" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
+    <!-- Özet şerit: Giriş / Gece / Çıkış / Toplam Tutar -->
+    <div class="modal-ozet-serit">
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Giriş Tarihi</span>
+        <span class="modal-ozet-val" id="ci_ozet_giris">—</span>
       </div>
-      <div class="form-group"><label>Pasaport No</label>
-        <input type="text" id="ci_pasaport" placeholder="Yabancı misafir" maxlength="20" style="text-transform:uppercase">
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Gece</span>
+        <span class="modal-ozet-val" id="ci_ozet_gece">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Çıkış Tarihi</span>
+        <span class="modal-ozet-val" id="ci_ozet_cikis">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Toplam Tutar</span>
+        <span class="modal-ozet-val tutar" id="ci_ozet_toplam">—</span>
       </div>
     </div>
-    <div class="musteri-bulundu" id="musteriBulundu" style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div class="mb-ad" id="mb-ad"></div>
-        <div class="mb-meta" id="mb-meta"></div>
+
+    <!-- Misafir Bilgileri -->
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">👤</span> Misafir Bilgileri</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>TC Kimlik No</label>
+          <input type="text" id="ci_tc" placeholder="11 hane" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
+        </div>
+        <div class="form-group"><label>Pasaport No</label>
+          <input type="text" id="ci_pasaport" placeholder="Yabancı misafir" maxlength="20" style="text-transform:uppercase">
+        </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="musteriKartiAc(document.getElementById('ci_tc').value)" style="white-space:nowrap">📋 Kartı Gör</button>
+      <div class="musteri-bulundu" id="musteriBulundu" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="mb-ad" id="mb-ad"></div>
+          <div class="mb-meta" id="mb-meta"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="musteriKartiAc(document.getElementById('ci_tc').value)" style="white-space:nowrap">📋 Kartı Gör</button>
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group"><label>Ad Soyad *</label><input type="text" id="ci_ad" placeholder="Ad Soyad" oninput="adDegistiKontrol()"></div>
+        <div class="form-group"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
+        <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="ci_dt"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Yetişkin *</label><input type="number" id="ci_yetiskin" min="1" value="1" inputmode="numeric"></div>
+        <div class="form-group"><label>Çocuk</label><input type="number" id="ci_cocuk" min="0" value="0" inputmode="numeric"></div>
+        <div class="form-group"><label>Toplam Kişi</label><input type="text" id="ci_toplam_kisi" readonly></div>
+      </div>
+
+      <details style="margin-bottom:0">
+        <summary style="font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.5px">+ E-posta / Araç Plakası (opsiyonel)</summary>
+        <div class="form-row" style="margin-top:8px">
+          <div class="form-group"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
+          <div class="form-group"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
+        </div>
+      </details>
     </div>
 
-    <div class="form-row-3">
-      <div class="form-group"><label>Ad Soyad *</label><input type="text" id="ci_ad" placeholder="Ad Soyad" oninput="adDegistiKontrol()"></div>
-      <div class="form-group"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
-      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="ci_dt"></div>
+    <!-- Konaklama Tarihleri (gizli ama gerekli alanlar) -->
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">📅</span> Konaklama Tarihleri</div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()" min=""></div>
+        <div class="form-group"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" placeholder="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
+        <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="—"></div>
+      </div>
+      <input type="hidden" id="ci_cikis">
+      <input type="hidden" id="ci_saat">
     </div>
 
-    <details style="margin-bottom:10px">
-      <summary style="font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.5px">+ E-posta / Araç Plakası (opsiyonel)</summary>
-      <div class="form-row" style="margin-top:8px">
-        <div class="form-group"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
-        <div class="form-group"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
+    <!-- İki kolon: Ödeme Bilgileri | Kaynak & Komisyon -->
+    <div class="modal-sections-grid">
+      <div class="modal-section-card" style="margin-bottom:0">
+        <div class="modal-section-head"><span class="ikon">💳</span> Ödeme Bilgileri</div>
+        <div class="form-group">
+          <label>Fiyat Tipi</label>
+          <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()"></select>
+        </div>
+        <div class="form-group">
+          <label>Gecelik Ücret *</label>
+          <input type="number" id="ci_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()">
+          <div id="ci_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Ödeme Durumu</label>
+            <select id="ci_odeme_durum" onchange="document.getElementById('ci_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
+              <option value="odenmedi">Ödenmedi</option>
+              <option value="odendi">Ödendi</option>
+              <option value="depozito">Depozito Alındı</option>
+              <option value="kismi">Kısmi Ödeme</option>
+            </select>
+            <div id="ci_kismi_wrap" style="display:none;margin-top:6px">
+              <input type="number" id="ci_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="ciFiyatGuncelle()">
+              <div id="ci_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+          </div>
+          <div class="form-group"><label>Ödeme Türü</label>
+            <select id="ci_odeme">
+              <option value="nakit">Nakit</option>
+              <option value="kart">Kredi / Banka Kartı</option>
+              <option value="havale">Havale / EFT</option>
+            </select>
+          </div>
+        </div>
       </div>
-    </details>
 
-    <div class="separator"></div>
-    <div class="section-mini-title">Konaklama Bilgileri</div>
-
-    <div class="form-row-3">
-      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()" min=""></div>
-      <div class="form-group"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" placeholder="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
-      <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="ci_cikis_goster" readonly placeholder="—"></div>
-    </div>
-    <input type="hidden" id="ci_cikis">
-    <input type="hidden" id="ci_saat">
-
-    <div class="form-row-3">
-      <div class="form-group"><label>Yetişkin *</label><input type="number" id="ci_yetiskin" min="1" value="1" inputmode="numeric"></div>
-      <div class="form-group"><label>Çocuk</label><input type="number" id="ci_cocuk" min="0" value="0" inputmode="numeric"></div>
-      <div class="form-group"><label>Toplam Kişi</label><input type="text" id="ci_toplam_kisi" readonly></div>
-    </div>
-
-    <div class="form-row-3">
-      <div class="form-group"><label>Kaynak</label>
-        <select id="ci_kaynak">
-          <option value="walk-in">Walk-in (Kapıdan)</option>
-          <option value="telefon">Telefon</option>
-          <option value="booking">Booking.com</option>
-          <option value="airbnb">Airbnb</option>
-          <option value="expedia">Expedia</option>
-          <option value="website">Otel Websitesi</option>
-          <option value="ajans">Acente / Ajans</option>
-          <option value="diger">Diğer</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Ödeme Türü</label>
-        <select id="ci_odeme">
-          <option value="nakit">Nakit</option>
-          <option value="kart">Kredi / Banka Kartı</option>
-          <option value="havale">Havale / EFT</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Ödeme Durumu</label>
-        <select id="ci_odeme_durum" onchange="document.getElementById('ci_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
-          <option value="odenmedi">Ödenmedi</option>
-          <option value="odendi">Ödendi</option>
-          <option value="depozito">Depozito Alındı</option>
-          <option value="kismi">Kısmi Ödeme</option>
-        </select>
-        <div id="ci_kismi_wrap" style="display:none;margin-top:6px">
-          <input type="number" id="ci_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="ciFiyatGuncelle()">
-          <div id="ci_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+      <div class="modal-section-card" style="margin-bottom:0">
+        <div class="modal-section-head"><span class="ikon">🤝</span> Kaynak & Komisyon</div>
+        <div class="form-group">
+          <label>Kaynak</label>
+          <select id="ci_kaynak">
+            <option value="walk-in">Walk-in (Kapıdan)</option>
+            <option value="telefon">Telefon</option>
+            <option value="booking">Booking.com</option>
+            <option value="airbnb">Airbnb</option>
+            <option value="expedia">Expedia</option>
+            <option value="website">Otel Websitesi</option>
+            <option value="ajans">Acente / Ajans</option>
+            <option value="diger">Diğer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sözleşme Fiyatı — Gecelik <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil)</span></label>
+          <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
+          <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Komisyoncu / Acente <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
+          <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı...">
         </div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group"><label>Fiyat Tipi</label>
-        <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()"></select>
-      </div>
-      <div class="form-group">
-        <label>Gecelik Ücret *</label>
-        <input type="number" id="ci_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()">
-        <div id="ci_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil, 1 gecenin fiyatı)</span></label>
-        <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
-        <div id="ci_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
-      </div>
-      <div class="form-group">
-        <label>Komisyon Alacak Kişi <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
-        <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı...">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Not</label><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">📝</span> Not</div>
+      <div class="form-group" style="margin-bottom:0"><input type="text" id="ci_not" placeholder="Özel istek, not..."></div>
     </div>
 
-    <div class="section-mini-title" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-      <span>Yanında Kalanlar</span>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle()">+ Kişi Ekle</button>
+    <div class="modal-section-card">
+      <div class="modal-section-head" style="border-bottom:none;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <span><span class="ikon">👥</span> Yanında Kalanlar</span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle()">+ Kişi Ekle</button>
+      </div>
+      <div id="refakatciListesi" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
-    <div id="refakatciListesi" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('checkinModal')">Vazgeç</button>
@@ -923,98 +973,146 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 <!-- REZERVASYON MODAL -->
 <div class="modal-overlay" id="rezervModal">
-  <div class="modal" style="max-width:640px">
-    <div class="modal-title">Rezervasyon Ekle</div>
-    <div class="form-row-3">
-      <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()" min=""></div>
-      <div class="form-group"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
-      <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly placeholder="—"></div>
-    </div>
-    <input type="hidden" id="rev_cikis">
-    <div class="form-row">
-      <div class="form-group"><label>Oda No *</label>
-        <select id="rev_oda" onchange="revOdaSecildi()"><option value="">— Seç —</option></select>
-      </div>
-      <div class="form-group"><label>Kaynak</label>
-        <select id="rev_kaynak">
-          <option value="walk-in">Walk-in</option><option value="telefon">Telefon</option>
-          <option value="booking">Booking.com</option><option value="airbnb">Airbnb</option>
-          <option value="expedia">Expedia</option><option value="website">Website</option>
-          <option value="ajans">Ajans</option><option value="diger">Diğer</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row-3">
-      <div class="form-group"><label>TC / Pasaport No</label><input type="text" id="rev_tc" maxlength="20" oninput="revTcAra(this.value)" placeholder="TC (11 hane) veya Pasaport No" style="text-transform:uppercase"></div>
-      <div class="form-group"><label id="rev_ad_label">Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
-      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="rev_dt"></div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--dark);cursor:pointer">
-      <input type="checkbox" id="rev_araci" style="width:auto;accent-color:var(--gold2)" onchange="document.getElementById('rev_ad_label').textContent=this.checked?'Aracı / Komisyoncu Adı *':'Misafir Adı *';document.getElementById('rev_ad').placeholder=this.checked?'Aracının adı...':'Ad Soyad'">
-      🤝 Aracı (komisyoncu) adına rezervasyon — gerçek misafir bilgileri check-in'de alınır
-    </label>
-    <div class="musteri-bulundu" id="revMusteriBulundu">
-      <div class="mb-ad" id="rev_mb_ad"></div>
-      <div class="mb-meta" id="rev_mb_meta"></div>
-    </div>
-    <div class="form-row-3">
-      <div class="form-group"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX..."></div>
-      <div class="form-group"><label>Yetişkin</label><input type="number" id="rev_yetiskin" min="1" value="1"></div>
-      <div class="form-group"><label>Çocuk</label><input type="number" id="rev_cocuk" min="0" value="0"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Fiyat Tipi</label>
-        <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
-      </div>
-      <div class="form-group">
-        <label>Gecelik Ücret *</label>
-        <input type="number" id="rev_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
-        <div id="rev_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Sözleşme Fiyatı — GECELİK <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil, 1 gecenin fiyatı)</span></label>
-        <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
-        <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
-      </div>
-      <div class="form-group">
-        <label>Komisyon Alacak Kişi <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
-        <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Not</label><input type="text" id="rev_not" placeholder="Özel istek..."></div>
-    </div>
-    <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
+  <div class="modal" style="max-width:760px">
+    <div class="modal-title">Yeni Rezervasyon</div>
 
-    <div class="section-mini-title" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-      <span>Yanında Kalanlar</span>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle('revRefakatciListesi')">+ Kişi Ekle</button>
+    <!-- Özet şerit: Giriş / Gece / Çıkış / Oda / Toplam Tutar -->
+    <div class="modal-ozet-serit">
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Giriş Tarihi</span>
+        <span class="modal-ozet-val" id="rev_ozet_giris">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Gece</span>
+        <span class="modal-ozet-val" id="rev_ozet_gece">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Çıkış Tarihi</span>
+        <span class="modal-ozet-val" id="rev_ozet_cikis">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Oda</span>
+        <span class="modal-ozet-val" id="rev_ozet_oda">—</span>
+      </div>
+      <div class="modal-ozet-item">
+        <span class="modal-ozet-label">Toplam Tutar</span>
+        <span class="modal-ozet-val tutar" id="rev_ozet_toplam">—</span>
+      </div>
     </div>
-    <div id="revRefakatciListesi" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;margin-bottom:12px"></div>
 
-    <div class="form-row">
-      <div class="form-group"><label>Ödeme Durumu</label>
-        <select id="rev_odeme_durum" onchange="document.getElementById('rev_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
-          <option value="odenmedi">Ödenmedi</option>
-          <option value="odendi">Ödendi</option>
-          <option value="depozito">Depozito Alındı</option>
-          <option value="kismi">Kısmi Ödeme</option>
-        </select>
-        <div id="rev_kismi_wrap" style="display:none;margin-top:6px">
-          <input type="number" id="rev_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="revFiyatGuncelle()">
-          <div id="rev_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+    <!-- Konaklama Tarihleri & Oda -->
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">📅</span> Konaklama & Oda</div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()" min=""></div>
+        <div class="form-group"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
+        <div class="form-group"><label>Çıkış (Otomatik)</label><input type="text" id="rev_cikis_goster" readonly placeholder="—"></div>
+      </div>
+      <input type="hidden" id="rev_cikis">
+      <div class="form-row">
+        <div class="form-group"><label>Oda No *</label>
+          <select id="rev_oda" onchange="revOdaSecildi()"><option value="">— Seç —</option></select>
+        </div>
+        <div class="form-group"><label>Kaynak</label>
+          <select id="rev_kaynak">
+            <option value="walk-in">Walk-in</option><option value="telefon">Telefon</option>
+            <option value="booking">Booking.com</option><option value="airbnb">Airbnb</option>
+            <option value="expedia">Expedia</option><option value="website">Website</option>
+            <option value="ajans">Ajans</option><option value="diger">Diğer</option>
+          </select>
         </div>
       </div>
-      <div class="form-group"><label>Ödeme Türü</label>
-        <select id="rev_odeme_tip">
-          <option value="nakit">Nakit</option>
-          <option value="kart">Kredi Kartı</option>
-          <option value="havale">Havale / EFT</option>
-        </select>
+      <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:0">⚠ Bu oda seçilen tarihlerde dolu!</div>
+    </div>
+
+    <!-- Misafir Bilgileri -->
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">👤</span> Misafir Bilgileri</div>
+      <div class="form-row-3">
+        <div class="form-group"><label>TC / Pasaport No</label><input type="text" id="rev_tc" maxlength="20" oninput="revTcAra(this.value)" placeholder="TC (11 hane) veya Pasaport No" style="text-transform:uppercase"></div>
+        <div class="form-group"><label id="rev_ad_label">Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+        <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="rev_dt"></div>
+      </div>
+      <div class="musteri-bulundu" id="revMusteriBulundu">
+        <div class="mb-ad" id="rev_mb_ad"></div>
+        <div class="mb-meta" id="rev_mb_meta"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX..."></div>
+        <div class="form-group" style="display:flex;gap:12px">
+          <div style="flex:1"><label>Yetişkin</label><input type="number" id="rev_yetiskin" min="1" value="1"></div>
+          <div style="flex:1"><label>Çocuk</label><input type="number" id="rev_cocuk" min="0" value="0"></div>
+        </div>
+      </div>
+      <label class="modal-aracı-checkbox" style="margin-bottom:0">
+        <input type="checkbox" id="rev_araci" onchange="document.getElementById('rev_ad_label').textContent=this.checked?'Aracı / Komisyoncu Adı *':'Misafir Adı *';document.getElementById('rev_ad').placeholder=this.checked?'Aracının adı...':'Ad Soyad'">
+        <span><strong>🤝 Aracı (komisyoncu) adına rezervasyon</strong>gerçek misafir bilgileri check-in'de alınır.</span>
+      </label>
+    </div>
+
+    <!-- İki kolon: Ödeme Bilgileri | Kaynak & Komisyon -->
+    <div class="modal-sections-grid">
+      <div class="modal-section-card" style="margin-bottom:0">
+        <div class="modal-section-head"><span class="ikon">💳</span> Ödeme Bilgileri</div>
+        <div class="form-group">
+          <label>Fiyat Tipi</label>
+          <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
+        </div>
+        <div class="form-group">
+          <label>Gecelik Ücret *</label>
+          <input type="number" id="rev_fiyat" min="0" placeholder="Otomatik / elle girilebilir" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
+          <div id="rev_fiyat_toplam_sub" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Ödeme Durumu</label>
+            <select id="rev_odeme_durum" onchange="document.getElementById('rev_kismi_wrap').style.display=this.value==='kismi'?'block':'none'">
+              <option value="odenmedi">Ödenmedi</option>
+              <option value="odendi">Ödendi</option>
+              <option value="depozito">Depozito Alındı</option>
+              <option value="kismi">Kısmi Ödeme</option>
+            </select>
+            <div id="rev_kismi_wrap" style="display:none;margin-top:6px">
+              <input type="number" id="rev_kismi_tutar" min="0" placeholder="Alınan tutar (₺)" oninput="revFiyatGuncelle()">
+              <div id="rev_kismi_kalan" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+          </div>
+          <div class="form-group"><label>Ödeme Türü</label>
+            <select id="rev_odeme_tip">
+              <option value="nakit">Nakit</option>
+              <option value="kart">Kredi Kartı</option>
+              <option value="havale">Havale / EFT</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section-card" style="margin-bottom:0">
+        <div class="modal-section-head"><span class="ikon">🤝</span> Kaynak & Komisyon</div>
+        <div class="form-group">
+          <label>Sözleşme Fiyatı — Gecelik <span style="font-size:10px;color:var(--muted);font-weight:400">(toplam değil)</span></label>
+          <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
+          <div id="rev_sozlesme_toplam" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px;display:none"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Komisyoncu / Acente <span style="font-size:10px;color:var(--muted);font-weight:400">(varsa)</span></label>
+          <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
+        </div>
       </div>
     </div>
+
+    <div class="modal-section-card">
+      <div class="modal-section-head"><span class="ikon">📝</span> Not</div>
+      <div class="form-group" style="margin-bottom:0"><input type="text" id="rev_not" placeholder="Özel istek..."></div>
+    </div>
+
+    <div class="modal-section-card">
+      <div class="modal-section-head" style="border-bottom:none;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <span><span class="ikon">👥</span> Yanında Kalanlar</span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle('revRefakatciListesi')">+ Kişi Ekle</button>
+      </div>
+      <div id="revRefakatciListesi" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('rezervModal')">Vazgeç</button>
       <button class="btn btn-primary" onclick="saveRezervasyon()">Kaydet</button>
@@ -1414,7 +1512,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--green)" id="rapor-checkin-say">—</div>
     </div>
     <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--gold);padding:16px 20px;box-shadow:var(--shadow)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Komisyon</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Komisyon <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0">(gerçekleşen + yaklaşan)</span></div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold2)" id="rapor-komisyon">—</div>
     </div>
   </div>
@@ -1436,9 +1534,9 @@ input[type="number"], input[type="date"], input[type="password"] {
       </table>
     </div>
 
-    <!-- Komisyon tablosu -->
+    <!-- Komisyon tablosu — gerçekleşmiş (check-in/gelir) -->
     <div class="table-card">
-      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--green)">— Gerçekleşen (Check-in Yapılmış)</span></div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
           <tr>
@@ -1457,12 +1555,56 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="total-row" id="rapor-komisyon-toplam"></div>
     </div>
   </div>
+
+  <!-- Komisyon tablosu — yaklaşan rezervasyonlar (henüz check-in yapılmamış) -->
+  <div class="table-card" style="margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold2)">— Yaklaşan Rezervasyonlar (Henüz Check-in Yapılmadı)</span></div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Aracı</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Giriş</th>
+          <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Sözleşme</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Beklenen Komisyon</th>
+        </tr>
+      </thead>
+      <tbody id="rapor-komisyon-yaklasan-body"></tbody>
+    </table>
+    <div class="total-row" id="rapor-komisyon-yaklasan-toplam"></div>
+  </div>
 </div>
 
 </div><!-- /content -->
 
 <script type="module">
+// Modal özet şeritlerinde "16 Haziran 2026" gibi okunaklı tarih göstermek için
+function formatTarihGoster(iso) {
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-').map(Number);
+  if(!y||!m||!d) return iso;
+  const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  return `${d} ${aylar[m-1]} ${y}`;
+}
+
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
+
+// Takvimde ardışık farklı misafirlerin görsel olarak ayrışması için
+// her misafir/rezervasyon kaydına (isim+giriş tarihine göre) sabit ama
+// birbirinden ayırt edilebilir bir ton ataması yapar. Palet (mor/yeşil) sabit kalır.
+function takvimRenkTonu(anahtar, taban) {
+  let h = 0;
+  const s = String(anahtar || '');
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) % 360; }
+  // taban: 'rezerve' (mor) veya 'dolu' (yeşil) — hue sabit, lightness ile ton farkı
+  const hue = taban === 'dolu' ? 130 : 270;
+  const light = 78 + (h % 5) * 3; // 78–90 arası, hafif farklı tonlar
+  const sat = taban === 'dolu' ? 32 : 38;
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
+}
 if('serviceWorker' in navigator) { navigator.serviceWorker.register('/house/sw.js').catch(()=>{}); }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -2144,6 +2286,7 @@ window.openCheckin = function(no) {
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
   // Temizle
   ['ci_tc','ci_ad','ci_tel','ci_email','ci_plaka','ci_not','ci_dt','ci_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['ci_ozet_giris','ci_ozet_gece','ci_ozet_cikis','ci_ozet_toplam'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
   clearRefakatciler();;
   document.getElementById('ci_giris').value = today();
   document.getElementById('ci_gece').value = 1;
@@ -2192,6 +2335,9 @@ window.hesaplaKonaklama = function() {
     const cikis = addDays(giris, gece);
     document.getElementById('ci_cikis').value = cikis;
     document.getElementById('ci_cikis_goster').value = cikis + ` (${gece} gece)`;
+    const ozGirisEl = document.getElementById('ci_ozet_giris'); if(ozGirisEl) ozGirisEl.textContent = formatTarihGoster ? formatTarihGoster(giris) : giris;
+    const ozGeceEl = document.getElementById('ci_ozet_gece'); if(ozGeceEl) ozGeceEl.textContent = gece;
+    const ozCikisEl = document.getElementById('ci_ozet_cikis'); if(ozCikisEl) ozCikisEl.textContent = formatTarihGoster ? formatTarihGoster(cikis) : cikis;
   }
   fiyatTipGuncelle();
 };
@@ -2239,6 +2385,8 @@ window.ciFiyatGuncelle = function() {
   if(subEl) {
     subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)} ₺` : '';
   }
+  const ozTutarEl = document.getElementById('ci_ozet_toplam');
+  if(ozTutarEl) ozTutarEl.textContent = toplam > 0 ? fmt(toplam) + ' ₺' : '—';
   // Kısmi ödeme hesabı sözleşme (komisyonlu) fiyat varsa onun üzerinden yapılır
   const sozFiyat = Number(document.getElementById('ci_sozlesme_fiyat')?.value) || 0;
   const kismiToplam = (sozFiyat > 0 ? sozFiyat : fiyat) * gece;
@@ -2378,9 +2526,10 @@ window.saveCheckin = async function() {
       kismiKalan: kismiTutarVal!=null ? Math.max(0, ((sozlesmeFiyatVal||fiyat)*gece) - kismiTutarVal) : null,
       misafir:ad, tc, kaynak,
       fiyatTip, fiyatTipAd:getTipAd(fiyatTip),
-      girisSaati, yetiskin, cocuk,
+      girisSaati, yetiskin, cocuk, gece, fiyat,
       sozlesmeFiyat: sozlesmeFiyatVal || null,
       komisyonFark: komisyonFark || null,
+      araciAd: window._O['oda'+no]?.araciAd || null,
       aciklama:`Oda ${no} · ${gece} gece · ${getTipAd(fiyatTip)} · ${kaynak}`,
       kayitTarih:now
     });
@@ -2520,6 +2669,10 @@ window.checkindenRezervasyon = function(rev) {
     sozFiyatEl2.value = rev.sozlesmeFiyat;
     sozlesmeToplam('ci');
   }
+
+  const ozGirisEl = document.getElementById('ci_ozet_giris'); if(ozGirisEl) ozGirisEl.textContent = formatTarihGoster(rev.giris);
+  const ozGeceEl = document.getElementById('ci_ozet_gece'); if(ozGeceEl) ozGeceEl.textContent = gece;
+  const ozCikisEl = document.getElementById('ci_ozet_cikis'); if(ozCikisEl) ozCikisEl.textContent = formatTarihGoster(rev.cikis);
 
   ciFiyatGuncelle();
   kisilerGuncelle();
@@ -2979,6 +3132,7 @@ window.openRezervModalForOda = function(odaNo) {
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
   const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
   clearRefakatciler('revRefakatciListesi');
+  ['rev_ozet_giris','rev_ozet_gece','rev_ozet_cikis','rev_ozet_oda','rev_ozet_toplam'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
 
   // Bugünü giriş tarihi olarak set et
   document.getElementById('rev_giris').value = today();
@@ -3010,6 +3164,9 @@ window.revHesapla = function() {
     const cikis = addDays(giris, gece);
     document.getElementById('rev_cikis').value = cikis;
     document.getElementById('rev_cikis_goster').value = cikis + ` (${gece} gece)`;
+    const ozGirisEl = document.getElementById('rev_ozet_giris'); if(ozGirisEl) ozGirisEl.textContent = formatTarihGoster(giris);
+    const ozGeceEl = document.getElementById('rev_ozet_gece'); if(ozGeceEl) ozGeceEl.textContent = gece;
+    const ozCikisEl = document.getElementById('rev_ozet_cikis'); if(ozCikisEl) ozCikisEl.textContent = formatTarihGoster(cikis);
   }
   revCarpısmaKontrol();
   revFiyatGuncelle();
@@ -3018,6 +3175,7 @@ window.revHesapla = function() {
 window.revOdaSecildi = function() {
   const odaNo = document.getElementById('rev_oda').value;
   if(!odaNo) return;
+  const ozOdaEl = document.getElementById('rev_ozet_oda'); if(ozOdaEl) ozOdaEl.textContent = odaNo;
   const sel = document.getElementById('rev_fiyat_tip');
   sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}">${getTipAd(t)} — ${getOdaFiyat(odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
   revFiyatGuncelle();
@@ -3038,6 +3196,8 @@ window.revFiyatGuncelle = function() {
   const toplam = gece*fiyat;
   const subEl = document.getElementById('rev_fiyat_toplam_sub');
   if(subEl) subEl.textContent = fiyat > 0 ? `${gece} gece × ${fiyat.toLocaleString('tr-TR')} ₺ = ${fmt(toplam)} ₺` : '';
+  const ozTutarEl = document.getElementById('rev_ozet_toplam');
+  if(ozTutarEl) ozTutarEl.textContent = toplam > 0 ? fmt(toplam) + ' ₺' : '—';
   // Kısmi ödeme hesabı sözleşme (komisyonlu) fiyat varsa onun üzerinden yapılır
   const sozFiyat = Number(document.getElementById('rev_sozlesme_fiyat')?.value) || 0;
   const kismiToplam = (sozFiyat > 0 ? sozFiyat : fiyat) * gece;
@@ -3395,23 +3555,55 @@ function thisMonth() {
 window.renderRapor = function() {
   const secilenAy = document.getElementById('rapor-ay')?.value || thisMonth();
   const ay = secilenAy || thisMonth();
+  const fmt2 = n => Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:0}) + ' ₺';
 
-  // Ay içindeki rezervasyonlar
+  // Ay içindeki rezervasyonlar (giriş veya çıkış bu ayda olanlar — doluluk hesabı için)
   const ayRezervler = (window._R||[]).filter(r => {
     if(r.durum==='iptal') return false;
     return (r.giris||'').slice(0,7) === ay || (r.cikis||'').slice(0,7) === ay;
   });
 
-  // Ay içindeki gelirler
+  // Ay içindeki gelirler (gerçekleşmiş check-in'ler)
   const ayGelirler = (window._G||[]).filter(g => (g.tarih||'').startsWith(ay));
   const toplamGelir = ayGelirler.reduce((a,b)=>a+Number(b.tutar||0), 0);
 
-  // Check-in sayısı (aktivite logdan değil, rezervasyon girişlerinden)
-  const checkinSay = ayRezervler.filter(r => (r.giris||'').slice(0,7) === ay).length;
+  // Check-in sayısı
+  const checkinSay = ayGelirler.length;
 
-  // Komisyon
-  const ayKomisyon = (window._KOM||[]).filter(k => (k.tarih||'').startsWith(ay));
-  const toplamKomisyon = ayKomisyon.reduce((a,b)=>a+Number(b.toplamKomisyon||0), 0);
+  // ── KOMİSYON — GERÇEKLEŞEN (gelirler koleksiyonundan, check-in yapılmış) ──
+  // sozlesmeFiyat > fiyat farkından VEYA doğrudan kayıtlı komisyonFark'tan hesaplanır.
+  const gerceklesenKomisyonlar = ayGelirler
+    .map(g => {
+      const fiyat = Number(g.fiyat) || 0;
+      const sozlesme = Number(g.sozlesmeFiyat) || 0;
+      const gece = Number(g.gece) || 0;
+      const fark = g.komisyonFark!=null ? Number(g.komisyonFark) : ((sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0);
+      return {...g, _komisyonTutar: fark};
+    })
+    .filter(g => g.araciAd || g._komisyonTutar > 0);
+
+  const toplamKomisyonGerceklesen = gerceklesenKomisyonlar.reduce((a,b)=>a+b._komisyonTutar, 0);
+
+  // ── KOMİSYON — YAKLAŞAN (rezervasyonlar koleksiyonundan, henüz check-in yapılmamış) ──
+  // Aktif odadaki misafirle eşleşen / check-in'e dönüşmüş rezervasyonları hariç tutmak için:
+  // odanın güncel _O kaydında aynı giriş tarihiyle "dolu" durumda olmaması gerekir.
+  const yaklasanKomisyonlar = ayRezervler
+    .filter(r => {
+      if(!r.araciAd) return false;
+      const oda = window._O?.['oda'+r.odaNo];
+      const checkinOlmus = oda && oda.durum==='dolu' && oda.giris===r.giris;
+      return !checkinOlmus;
+    })
+    .map(r => {
+      const fiyat = Number(r.fiyat) || 0;
+      const sozlesme = Number(r.sozlesmeFiyat) || 0;
+      const gece = geceSayisi(r.giris, r.cikis);
+      const fark = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+      return {...r, _gece:gece, _komisyonTutar: fark};
+    });
+
+  const toplamKomisyonYaklasan = yaklasanKomisyonlar.reduce((a,b)=>a+b._komisyonTutar, 0);
+  const toplamKomisyon = toplamKomisyonGerceklesen + toplamKomisyonYaklasan;
 
   // Doluluk — ay kaç gün?
   const [yil, mNo] = ay.split('-').map(Number);
@@ -3429,7 +3621,6 @@ window.renderRapor = function() {
   const dolulukOrani = toplamOdaGun > 0 ? Math.round(toplamDoluGun / toplamOdaGun * 100) : 0;
 
   // Özet kartlar
-  const fmt2 = n => Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:0}) + ' ₺';
   document.getElementById('rapor-toplam-gelir').textContent = fmt2(toplamGelir);
   document.getElementById('rapor-doluluk').textContent = dolulukOrani + '%';
   document.getElementById('rapor-checkin-say').textContent = checkinSay;
@@ -3465,29 +3656,52 @@ window.renderRapor = function() {
     </tr>`;
   }).join('');
 
-  // Komisyon tablosu
-  if(ayKomisyon.length === 0) {
+  // ── Komisyon tablosu — GERÇEKLEŞEN ──
+  const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi', '':'—'};
+  const odDurumCls = {odendi:'color:var(--green)', odenmedi:'color:var(--red)', depozito:'color:var(--gold2)', kismi:'color:var(--orange)'};
+
+  if(gerceklesenKomisyonlar.length === 0) {
     document.getElementById('rapor-komisyon-body').innerHTML =
-      '<tr class="empty-row"><td colspan="8">Bu ay komisyon kaydı yok</td></tr>';
+      '<tr class="empty-row"><td colspan="8">Bu ay gerçekleşen komisyon kaydı yok</td></tr>';
     document.getElementById('rapor-komisyon-toplam').textContent = '';
   } else {
-    document.getElementById('rapor-komisyon-body').innerHTML = ayKomisyon.map(k => {
-      const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi', '':'—'};
-      const odDurumCls = {odendi:'color:var(--green)', odenmedi:'color:var(--red)', depozito:'color:var(--gold2)', kismi:'color:var(--orange)'};
+    document.getElementById('rapor-komisyon-body').innerHTML = gerceklesenKomisyonlar.map(k => {
       const odDurum = k.odemeDurum || '';
       return `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:600">${k.araciAd?'🤝 '+k.araciAd:'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${k.odaNo}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${k.gece||'—'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.gercekFiyat?.toLocaleString('tr-TR')||'—'} ₺</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.sozlesmeFiyat?.toLocaleString('tr-TR')||'—'} ₺</td>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--gold2)">${fmt2(k.toplamKomisyon)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.fiyat?Number(k.fiyat).toLocaleString('tr-TR'):'—'} ₺</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${k.sozlesmeFiyat?Number(k.sozlesmeFiyat).toLocaleString('tr-TR'):'—'} ₺</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--gold2)">${k._komisyonTutar>0?fmt2(k._komisyonTutar):'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;${odDurumCls[odDurum]||''}">${odDurumMap[odDurum]||'—'}</td>
       </tr>`;
     }).join('');
     document.getElementById('rapor-komisyon-toplam').textContent =
-      `${ayKomisyon.length} kayıt · Toplam Komisyon: ${fmt2(toplamKomisyon)}`;
+      `${gerceklesenKomisyonlar.length} kayıt · Toplam: ${fmt2(toplamKomisyonGerceklesen)}`;
+  }
+
+  // ── Komisyon tablosu — YAKLAŞAN (henüz check-in yapılmamış rezervasyonlar) ──
+  if(yaklasanKomisyonlar.length === 0) {
+    document.getElementById('rapor-komisyon-yaklasan-body').innerHTML =
+      '<tr class="empty-row"><td colspan="8">Bu ay için aracılı/komisyonlu yaklaşan rezervasyon yok</td></tr>';
+    document.getElementById('rapor-komisyon-yaklasan-toplam').textContent = '';
+  } else {
+    document.getElementById('rapor-komisyon-yaklasan-body').innerHTML = yaklasanKomisyonlar.map(r => {
+      return `<tr>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${r.misafir||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:600">🤝 ${r.araciAd}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${r.odaNo}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${r.giris||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${r._gece||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${r.fiyat?Number(r.fiyat).toLocaleString('tr-TR'):'—'} ₺</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${r.sozlesmeFiyat?Number(r.sozlesmeFiyat).toLocaleString('tr-TR'):'—'} ₺</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--gold2)">${r._komisyonTutar>0?fmt2(r._komisyonTutar):'—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('rapor-komisyon-yaklasan-toplam').textContent =
+      `${yaklasanKomisyonlar.length} kayıt · Beklenen Toplam: ${fmt2(toplamKomisyonYaklasan)}`;
   }
 };
 
@@ -3571,28 +3785,36 @@ function renderTakvimAyHafta(grid, todayStr) {
       // Temizlik sadece bugün göster, gelecek günlerde boş göster
       const temizlik = oda.durum==='temizlik' && isToday;
 
-      let cls='t-bos', label='', tooltip='', onclick='';
+      let cls='t-bos', label='', tooltip='', onclick='', bgStyle='';
       if(rev) {
         cls='t-rezerve';
         label=rev.misafir||'Rezervasyon';
+        const anahtarRev = (rev.id||'') + '|' + (rev.misafir||'') + '|' + (rev.giris||'');
+        bgStyle = `background:${takvimRenkTonu(anahtarRev,'rezerve')};`;
         tooltip=`title="${(rev.misafir||'').replace(/"/g,"'")} · ${rev.giris}→${rev.cikis}"`;
         onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:rev.fiyat,kaynak:rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(fiiliDolu||bugunDolu) {
         cls='t-dolu';
         label=oda.misafir||'Dolu';
+        const anahtarDolu = (oda.misafir||'') + '|' + (oda.giris||'') + '|' + i;
+        bgStyle = `background:${takvimRenkTonu(anahtarDolu,'dolu')};`;
         onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:oda.misafir,giris:oda.giris,cikis:oda.cikis,odaNo:i,gece:geceSayisi(oda.giris,oda.cikis),fiyat:oda.fiyat,kaynak:oda.kaynak,odemeDurum:oda.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(temizlik) { cls='t-temizlik'; label='Temizlik'; }
       else if(isToday) { cls='t-bugun'; }
 
-      html += `<td class="${cls}" ${tooltip} ${onclick} style="${onclick?'cursor:pointer':''}">`;
+      html += `<td class="${cls}" ${tooltip} ${onclick} style="${bgStyle}${onclick?'cursor:pointer':''}">`;
 
       if(label) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
         const prevRev = prevG ? window._R.find(r=>Number(r.odaNo)===i&&(r.giris||'')<=prevG&&(r.cikis||'')>prevG&&r.durum!=='iptal') : null;
         const prevDolu = prevG && oda.durum==='dolu' && oda.giris && oda.giris<=prevG && oda.cikis>prevG;
-        if(!prevRev && !prevDolu) html += `<div class="takvim-blok">${label}</div>`;
+        // Aynı bloğun devamı mı? Sadece dolu/rezerve OLMASI yetmez — AYNI kayıt/misafir olması gerekir.
+        const ayniRev = rev && prevRev && (rev.id ? rev.id===prevRev.id : (rev.misafir===prevRev.misafir && rev.giris===prevRev.giris));
+        const ayniDolu = (fiiliDolu||bugunDolu) && prevDolu && oda.misafir===(window._O['oda'+i]?.misafir) && prevG>=oda.giris;
+        const devamEdiyor = ayniRev || ayniDolu;
+        if(!devamEdiyor) html += `<div class="takvim-blok">${label}</div>`;
       }
       html += `</td>`;
     });
