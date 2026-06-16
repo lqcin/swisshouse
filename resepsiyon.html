@@ -2172,10 +2172,18 @@ window.openCheckin = function(no) {
 window.hesaplaKonaklama = function() {
   const giris = document.getElementById('ci_giris').value;
   const gece  = parseInt(document.getElementById('ci_gece').value) || 1;
+  const dogrudanCheckin = !window._ciKaynakRevId; // rezervasyondan değil, doğrudan açılan check-in
 
   // Geçmiş tarih engeli
   if(giris && giris < today()) {
     toast('Giriş tarihi geçmiş tarih olamaz', 'error');
+    document.getElementById('ci_giris').value = today();
+    return;
+  }
+
+  // Doğrudan (rezervasyonsuz) check-in'de ileri tarih engeli — check-in "şu an doluyum" demektir
+  if(dogrudanCheckin && giris && giris > today()) {
+    toast('Doğrudan check-in için giriş tarihi bugün olmalı. İleri tarihli giriş için Rezervasyon oluşturun.', 'error');
     document.getElementById('ci_giris').value = today();
     return;
   }
@@ -2326,6 +2334,7 @@ window.saveCheckin = async function() {
   const now    = nowISO();
 
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
+  if(!window._ciKaynakRevId && giris && giris > today()) { toast('Doğrudan check-in için giriş tarihi bugün olmalı. İleri tarihli giriş için Rezervasyon kullanın.','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz — lütfen kontrol edin','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden check-in yapılamaz — Fiyat Tipi seçin veya fiyatı kontrol edin','error'); return; }
@@ -3557,7 +3566,8 @@ function renderTakvimAyHafta(grid, todayStr) {
       const isToday = g === todayStr;
       const rev = window._R.find(r => Number(r.odaNo)===i && (r.giris||'')<=g && (r.cikis||'')>g && r.durum!=='iptal');
       const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=g && oda.cikis>g;
-      const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris||!oda.cikis);
+      // Güvenlik ağı: durum dolu ama giriş/çıkış eksik VEYA giriş bugünden ileri (veri tutarsızlığı) — bugün için göster
+      const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris || !oda.cikis || oda.giris > todayStr);
       // Temizlik sadece bugün göster, gelecek günlerde boş göster
       const temizlik = oda.durum==='temizlik' && isToday;
 
@@ -3604,7 +3614,7 @@ function renderTakvimGunluk(grid, todayStr) {
     const oda = window._O['oda'+i] || {durum:'bos'};
     const rev = window._R.find(r=>Number(r.odaNo)===i && (r.giris||'')<=gunStr && (r.cikis||'')>gunStr && r.durum!=='iptal');
     const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=gunStr && oda.cikis>gunStr;
-    const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris||!oda.cikis);
+    const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris || !oda.cikis || oda.giris > todayStr);
 
     let durumBadge, misafir='—', giris='—', cikis='—', kaynak='—', fiyatTipAd='—', gecelik='—';
 
