@@ -129,6 +129,9 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .mxl-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .mxl-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;}
 .mxl-row-3-auto{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:start;}
+.mxl-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;align-items:start;}
+.mxl-row-konaklama{display:grid;grid-template-columns:1fr 1fr 1fr 90px;gap:14px;align-items:start;}
+.mxl-gece-col input{text-align:center;}
 .mxl-stepper{display:flex;align-items:center;border:1px solid var(--border);background:var(--cream);}
 .mxl-stepper button{width:30px;height:38px;border:none;background:none;color:var(--dark);font-size:15px;cursor:pointer;flex-shrink:0;}
 .mxl-stepper button:hover{background:var(--parchment);}
@@ -147,7 +150,7 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .mxl-info-note{font-size:10px;color:var(--muted);margin-top:10px;display:flex;align-items:flex-start;gap:6px;}
 .mxl-komisyon-toggle{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
 .mxl-komisyon-toggle input{margin-top:1px;}
-@media (max-width:1100px){.modal-xl{max-width:96vw;} .mxl-grid-2{grid-template-columns:1fr;} .mxl-ozet{flex-wrap:wrap;gap:8px;} .mxl-ozet-item{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;width:100%;} .mxl-ozet-item.tutar{margin-left:0;width:100%;border:1px solid var(--gold2);} .mxl-row-3,.mxl-row-3-auto{grid-template-columns:1fr;}}
+@media (max-width:1100px){.modal-xl{max-width:96vw;} .mxl-grid-2{grid-template-columns:1fr;} .mxl-ozet{flex-wrap:wrap;gap:8px;} .mxl-ozet-item{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;width:100%;} .mxl-ozet-item.tutar{margin-left:0;width:100%;border:1px solid var(--gold2);} .mxl-row-3,.mxl-row-3-auto,.mxl-row-4,.mxl-row-konaklama{grid-template-columns:1fr;}}
 
 /* BUTTONS */
 .btn{border:none;padding:10px 22px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
@@ -506,15 +509,6 @@ input[type="number"], input[type="date"], input[type="password"] {
       <!-- Misafir Bilgileri -->
       <div class="mxl-card" style="margin-top:0">
         <div class="mxl-card-head"><span class="ikon">👤</span> Misafir Bilgileri</div>
-        <div class="form-row" style="margin-bottom:12px">
-          <div class="form-group" style="margin-bottom:0">
-            <label>TC Kimlik No</label>
-            <input type="text" id="ci_tc" placeholder="11 hane" maxlength="11" inputmode="numeric" oninput="tcAra(this.value)">
-          </div>
-          <div class="form-group" style="margin-bottom:0"><label>Pasaport No</label>
-            <input type="text" id="ci_pasaport" placeholder="Yabancı misafir" maxlength="20" style="text-transform:uppercase">
-          </div>
-        </div>
         <div class="musteri-bulundu" id="musteriBulundu" style="display:flex;justify-content:space-between;align-items:center">
           <div>
             <div class="mb-ad" id="mb-ad"></div>
@@ -523,24 +517,31 @@ input[type="number"], input[type="date"], input[type="password"] {
           <button class="btn btn-ghost btn-sm" onclick="musteriKartiAc(document.getElementById('ci_tc').value)" style="white-space:nowrap">📋 Kartı Gör</button>
         </div>
 
-        <div class="mxl-row-3-auto">
-          <div class="form-group" style="margin-bottom:0"><label>Ad Soyad *</label><input type="text" id="ci_ad" placeholder="Ad Soyad" oninput="adDegistiKontrol()"></div>
-          <div class="form-group" style="margin-bottom:0"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
-          <div class="form-group" style="margin-bottom:0"><label>Doğum Tarihi</label><input type="date" id="ci_dt"></div>
-          <div class="mxl-araci-box">
-            <input type="checkbox" id="ci_pasaport_toggle" onclick="document.getElementById('ci_pasaport_alani').style.display=this.checked?'block':'none'" style="display:none">
-            <div>
-              <strong>📧 E-posta / Plaka</strong>
-              <a href="#" onclick="event.preventDefault();const e=document.getElementById('ci_extra_alanlar');e.style.display=e.style.display==='none'?'grid':'none';" style="color:var(--gold);text-decoration:underline;font-size:10px">+ opsiyonel alanları göster</a>
-            </div>
+        <div class="mxl-row-4">
+          <div class="form-group" style="margin-bottom:0">
+            <label>TC / Pasaport No</label>
+            <input type="text" id="ci_tc" placeholder="TC Kimlik veya Pasaport No" maxlength="20" oninput="tcAra(this.value)" style="text-transform:uppercase">
           </div>
+          <div class="form-group" style="margin-bottom:0"><label>Misafir Adı *</label><input type="text" id="ci_ad" placeholder="Ad Soyad" oninput="adDegistiKontrol()"></div>
+          <div class="form-group" style="margin-bottom:0"><label>Doğum Tarihi</label><input type="date" id="ci_dt"></div>
+          <div class="form-group" style="margin-bottom:0"><label>Telefon</label><input type="tel" id="ci_tel" placeholder="05XX XXX XX XX" inputmode="tel"></div>
+        </div>
+        <input type="hidden" id="ci_pasaport">
+
+        <div style="margin-top:10px">
+          <a href="#" onclick="event.preventDefault();const e=document.getElementById('ci_extra_alanlar');e.style.display=e.style.display==='none'?'grid':'none';" style="color:var(--gold);text-decoration:underline;font-size:10px">+ E-posta / Araç Plakası (opsiyonel)</a>
         </div>
         <div id="ci_extra_alanlar" class="mxl-grid-2" style="display:none;margin-top:12px">
           <div class="form-group" style="margin-bottom:0"><label>E-posta</label><input type="email" id="ci_email" placeholder="ornek@mail.com"></div>
           <div class="form-group" style="margin-bottom:0"><label>Araç Plakası</label><input type="text" id="ci_plaka" placeholder="34 ABC 123" style="text-transform:uppercase"></div>
         </div>
+        <input type="hidden" id="ci_toplam_kisi">
+      </div>
 
-        <div class="mxl-row-3-auto" style="margin-top:12px">
+      <!-- Konaklama & Oda -->
+      <div class="mxl-card">
+        <div class="mxl-card-head"><span class="ikon">📅</span> Konaklama & Oda</div>
+        <div class="mxl-row-konaklama">
           <div class="form-group" style="margin-bottom:0">
             <label>Yetişkin</label>
             <div class="mxl-stepper">
@@ -558,18 +559,64 @@ input[type="number"], input[type="date"], input[type="password"] {
             </div>
           </div>
           <div class="form-group" style="margin-bottom:0"><label>Giriş Tarihi *</label><input type="date" id="ci_giris" onchange="hesaplaKonaklama()" min=""></div>
-          <div class="form-group" style="margin-bottom:0"><label>Kaç Gece *</label><input type="number" id="ci_gece" min="1" value="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
+          <div class="form-group mxl-gece-col" style="margin-bottom:0"><label>Gece *</label><input type="number" id="ci_gece" min="1" value="1" inputmode="numeric" oninput="hesaplaKonaklama()"></div>
         </div>
+        <!-- Kaynak — ileride lazım olursa aktif edilecek, şimdilik gizli -->
+        <select id="ci_kaynak" style="display:none">
+          <option value="walk-in">Walk-in</option>
+          <option value="telefon">Telefon</option>
+          <option value="booking">Booking.com</option>
+          <option value="airbnb">Airbnb</option>
+          <option value="expedia">Expedia</option>
+          <option value="website">Otel Websitesi</option>
+          <option value="ajans">Acente / Ajans</option>
+          <option value="diger">Diğer</option>
+        </select>
         <input type="hidden" id="ci_cikis_goster">
         <input type="hidden" id="ci_cikis">
         <input type="hidden" id="ci_saat">
-        <input type="hidden" id="ci_toplam_kisi">
       </div>
 
-      <!-- İki kolon: Ödeme Bilgileri | Kaynak & Komisyon -->
+      <!-- İki kolon: Ödeme & Komisyon | Ödeme Durumu -->
       <div class="mxl-grid-2">
         <div class="mxl-card">
           <div class="mxl-card-head"><span class="ikon">💳</span> Ödeme Bilgileri</div>
+          <div class="mxl-ucret-row">
+            <div class="mxl-ucret-col">
+              <div class="mxl-ucret-col-label">Fiyat Tipi</div>
+              <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()" style="margin-bottom:0"></select>
+            </div>
+            <div class="mxl-ucret-col">
+              <div class="mxl-ucret-col-label">Gecelik Ücret *</div>
+              <input type="number" id="ci_fiyat" min="0" placeholder="0" oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()" style="margin-bottom:0">
+            </div>
+            <div class="mxl-ucret-col toplam">
+              <div class="mxl-ucret-col-label">Toplam Ücret</div>
+              <div class="mxl-ucret-col-val" id="ci_fiyat_toplam_sub">—</div>
+            </div>
+          </div>
+          <div class="mxl-ucret-row">
+            <div class="mxl-ucret-col">
+              <div class="mxl-ucret-col-label">Sözleşme Fiyatı <span style="font-weight:400">(Gecelik)</span></div>
+              <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')" style="margin-bottom:0">
+            </div>
+            <div class="mxl-ucret-col">
+              <div class="mxl-ucret-col-label">Komisyoncu / Acente</div>
+              <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı..." style="margin-bottom:0">
+            </div>
+            <div class="mxl-ucret-col toplam">
+              <div class="mxl-ucret-col-label">Komisyon Tutarı</div>
+              <div class="mxl-ucret-col-val" id="ci_sozlesme_toplam" style="color:var(--gold2)">0,00 ₺</div>
+            </div>
+          </div>
+          <label class="mxl-komisyon-toggle">
+            <input type="checkbox" id="ci_komisyoncu_adina" style="width:auto">
+            <span>🏷️ Komisyoncu adına check-in <span style="color:var(--muted)">— gerçek misafir bilgileri yukarıda alınır</span></span>
+          </label>
+        </div>
+
+        <div class="mxl-card">
+          <div class="mxl-card-head"><span class="ikon">🧾</span> Ödeme Durumu & Türü</div>
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0">
               <label>Ödeme Durumu</label>
@@ -592,59 +639,7 @@ input[type="number"], input[type="date"], input[type="password"] {
               </select>
             </div>
           </div>
-
-          <div class="mxl-ucret-row">
-            <div class="mxl-ucret-col">
-              <div class="mxl-ucret-col-label">Fiyat Tipi</div>
-              <select id="ci_fiyat_tip" onchange="document.getElementById('ci_fiyat').dataset.manuelDegisim='';fiyatTipGuncelle()" style="margin-bottom:0"></select>
-            </div>
-            <div class="mxl-ucret-col">
-              <div class="mxl-ucret-col-label">Gecelik Ücret *</div>
-              <input type="number" id="ci_fiyat" min="0" placeholder="0" oninput="this.dataset.manuelDegisim='1';ciFiyatGuncelle()" style="margin-bottom:0">
-            </div>
-            <div class="mxl-ucret-col toplam">
-              <div class="mxl-ucret-col-label">Toplam Ücret</div>
-              <div class="mxl-ucret-col-val" id="ci_fiyat_toplam_sub">—</div>
-            </div>
-          </div>
-          <div class="mxl-info-note">ℹ️ <span>Ücretler bilgilendirme amaçlıdır. Sözleşme fiyatı sağdaki Kaynak & Komisyon kartından girilir.</span></div>
-        </div>
-
-        <div class="mxl-card">
-          <div class="mxl-card-head"><span class="ikon">🤝</span> Kaynak & Komisyon</div>
-          <div class="form-row">
-            <div class="form-group" style="margin-bottom:0">
-              <label>Kaynak</label>
-              <select id="ci_kaynak">
-                <option value="walk-in">Walk-in</option>
-                <option value="telefon">Telefon</option>
-                <option value="booking">Booking.com</option>
-                <option value="airbnb">Airbnb</option>
-                <option value="expedia">Expedia</option>
-                <option value="website">Otel Websitesi</option>
-                <option value="ajans">Acente / Ajans</option>
-                <option value="diger">Diğer</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label>Komisyoncu / Acente <span style="font-weight:400;text-transform:none;font-size:9px">(Varsa)</span></label>
-              <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı...">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:12px;margin-bottom:0">
-            <div class="form-group" style="margin-bottom:0">
-              <label>Sözleşme Fiyatı <span style="font-weight:400;text-transform:none;font-size:9px">(Gecelik)</span></label>
-              <input type="number" id="ci_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('ci')">
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label>Komisyon Tutarı</label>
-              <div id="ci_sozlesme_toplam" style="font-size:14px;font-weight:700;color:var(--gold2);padding:10px 13px;background:var(--cream);border:1px solid var(--border)">0,00 ₺</div>
-            </div>
-          </div>
-          <label class="mxl-komisyon-toggle">
-            <input type="checkbox" id="ci_komisyoncu_adina" style="width:auto">
-            <span>🏷️ Komisyoncu adına check-in <span style="color:var(--muted)">— gerçek misafir bilgileri yukarıda alınır</span></span>
-          </label>
+          <div class="mxl-info-note">ℹ️ <span>Ücretler bilgilendirme amaçlıdır. Değişiklik yapmak için yukarıdaki fiyat alanlarını kullanın.</span></div>
         </div>
       </div>
 
@@ -658,9 +653,10 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="mxl-card">
         <div class="mxl-card-head" style="justify-content:space-between">
           <span><span class="ikon">👥</span> Yanında Kalanlar</span>
+
           <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle()">+ Kişi Ekle</button>
         </div>
-        <div id="refakatciListesi" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="refakatciListesi" style="display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto"></div>
       </div>
     </div>
   </div>
@@ -1117,49 +1113,15 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
 
     <div class="mxl-body">
-      <!-- Konaklama & Oda seçimi (gizli yapı taşıyıcı alanlar) -->
+      <!-- Konaklama & Oda: giriş / gece / oda / yetişkin / çocuk yan yana -->
       <div class="mxl-card" style="margin-top:0">
         <div class="mxl-card-head"><span class="ikon">📅</span> Konaklama & Oda</div>
-        <div class="mxl-row-3-auto">
+        <div style="display:grid;grid-template-columns:1.3fr 90px 1.3fr 1fr 1fr;gap:14px;align-items:start">
           <div class="form-group" style="margin-bottom:0"><label>Giriş Tarihi *</label><input type="date" id="rev_giris" oninput="revHesapla()" min=""></div>
-          <div class="form-group" style="margin-bottom:0"><label>Kaç Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
+          <div class="form-group mxl-gece-col" style="margin-bottom:0"><label>Gece *</label><input type="number" id="rev_gece" min="1" value="1" oninput="revHesapla()"></div>
           <div class="form-group" style="margin-bottom:0"><label>Oda No *</label>
             <select id="rev_oda" onchange="revOdaSecildi()"><option value="">— Seç —</option></select>
           </div>
-          <div class="form-group" style="margin-bottom:0"><label>Kaynak</label>
-            <select id="rev_kaynak">
-              <option value="walk-in">Walk-in</option><option value="telefon">Telefon</option>
-              <option value="booking">Booking.com</option><option value="airbnb">Airbnb</option>
-              <option value="expedia">Expedia</option><option value="website">Website</option>
-              <option value="ajans">Ajans</option><option value="diger">Diğer</option>
-            </select>
-          </div>
-        </div>
-        <input type="hidden" id="rev_cikis_goster">
-        <input type="hidden" id="rev_cikis">
-        <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-top:12px;margin-bottom:0">⚠ Bu oda seçilen tarihlerde dolu!</div>
-      </div>
-
-      <!-- Misafir Bilgileri -->
-      <div class="mxl-card">
-        <div class="mxl-card-head"><span class="ikon">👤</span> Misafir Bilgileri</div>
-        <div class="mxl-row-3-auto">
-          <div class="form-group" style="margin-bottom:0"><label id="rev_ad_label">Ad Soyad *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
-          <div class="form-group" style="margin-bottom:0"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX XXX XX XX"></div>
-          <div class="form-group" style="margin-bottom:0"><label>TC / Pasaport No</label><input type="text" id="rev_tc" maxlength="20" oninput="revTcAra(this.value)" placeholder="TC Kimlik veya Pasaport No" style="text-transform:uppercase"></div>
-          <div class="mxl-araci-box">
-            <input type="checkbox" id="rev_araci" onchange="document.getElementById('rev_ad_label').textContent=this.checked?'Aracı / Komisyoncu Adı *':'Ad Soyad *';document.getElementById('rev_ad').placeholder=this.checked?'Aracının adı...':'Ad Soyad'">
-            <div>
-              <strong>Aracı (komisyoncu) adına rezervasyon</strong>
-              gerçek misafir bilgileri check-in'de alınır.
-            </div>
-          </div>
-        </div>
-        <div class="musteri-bulundu" id="revMusteriBulundu" style="margin-top:12px;margin-bottom:0">
-          <div class="mb-ad" id="rev_mb_ad"></div>
-          <div class="mb-meta" id="rev_mb_meta"></div>
-        </div>
-        <div class="mxl-row-3-auto" style="margin-top:12px">
           <div class="form-group" style="margin-bottom:0">
             <label>Yetişkin</label>
             <div class="mxl-stepper">
@@ -1176,11 +1138,33 @@ input[type="number"], input[type="date"], input[type="password"] {
               <button type="button" onclick="revKisiAyarla('rev_cocuk',1)">+</button>
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:0"><label>Doğum Tarihi</label><input type="date" id="rev_dt"></div>
         </div>
+        <input type="hidden" id="rev_cikis_goster">
+        <input type="hidden" id="rev_cikis">
+        <input type="hidden" id="rev_kaynak" value="walk-in">
+        <div id="rev_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-top:12px;margin-bottom:0">⚠ Bu oda seçilen tarihlerde dolu!</div>
       </div>
 
-      <!-- İki kolon: Ödeme Bilgileri | Kaynak & Komisyon -->
+      <!-- Misafir Bilgileri: TC/Pasaport - Ad Soyad - Doğum Tarihi - Telefon -->
+      <div class="mxl-card">
+        <div class="mxl-card-head"><span class="ikon">👤</span> Misafir Bilgileri</div>
+        <div class="mxl-row-3-auto">
+          <div class="form-group" style="margin-bottom:0"><label>TC / Pasaport No</label><input type="text" id="rev_tc" maxlength="20" oninput="revTcAra(this.value)" placeholder="TC Kimlik veya Pasaport No" style="text-transform:uppercase"></div>
+          <div class="form-group" style="margin-bottom:0"><label id="rev_ad_label">Misafir Adı *</label><input type="text" id="rev_ad" placeholder="Ad Soyad"></div>
+          <div class="form-group" style="margin-bottom:0"><label>Doğum Tarihi</label><input type="date" id="rev_dt"></div>
+          <div class="form-group" style="margin-bottom:0"><label>Telefon</label><input type="tel" id="rev_tel" placeholder="05XX XXX XX XX"></div>
+        </div>
+        <div class="musteri-bulundu" id="revMusteriBulundu" style="margin-top:12px;margin-bottom:0">
+          <div class="mb-ad" id="rev_mb_ad"></div>
+          <div class="mb-meta" id="rev_mb_meta"></div>
+        </div>
+        <label class="mxl-komisyon-toggle" style="margin-top:12px">
+          <input type="checkbox" id="rev_araci" onchange="document.getElementById('rev_ad_label').textContent=this.checked?'Aracı / Komisyoncu Adı *':'Misafir Adı *';document.getElementById('rev_ad').placeholder=this.checked?'Aracının adı...':'Ad Soyad'">
+          <span><strong style="color:var(--dark);display:block;font-size:11px;margin-bottom:2px">🤝 Aracı (komisyoncu) adına rezervasyon</strong>gerçek misafir bilgileri check-in'de alınır.</span>
+        </label>
+      </div>
+
+      <!-- İki kolon: Ödeme Bilgileri (fiyat tipi/gecelik + sözleşme/komisyon altta) | Yanında Kalanlar -->
       <div class="mxl-grid-2">
         <div class="mxl-card">
           <div class="mxl-card-head"><span class="ikon">💳</span> Ödeme Bilgileri</div>
@@ -1207,55 +1191,47 @@ input[type="number"], input[type="date"], input[type="password"] {
             </div>
           </div>
 
-          <div class="mxl-ucret-row">
-            <div class="mxl-ucret-col">
-              <div class="mxl-ucret-col-label">Fiyat Tipi</div>
-              <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()" style="margin-bottom:0"></select>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Fiyat Tipi</label>
+              <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
             </div>
-            <div class="mxl-ucret-col">
-              <div class="mxl-ucret-col-label">Gecelik Ücret *</div>
-              <input type="number" id="rev_fiyat" min="0" placeholder="0" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()" style="margin-bottom:0">
-            </div>
-            <div class="mxl-ucret-col toplam">
-              <div class="mxl-ucret-col-label">Toplam Ücret</div>
-              <div class="mxl-ucret-col-val" id="rev_fiyat_toplam_sub">—</div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Gecelik Ücret *</label>
+              <input type="number" id="rev_fiyat" min="0" placeholder="0" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
             </div>
           </div>
-          <div class="mxl-info-note">ℹ️ <span>Ücretler bilgilendirme amaçlıdır. Komisyon detayları sağdaki karttan girilir.</span></div>
-        </div>
 
-        <div class="mxl-card">
-          <div class="mxl-card-head"><span class="ikon">🤝</span> Kaynak & Komisyon</div>
-          <div class="form-row">
-            <div class="form-group" style="margin-bottom:0">
-              <label>Komisyoncu / Acente <span style="font-weight:400;text-transform:none;font-size:9px">(Varsa)</span></label>
-              <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
-            </div>
+          <div class="form-row" style="margin-top:12px;margin-bottom:0;padding-top:12px;border-top:1px solid var(--border)">
             <div class="form-group" style="margin-bottom:0">
               <label>Sözleşme Fiyatı <span style="font-weight:400;text-transform:none;font-size:9px">(Gecelik)</span></label>
               <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
             </div>
-          </div>
-          <div class="form-row" style="margin-top:12px;margin-bottom:0">
             <div class="form-group" style="margin-bottom:0">
               <label>Komisyon Tutarı</label>
               <div id="rev_sozlesme_toplam" style="font-size:14px;font-weight:700;color:var(--gold2);padding:10px 13px;background:var(--cream);border:1px solid var(--border)">0,00 ₺</div>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px;margin-bottom:0">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Komisyoncu / Acente <span style="font-weight:400;text-transform:none;font-size:9px">(Varsa)</span></label>
+              <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Not</label>
               <input type="text" id="rev_not" placeholder="Özel istek...">
             </div>
           </div>
+          <div class="mxl-info-note">ℹ️ <span>Ücretler bilgilendirme amaçlıdır.</span></div>
         </div>
-      </div>
 
-      <!-- Yanında Kalanlar -->
-      <div class="mxl-card">
-        <div class="mxl-card-head" style="justify-content:space-between">
-          <span><span class="ikon">👥</span> Yanında Kalanlar</span>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle('revRefakatciListesi')">+ Kişi Ekle</button>
+        <div class="mxl-card">
+          <div class="mxl-card-head" style="justify-content:space-between">
+            <span><span class="ikon">👥</span> Yanında Kalanlar</span>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="refakatciEkle('revRefakatciListesi')">+ Kişi Ekle</button>
+          </div>
+          <div id="revRefakatciListesi" style="display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto"></div>
         </div>
-        <div id="revRefakatciListesi" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
   </div>
