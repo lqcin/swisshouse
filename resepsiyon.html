@@ -901,17 +901,23 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="separator"></div>
     <div class="section-mini-title">Konaklama Bilgileri</div>
     <div class="form-row-3">
+      <div class="form-group"><label>Oda *</label>
+        <select id="rd_oda" onchange="rdOdaDegisti()"></select>
+      </div>
       <div class="form-group"><label>Giriş Tarihi *</label>
         <input type="date" id="rd_giris" onchange="rdGunGuncelle()">
       </div>
       <div class="form-group"><label>Kaç Gece *</label>
         <input type="number" id="rd_gece" min="1" value="1" oninput="rdGunGuncelle()">
       </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Çıkış (Otomatik)</label>
         <input type="text" id="rd_cikis_lbl" readonly placeholder="—">
         <input type="hidden" id="rd_cikis">
       </div>
     </div>
+    <div id="rd_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
     <div class="form-row">
       <div class="form-group"><label>Fiyat Tipi</label>
         <select id="rd_fiyat_tip" onchange="rdFiyatGuncelle()"></select>
@@ -4582,12 +4588,17 @@ window.printSozlesmeFromData = function(o, odaAdi, gece, sozNo, resNo, gecelikFi
 // ── REZERVASYON DÜZENLE ──
 window.revDuzenleAc = function(rev) {
   document.getElementById('rd_id').value = rev.id;
+  window._rdOrijinalOdaNo = rev.odaNo; // çakışma kontrolünde kendi rezervasyonunu hariç tutmak için referans
 
   // Misafir bilgileri
   document.getElementById('rd_ad').value = rev.misafir || '';
   document.getElementById('rd_tc').value = rev.tc || '';
   document.getElementById('rd_tel').value = rev.tel || '';
   document.getElementById('rd_dt').value = rev.dt || '';
+
+  // Oda seçimi
+  const odaSel = document.getElementById('rd_oda');
+  odaSel.innerHTML = HOTEL_ODALAR.map(no => `<option value="${no}"${Number(no)===Number(rev.odaNo)?' selected':''}>Oda ${no}</option>`).join('');
 
   // Konaklama
   document.getElementById('rd_giris').value = rev.giris || today();
@@ -4627,6 +4638,35 @@ window.revDuzenleAc = function(rev) {
   openModal('revDuzenleModal');
 };
 
+window.rdOdaDegisti = function() {
+  const odaNo = document.getElementById('rd_oda').value;
+  if(window._O['oda'+odaNo]?.durum === 'arizali') {
+    toast(`Oda ${odaNo} arızalı/bakımda — bu odaya rezervasyon taşınamaz.`, 'error');
+    document.getElementById('rd_oda').value = window._rdOrijinalOdaNo;
+    return;
+  }
+  const sel = document.getElementById('rd_fiyat_tip');
+  const mevcutTip = sel.value || 1;
+  sel.innerHTML = [1,2,3,4].map(t=>`<option value="${t}"${t==mevcutTip?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  rdCarpısmaKontrol();
+};
+
+window.rdCarpısmaKontrol = function() {
+  const odaNo = document.getElementById('rd_oda').value;
+  const giris = document.getElementById('rd_giris').value;
+  const cikis = document.getElementById('rd_cikis').value;
+  const id = document.getElementById('rd_id').value;
+  const carpısmaEl = document.getElementById('rd_carpısma');
+  if(!odaNo || !giris || !cikis) { carpısmaEl.style.display = 'none'; return; }
+  const kontrol = odaCakismaKontrol(odaNo, giris, cikis, id);
+  if(kontrol.cakisma) {
+    carpısmaEl.textContent = `⚠ Oda ${odaNo} bu tarihlerde dolu! (${kontrol.tip === 'rezervasyon' ? 'Rezervasyon' : 'Konaklama'}: ${kontrol.detay})`;
+    carpısmaEl.style.display = 'block';
+  } else {
+    carpısmaEl.style.display = 'none';
+  }
+};
+
 window.rdGunGuncelle = function() {
   const giris = document.getElementById('rd_giris').value;
   const gece  = parseInt(document.getElementById('rd_gece').value)||1;
@@ -4636,6 +4676,7 @@ window.rdGunGuncelle = function() {
   const [y,m,d] = cikis.split('-');
   document.getElementById('rd_cikis_lbl').value = `${d}.${m}.${y} (${gece} gece)`;
   rdFiyatGuncelle();
+  rdCarpısmaKontrol();
 };
 
 window.rdFiyatGuncelle = function() {
@@ -4662,6 +4703,7 @@ window.rdFiyatGuncelle = function() {
 
 window.revDuzenleKaydet = async function() {
   const id     = document.getElementById('rd_id').value;
+  const odaNo  = document.getElementById('rd_oda').value;
   const ad     = document.getElementById('rd_ad').value.trim();
   const tc     = document.getElementById('rd_tc').value.trim();
   const tel    = document.getElementById('rd_tel').value.trim();
@@ -4678,25 +4720,26 @@ window.revDuzenleKaydet = async function() {
   const refakatciler = getRefakatciler('rdRefakatciListesi');
   const komisyoncuAdi = document.getElementById('rd_komisyoncu')?.value.trim() || '';
 
+  if(!odaNo) { toast('Oda seçimi zorunlu','error'); return; }
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
   if(!fiyat) { toast('Fiyat zorunlu','error'); return; }
   if(tc && /^\d{11}$/.test(tc) && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz','error'); return; }
+  if(window._O['oda'+odaNo]?.durum === 'arizali') { toast(`Oda ${odaNo} arızalı/bakımda — rezervasyon taşınamaz.`,'error'); return; }
 
-  // ÇAKIŞMA KONTROLÜ — kendi kaydı hariç
+  // ÇAKIŞMA KONTROLÜ — kendi kaydı hariç, SEÇİLEN (yeni) oda üzerinden
   const duzenlenenRev = window._R.find(r => r.id === id);
-  if(duzenlenenRev) {
-    const kontrol = odaCakismaKontrol(duzenlenenRev.odaNo, giris, cikis, id);
-    if(kontrol.cakisma) {
-      toast(`⚠ Oda ${duzenlenenRev.odaNo} bu tarihlerde dolu! (${kontrol.detay})`, 'error');
-      return;
-    }
+  const kontrol = odaCakismaKontrol(odaNo, giris, cikis, id);
+  if(kontrol.cakisma) {
+    toast(`⚠ Oda ${odaNo} bu tarihlerde dolu! (${kontrol.detay})`, 'error');
+    return;
   }
 
   const kismiTutarVal = odemeDurum==='kismi' ? (Number(document.getElementById('rd_kismi_tutar')?.value)||0) : null;
   const kismiToplamBaz = (sozlesmeFiyatVal||fiyat)*gece;
 
   await updateDoc(doc(db,'rezervasyonlar',id), {
+    odaNo: Number(odaNo),
     misafir: ad, tc, tel, dt,
     giris, cikis, gece, fiyat, fiyatTip,
     fiyatTipAd: getTipAd(fiyatTip),
@@ -4710,8 +4753,9 @@ window.revDuzenleKaydet = async function() {
   });
 
   closeModal('revDuzenleModal');
-  toast('Rezervasyon güncellendi ✓','success');
-  await logAktivite('rezervasyon_duzenle', `${giris}→${cikis} · ${gece} gece · ${fmt(fiyat)} ₺`, '');
+  const odaDegisti = duzenlenenRev && Number(duzenlenenRev.odaNo) !== Number(odaNo);
+  toast(odaDegisti ? `Rezervasyon güncellendi — Oda ${duzenlenenRev.odaNo} → Oda ${odaNo} ✓` : 'Rezervasyon güncellendi ✓', 'success');
+  await logAktivite('rezervasyon_duzenle', `Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(fiyat)} ₺${odaDegisti?' (oda değiştirildi: '+duzenlenenRev.odaNo+'→'+odaNo+')':''}`, String(odaNo));
 };
 
 // ── SÜRE DEĞİŞTİR ──
