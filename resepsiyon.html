@@ -186,24 +186,25 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .amount-neg{color:var(--red);font-weight:600;}
 
 /* ── ODALAR SAYFASI ── */
-.rooms-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-.stat-card{background:var(--white);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stat-card.dolu::before{background:var(--red);}
-.stat-card.bos::before{background:var(--green);}
-.stat-card.temizlik::before{background:var(--gold2);}
-.stat-card.rezerve::before{background:var(--blue);}
-.stat-card.arizali::before{background:#9a5221;}
-.stat-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.stat-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--dark);line-height:1;}
+.odalar-layout{display:flex;gap:16px;align-items:stretch;height:calc(100vh - 200px);}
 
-.rooms-grid{display:flex;flex-direction:column;gap:20px;}
-.kat-blok{background:var(--white);border:1px solid var(--border);border-radius:2px;overflow:hidden;box-shadow:var(--shadow);}
-.kat-baslik{padding:10px 18px;background:var(--parchment);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
-.kat-baslik span{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dark);}
-.kat-baslik small{font-size:11px;color:var(--muted);}
-.kat-odalar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px;}
-.kat-odalar .room-card{border:1px solid var(--border);border-radius:3px;box-shadow:var(--shadow);padding:20px 18px;}
+.rooms-stats-col{display:flex;flex-direction:column;gap:8px;width:150px;flex-shrink:0;}
+.stat-mini{background:var(--white);border:1px solid var(--border);border-left:4px solid var(--border);padding:10px 12px;box-shadow:var(--shadow);display:flex;flex-direction:column;flex:1;justify-content:center;}
+.stat-mini.dolu{border-left-color:var(--red);}
+.stat-mini.bos{border-left-color:var(--green);}
+.stat-mini.temizlik{border-left-color:var(--gold2);}
+.stat-mini.rezerve{border-left-color:var(--blue);}
+.stat-mini.arizali{border-left-color:#9a5221;}
+.stat-mini-label{font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.stat-mini-value{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--dark);line-height:1;}
+
+.rooms-grid{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;height:100%;}
+.kat-blok{background:var(--white);border:1px solid var(--border);border-radius:2px;overflow:hidden;box-shadow:var(--shadow);flex:1;display:flex;flex-direction:column;}
+.kat-baslik{padding:5px 14px;background:var(--parchment);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.kat-baslik span{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dark);}
+.kat-baslik small{font-size:10px;color:var(--muted);}
+.kat-odalar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;flex:1;}
+.kat-odalar .room-card{border:1px solid var(--border);border-radius:3px;box-shadow:var(--shadow);padding:8px;min-height:0;}
 .room-card{background:var(--white);border:1px solid var(--border);padding:24px 18px;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden;box-shadow:var(--shadow);min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:var(--border);}
 .room-card.dolu{background:#ffeeed;border-color:rgba(200,16,46,.2);}
@@ -217,15 +218,15 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .room-card.arizali{background:#f5ece0;border-color:rgba(154,82,33,.3);}
 .room-card.arizali::before{background:#9a5221;}
 .room-card.arizali .room-status-text{color:#9a5221;}
-.room-no{font-family:'Big Shoulders Display',sans-serif;font-size:32px;font-weight:600;color:var(--dark);margin-bottom:5px;letter-spacing:3px;}
+.room-no{font-family:'Big Shoulders Display',sans-serif;font-size:24px;font-weight:600;color:var(--dark);margin-bottom:2px;letter-spacing:2px;}
 .room-status-text{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;}
 .dolu .room-status-text{color:var(--red);}
 .bos .room-status-text{color:var(--green);}
 .temizlik .room-status-text{color:var(--gold);}
 .rezerve .room-status-text{color:var(--blue);}
-.room-guest{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.room-info{font-size:10px;color:var(--warm);margin-top:3px;}
-.room-price{font-size:11px;color:var(--gold);font-weight:600;margin-top:3px;}
+.room-guest{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.room-info{font-size:9px;color:var(--warm);margin-top:1px;}
+.room-price{font-size:10px;color:var(--gold);font-weight:600;margin-top:1px;}
 
 /* ── REZERVASYONLAR ── */
 .table-card{background:var(--white);border:1px solid var(--border);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
@@ -372,7 +373,7 @@ tbody td{padding:12px 16px;font-size:13px;}
 .vardiya-stat span{color:#fff;font-weight:600;}
 
 /* RESPONSIVE */
-@media(max-width:900px){.rooms-stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.odalar-layout{flex-direction:column;height:auto;} .rooms-stats-col{flex-direction:row;width:100%;flex-wrap:wrap;} .stat-mini{min-width:90px;} .kat-blok{flex:none;}}
 /* ── CROSS-PLATFORM MOBİL ── */
 /* Android Chrome, Samsung Internet, iOS Safari */
 input:not([type=checkbox]):not([type=radio]), select, textarea, button {
@@ -1468,33 +1469,35 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
   </div>
 
-  <!-- İstatistikler -->
-  <div class="rooms-stats">
-    <div class="stat-card dolu">
-      <div class="stat-label">Dolu</div>
-      <div class="stat-value" id="stat-dolu">—</div>
+  <div class="odalar-layout">
+    <!-- Sol: kompakt durum sütunu -->
+    <div class="rooms-stats-col">
+      <div class="stat-mini dolu">
+        <span class="stat-mini-label">Dolu</span>
+        <span class="stat-mini-value" id="stat-dolu">—</span>
+      </div>
+      <div class="stat-mini bos">
+        <span class="stat-mini-label">Boş</span>
+        <span class="stat-mini-value" id="stat-bos">—</span>
+      </div>
+      <div class="stat-mini temizlik">
+        <span class="stat-mini-label">Temizlik</span>
+        <span class="stat-mini-value" id="stat-temizlik">—</span>
+      </div>
+      <div class="stat-mini rezerve">
+        <span class="stat-mini-label">Rezervasyon</span>
+        <span class="stat-mini-value" id="stat-rezerve">—</span>
+      </div>
+      <div class="stat-mini arizali">
+        <span class="stat-mini-label">Arızalı</span>
+        <span class="stat-mini-value" id="stat-arizali">—</span>
+      </div>
     </div>
-    <div class="stat-card bos">
-      <div class="stat-label">Boş</div>
-      <div class="stat-value" id="stat-bos">—</div>
-    </div>
-    <div class="stat-card temizlik">
-      <div class="stat-label">Temizlik</div>
-      <div class="stat-value" id="stat-temizlik">—</div>
-    </div>
-    <div class="stat-card rezerve">
-      <div class="stat-label">Rezervasyon</div>
-      <div class="stat-value" id="stat-rezerve">—</div>
-    </div>
-    <div class="stat-card arizali">
-      <div class="stat-label">Arızalı</div>
-      <div class="stat-value" id="stat-arizali">—</div>
-    </div>
-  </div>
 
-  <!-- Oda kartları -->
-  <div class="rooms-grid" id="roomsGrid">
-    <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-style:italic;font-family:'Cormorant Garamond',serif">Yükleniyor...</div>
+    <!-- Sağ: Oda kartları -->
+    <div class="rooms-grid" id="roomsGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-style:italic;font-family:'Cormorant Garamond',serif">Yükleniyor...</div>
+    </div>
   </div>
 </div>
 
