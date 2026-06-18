@@ -1081,7 +1081,7 @@ input[type="number"], input[type="date"], input[type="password"] {
         </div>
       </div>
       <div class="mxl-header-actions">
-        <button class="btn btn-ghost" onclick="closeModal('rezervModal')">✕ İptal</button>
+        <button class="btn btn-ghost" onclick="window._onaylananTalepId=null;closeModal('rezervModal')">✕ İptal</button>
         <button class="btn btn-primary" onclick="saveRezervasyon()">💾 Kaydet</button>
       </div>
     </div>
@@ -1395,7 +1395,7 @@ input[type="number"], input[type="date"], input[type="password"] {
   <div class="nav-inner">
     <div class="nav-tab active" id="tab-odalar" onclick="showPage('odalar',this)">🛏 Odalar</div>
     <div class="nav-tab" id="tab-takvim" onclick="showPage('takvim',this)">📅 Takvim</div>
-    <div class="nav-tab" id="tab-rezervasyonlar" onclick="showPage('rezervasyonlar',this)">📋 Rezervasyonlar</div>
+    <div class="nav-tab" id="tab-rezervasyonlar" onclick="showPage('rezervasyonlar',this)">📋 Rezervasyonlar<span id="talep-badge" style="display:none;background:var(--primary);color:#fff;border-radius:50%;font-size:10px;font-weight:700;padding:1px 6px;margin-left:5px;letter-spacing:0"></span></div>
     <div class="nav-tab" id="tab-masraflar" onclick="showPage('masraflar',this)">💳 Masraflar</div>
     <div class="nav-tab" id="tab-rapor" onclick="raporPinIste(this)">📊 Rapor</div>
   </div>
@@ -1527,6 +1527,27 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 <!-- REZERVASYONLAR SAYFASI -->
 <div class="page" id="page-rezervasyonlar">
+  <!-- Instagram Talepleri -->
+  <div class="table-card" id="instagramTalepKart" style="display:none;border-left:4px solid var(--primary);margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      📷 Instagram Rezervasyon Talepleri <span id="talep-sayac" style="background:var(--primary);color:#fff;border-radius:50%;font-size:10px;padding:1px 7px"></span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Telefon</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Instagram</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
+          <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kişi</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Not</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="instagramTalepBody"></tbody>
+    </table>
+  </div>
+
   <div class="section-head">
     <h2>Rezervasyon <em>Listesi</em></h2>
     <button class="btn btn-primary" onclick="openRezervModalForOda(null)">+ Rezervasyon Ekle</button>
@@ -1937,6 +1958,94 @@ onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
 onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
   window._KOM = s.docs.map(d=>({id:d.id,...d.data()}));
 });
+
+// ── INSTAGRAM REZERVASYON TALEPLERİ ──
+window._TALEP = [];
+let _talepIlkYukleme = true;
+onSnapshot(query(collection(db,'rezervasyon_talepleri'), orderBy('kayitTarih','desc')), s => {
+  const oncekiBekleyenSayisi = (window._TALEP||[]).filter(t => t.durum==='bekliyor').length;
+  window._TALEP = s.docs.map(d=>({id:d.id,...d.data()}));
+  const yeniBekleyenSayisi = window._TALEP.filter(t => t.durum==='bekliyor').length;
+  renderInstagramTalepleri();
+  // Sayfa ilk açıldığında ses çalma — sadece sonradan yeni talep gelirse çal
+  if(!_talepIlkYukleme && yeniBekleyenSayisi > oncekiBekleyenSayisi) {
+    talepSesiCal();
+  }
+  _talepIlkYukleme = false;
+});
+
+function talepSesiCal() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start();
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+window.renderInstagramTalepleri = function() {
+  const bekleyenler = (window._TALEP||[]).filter(t => t.durum === 'bekliyor');
+  const badge = document.getElementById('talep-badge');
+  const kart = document.getElementById('instagramTalepKart');
+  const sayac = document.getElementById('talep-sayac');
+
+  if(bekleyenler.length === 0) {
+    if(badge) badge.style.display = 'none';
+    if(kart) kart.style.display = 'none';
+    return;
+  }
+
+  if(badge) { badge.textContent = bekleyenler.length; badge.style.display = 'inline'; }
+  if(kart) kart.style.display = 'block';
+  if(sayac) sayac.textContent = bekleyenler.length;
+
+  document.getElementById('instagramTalepBody').innerHTML = bekleyenler.map(t => `
+    <tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${t.misafir||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.tel||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.instagram?`<a href="https://instagram.com/${t.instagram.replace('@','')}" target="_blank" style="color:var(--primary)">${t.instagram}</a>`:'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${t.giris||'?'} → ${t.cikis||'?'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${(t.yetiskin||1)+(t.cocuk||0)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(t.not||'').replace(/"/g,'&quot;')}">${t.not||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">
+        <button class="btn btn-primary btn-sm" onclick="talepOnayla('${t.id}')">✓ Onayla</button>
+        <button class="btn btn-ghost btn-sm" onclick="talepReddet('${t.id}')">✕ Reddet</button>
+      </td>
+    </tr>
+  `).join('');
+};
+
+window.talepOnayla = function(id) {
+  const t = (window._TALEP||[]).find(x => x.id === id);
+  if(!t) return;
+  // Talebi rezervasyon formuna taşı — kullanıcı oda seçip onaylasın
+  openRezervModalForOda(null);
+  setTimeout(() => {
+    document.getElementById('rev_giris').value = t.giris || '';
+    document.getElementById('rev_ad').value = t.misafir || '';
+    document.getElementById('rev_tel').value = t.tel || '';
+    document.getElementById('rev_yetiskin').value = t.yetiskin || 1;
+    document.getElementById('rev_cocuk').value = t.cocuk || 0;
+    document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + (t.instagram ? `[IG: ${t.instagram}]` : '[Instagram talebi]');
+    document.getElementById('rev_kaynak').value = 'diger';
+    const gece = geceSayisi(t.giris, t.cikis) || 1;
+    document.getElementById('rev_gece').value = gece;
+    revHesapla();
+  }, 100);
+  window._onaylananTalepId = id; // saveRezervasyon başarılı olunca talep kaydını güncellemek için
+};
+
+window.talepReddet = async function(id) {
+  if(!confirm('Bu talebi reddetmek istediğinize emin misiniz?')) return;
+  await updateDoc(doc(db,'rezervasyon_talepleri',id), {durum:'reddedildi', islemTarih: nowISO()});
+  toast('Talep reddedildi', 'info');
+};
 
 // ── RENDER ODALAR ──
 window.renderOdalar = function() {
@@ -3314,6 +3423,7 @@ window.saveDurum = async function() {
 
 // ── REZERVASYONLAR ──
 window.openRezervModalForOda = function(odaNo) {
+  window._onaylananTalepId = null;
   if(odaNo && window._O['oda'+odaNo]?.durum === 'arizali') {
     toast(`Oda ${odaNo} arızalı/bakımda — rezervasyon alınamaz.`, 'error');
     return;
@@ -3493,6 +3603,11 @@ window.saveRezervasyon = async function() {
   const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
   closeModal('rezervModal');
   await logAktivite('rezervasyon', `${ad} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(gece*fiyat)}`, odaNo);
+  // Bu rezervasyon bir Instagram talebinden onaylandıysa, talebin durumunu güncelle
+  if(window._onaylananTalepId) {
+    await updateDoc(doc(db,'rezervasyon_talepleri', window._onaylananTalepId), {durum:'onaylandi', islemTarih: nowISO()});
+    window._onaylananTalepId = null;
+  }
   toast('Rezervasyon kaydedildi ✓','success');
 };
 
