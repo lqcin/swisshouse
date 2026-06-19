@@ -4158,7 +4158,7 @@ function renderTakvimAyHafta(grid, todayStr) {
         onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:oda.misafir,giris:oda.giris,cikis:oda.cikis,odaNo:i,gece:geceSayisi(oda.giris,oda.cikis),fiyat:oda.fiyat,kaynak:oda.kaynak,odemeDurum:oda.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(temizlik) { cls='t-temizlik'; label='Temizlik'; }
-      else if(oda.durum==='arizali' && isToday) { cls='t-arizali'; label='🔧 Arızalı'; }
+      else if(oda.durum==='arizali' && g >= todayStr) { cls='t-arizali'; label='🔧 Arızalı'; }
       else if(isToday) { cls='t-bugun'; }
 
       html += `<td class="${cls}" ${tooltip} ${onclick} style="${bgStyle}${onclick?'cursor:pointer':''}">`;
@@ -4167,10 +4167,12 @@ function renderTakvimAyHafta(grid, todayStr) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
         const prevRev = prevG ? window._R.find(r=>Number(r.odaNo)===i&&(r.giris||'')<=prevG&&(r.cikis||'')>prevG&&r.durum!=='iptal') : null;
         const prevDolu = prevG && oda.durum==='dolu' && oda.giris && oda.giris<=prevG && oda.cikis>prevG;
+        const prevArizali = prevG && oda.durum==='arizali' && prevG >= todayStr;
         // Aynı bloğun devamı mı? Sadece dolu/rezerve OLMASI yetmez — AYNI kayıt/misafir olması gerekir.
         const ayniRev = rev && prevRev && (rev.id ? rev.id===prevRev.id : (rev.misafir===prevRev.misafir && rev.giris===prevRev.giris));
         const ayniDolu = (fiiliDolu||bugunDolu) && prevDolu && oda.misafir===(window._O['oda'+i]?.misafir) && prevG>=oda.giris;
-        const devamEdiyor = ayniRev || ayniDolu;
+        const ayniArizali = oda.durum==='arizali' && prevArizali;
+        const devamEdiyor = ayniRev || ayniDolu || ayniArizali;
         if(!devamEdiyor) html += `<div class="takvim-blok">${label}</div>`;
       }
       html += `</td>`;
