@@ -8,113 +8,192 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary:#C8102E;
-  --cream:#f7f8fa; --parchment:#f0f2f5; --border:#e2e6eb; --warm:#b0b8c4;
-  --gold:#9a7c3f; --gold2:#c4a55a; --dark:#1a1d23;
-  --text:#1a1d23; --muted:#6b7280; --white:#fff;
-  --green:#16a34a; --green-bg:#f0fdf4;
-  --red:#dc2626; --red-bg:#fef2f2;
-  --shadow:0 1px 8px rgba(0,0,0,.07);
-  --shadow-lg:0 4px 24px rgba(0,0,0,.11);
+  --primary:#C8102E; --cream:#f7f8fa; --parchment:#f0f2f5;
+  --border:#e2e6eb; --gold:#9a7c3f; --gold2:#c4a55a;
+  --dark:#1a1d23; --text:#1a1d23; --muted:#6b7280; --white:#fff;
+  --green:#16a34a; --red:#dc2626;
+  --shadow:0 1px 8px rgba(0,0,0,.07); --shadow-lg:0 4px 24px rgba(0,0,0,.11);
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+*{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;font-size:15px;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
 .header-strip{position:fixed;top:0;left:0;right:0;height:4px;background:var(--primary);}
-.card{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:480px;width:100%;padding:36px 30px;}
-.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
-.logo-shield{width:34px;height:34px;flex-shrink:0;}
+.card{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:500px;width:100%;padding:32px 28px;}
+
+/* Dil seçimi */
+.lang-row{display:flex;gap:8px;margin-bottom:22px;justify-content:flex-end;}
+.lang-btn{padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:.5px;border:1px solid var(--border);background:var(--cream);color:var(--muted);cursor:pointer;transition:all .2s;}
+.lang-btn.active{background:var(--dark);color:#fff;border-color:var(--dark);}
+
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:5px;}
 .brand{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark);letter-spacing:.5px;}
 .brand em{color:var(--primary);font-style:italic;}
-.subtitle{font-size:12px;color:var(--muted);margin-bottom:26px;letter-spacing:.3px;}
-.form-group{margin-bottom:16px;}
+.subtitle{font-size:12px;color:var(--muted);margin-bottom:24px;letter-spacing:.3px;line-height:1.5;}
+
+.form-group{margin-bottom:14px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-label{display:block;font-size:10px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-input,select,textarea{width:100%;border:1px solid var(--border);padding:11px 13px;font-family:'Jost',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;}
-input:focus,select:focus,textarea:focus{border-color:var(--gold2);background:var(--white);}
-textarea{resize:vertical;min-height:70px;}
-.btn{width:100%;padding:14px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+input,select{width:100%;border:1px solid var(--border);padding:10px 12px;font-family:'Jost',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;appearance:none;}
+input:focus,select:focus{border-color:var(--gold2);background:var(--white);}
+input[readonly]{color:var(--muted);cursor:default;}
+
+/* Özet kutusu */
+.ozet-kart{background:var(--parchment);border:1px solid var(--border);padding:12px 16px;margin-bottom:14px;display:none;}
+.ozet-kart.goster{display:block;}
+.ozet-satir{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;}
+.ozet-satir:last-child{margin-bottom:0;font-weight:700;font-size:13px;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;}
+.ozet-label{color:var(--muted);}
+.ozet-val{color:var(--dark);font-weight:600;}
+
+.odeme-secenekler{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.odeme-kart{border:2px solid var(--border);padding:10px 12px;cursor:pointer;transition:all .2s;text-align:center;}
+.odeme-kart:hover{border-color:var(--gold2);}
+.odeme-kart.secili{border-color:var(--primary);background:#fff5f5;}
+.odeme-kart-ikon{font-size:20px;margin-bottom:4px;}
+.odeme-kart-label{font-size:11px;font-weight:600;color:var(--dark);}
+.odeme-kart-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+
+.btn{width:100%;padding:14px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;margin-top:4px;}
 .btn-primary{background:var(--primary);color:#fff;}
 .btn-primary:hover{opacity:.92;}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-.success-box{text-align:center;padding:20px 0;}
-.success-icon{font-size:40px;margin-bottom:12px;}
-.success-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px;}
-.success-text{font-size:13px;color:var(--muted);line-height:1.6;}
 .error-text{font-size:12px;color:var(--red);margin-top:8px;display:none;}
-.note{font-size:11px;color:var(--muted);margin-top:18px;text-align:center;line-height:1.5;}
-/* Honeypot — botlar için tuzak alan, gerçek kullanıcılar görmez */
+.note{font-size:10px;color:var(--muted);margin-top:14px;text-align:center;line-height:1.5;}
+.success-box{text-align:center;padding:20px 0;}
+.success-icon{font-size:44px;margin-bottom:12px;}
+.success-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;margin-bottom:8px;}
+.success-title.tr{color:var(--green);}
+.success-title.en{color:var(--green);}
+.success-title.fa{color:var(--green);}
+.success-text{font-size:13px;color:var(--muted);line-height:1.6;}
 .hp{position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;overflow:hidden;}
-@media(max-width:480px){.form-row{grid-template-columns:1fr;}}
+.section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);margin-bottom:10px;margin-top:4px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+@media(max-width:480px){.form-row,.form-row-3{grid-template-columns:1fr;} .odeme-secenekler{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
 <div class="header-strip"></div>
 <div class="card">
+
+  <div class="lang-row">
+    <button class="lang-btn active" onclick="setLang('tr')">🇹🇷 TR</button>
+    <button class="lang-btn" onclick="setLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" onclick="setLang('fa')">🇮🇷 FA</button>
+  </div>
+
   <div id="formWrap">
     <div class="logo-row">
-      <svg class="logo-shield" viewBox="0 0 30 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="34" height="34" viewBox="0 0 30 34" fill="none">
         <path d="M15 1L28 6V16C28 24 22 30 15 33C8 30 2 24 2 16V6L15 1Z" fill="#C8102E" stroke="#1a1d23" stroke-width="1"/>
-        <text x="15" y="20" font-family="Cormorant Garamond, serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">SH</text>
+        <text x="15" y="21" font-family="serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">SH</text>
       </svg>
       <div class="brand">SWISS <em>HOUSE</em></div>
     </div>
-    <div class="subtitle">Rezervasyon talebinizi iletin, en kısa sürede size dönüş yapacağız.</div>
+    <div class="subtitle" id="txt_subtitle">Rezervasyon talebinizi iletin, en kısa sürede size dönüş yapacağız.</div>
 
     <form id="talepForm" autocomplete="off">
-      <!-- Honeypot alanı: botlar genelde bu tip alanları otomatik doldurur, insanlar görmez -->
-      <div class="hp"><label>Web Sitesi</label><input type="text" id="hp_website" name="website" tabindex="-1" autocomplete="off"></div>
+      <div class="hp"><input type="text" id="hp_website" tabindex="-1" autocomplete="off"></div>
 
+      <!-- Kişisel Bilgiler -->
+      <div class="section-label" id="txt_sec_kisi">Kişisel Bilgiler</div>
       <div class="form-group">
-        <label>Ad Soyad *</label>
-        <input type="text" id="t_ad" placeholder="Ad Soyad" required maxlength="80">
+        <label id="txt_lbl_ad">Ad Soyad *</label>
+        <input type="text" id="t_ad" required maxlength="80">
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Telefon *</label>
-          <input type="tel" id="t_tel" placeholder="05XX XXX XX XX" required maxlength="20">
+          <label id="txt_lbl_tel">Telefon *</label>
+          <input type="tel" id="t_tel" required maxlength="20">
         </div>
         <div class="form-group">
-          <label>Instagram Kullanıcı Adı</label>
+          <label id="txt_lbl_ig">Instagram</label>
           <input type="text" id="t_instagram" placeholder="@kullaniciadi" maxlength="40">
         </div>
       </div>
+
+      <!-- Konaklama -->
+      <div class="section-label" id="txt_sec_konaklama">Konaklama</div>
       <div class="form-row">
         <div class="form-group">
-          <label>Giriş Tarihi *</label>
-          <input type="date" id="t_giris" required>
+          <label id="txt_lbl_giris">Giriş Tarihi *</label>
+          <input type="date" id="t_giris" required onchange="hesaplaKonaklama()">
         </div>
         <div class="form-group">
-          <label>Çıkış Tarihi *</label>
-          <input type="date" id="t_cikis" required>
+          <label id="txt_lbl_gece">Gece Sayısı *</label>
+          <input type="number" id="t_gece" min="1" max="30" value="1" required oninput="hesaplaKonaklama()">
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Yetişkin Sayısı</label>
-          <input type="number" id="t_yetiskin" min="1" value="2">
-        </div>
-        <div class="form-group">
-          <label>Çocuk Sayısı</label>
-          <input type="number" id="t_cocuk" min="0" value="0">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Not <span style="font-weight:400;text-transform:none;font-size:10px">(özel istek, oda tercihi vb.)</span></label>
-        <textarea id="t_not" maxlength="300" placeholder="İsteğe bağlı..."></textarea>
       </div>
 
-      <button type="submit" class="btn btn-primary" id="gonderBtn">Talebi Gönder</button>
+      <!-- Özet kutusu -->
+      <div class="ozet-kart" id="ozetKart">
+        <div class="ozet-satir">
+          <span class="ozet-label" id="txt_ozet_giris">Giriş:</span>
+          <span class="ozet-val" id="oz_giris">—</span>
+        </div>
+        <div class="ozet-satir">
+          <span class="ozet-label" id="txt_ozet_cikis">Çıkış:</span>
+          <span class="ozet-val" id="oz_cikis">—</span>
+        </div>
+        <div class="ozet-satir">
+          <span class="ozet-label" id="txt_ozet_sure">Konaklama:</span>
+          <span class="ozet-val" id="oz_sure">—</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label id="txt_lbl_yetiskin">Yetişkin</label>
+          <input type="number" id="t_yetiskin" min="1" max="10" value="2">
+        </div>
+        <div class="form-group">
+          <label id="txt_lbl_cocuk">Çocuk</label>
+          <input type="number" id="t_cocuk" min="0" max="10" value="0">
+        </div>
+      </div>
+
+      <!-- Ödeme Tercihi -->
+      <div class="section-label" id="txt_sec_odeme">Ödeme Tercihi</div>
+      <div class="odeme-secenekler">
+        <div class="odeme-kart secili" onclick="secOdeme('nakit')" id="okart_nakit">
+          <div class="odeme-kart-ikon">💵</div>
+          <div class="odeme-kart-label" id="txt_odeme_nakit">Nakit</div>
+          <div class="odeme-kart-sub" id="txt_odeme_nakit_sub">Kapıda ödeme</div>
+        </div>
+        <div class="odeme-kart" onclick="secOdeme('kart')" id="okart_kart">
+          <div class="odeme-kart-ikon">💳</div>
+          <div class="odeme-kart-label" id="txt_odeme_kart">Kredi/Banka Kartı</div>
+          <div class="odeme-kart-sub" id="txt_odeme_kart_sub">Kapıda ödeme</div>
+        </div>
+        <div class="odeme-kart" onclick="secOdeme('havale')" id="okart_havale">
+          <div class="odeme-kart-ikon">🏦</div>
+          <div class="odeme-kart-label" id="txt_odeme_havale">Havale / EFT</div>
+          <div class="odeme-kart-sub" id="txt_odeme_havale_sub">Banka transferi</div>
+        </div>
+        <div class="odeme-kart" onclick="secOdeme('depozito')" id="okart_depozito">
+          <div class="odeme-kart-ikon">🔒</div>
+          <div class="odeme-kart-label" id="txt_odeme_depozito">Depozito</div>
+          <div class="odeme-kart-sub" id="txt_odeme_depozito_sub">Ön ödeme ile rezervasyon</div>
+        </div>
+      </div>
+      <input type="hidden" id="t_odeme" value="nakit">
+
+      <!-- Not -->
+      <div class="form-group">
+        <label id="txt_lbl_not">Not <span style="font-weight:400;text-transform:none;font-size:9px" id="txt_lbl_not_sub">(özel istek, oda tercihi vb.)</span></label>
+        <input type="text" id="t_not" maxlength="300">
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="gonderBtn">TALEBİ GÖNDER</button>
       <div class="error-text" id="errorText"></div>
     </form>
-
-    <div class="note">Bu bir ön talep formudur. Rezervasyonunuz, ekibimiz tarafından onaylandıktan sonra kesinleşir.</div>
+    <div class="note" id="txt_note">Bu bir ön talep formudur. Rezervasyonunuz, ekibimiz tarafından onaylandıktan sonra kesinleşir.</div>
   </div>
 
   <div id="successWrap" style="display:none">
     <div class="success-box">
       <div class="success-icon">✅</div>
-      <div class="success-title">Talebiniz Alındı</div>
-      <div class="success-text">Rezervasyon talebiniz başarıyla iletildi. Ekibimiz en kısa sürede sizinle iletişime geçecek.</div>
+      <div class="success-title" id="txt_success_title">Talebiniz Alındı</div>
+      <div class="success-text" id="txt_success_body">Rezervasyon talebiniz başarıyla iletildi. Ekibimiz en kısa sürede sizinle iletişime geçecek.</div>
     </div>
   </div>
 </div>
@@ -122,7 +201,7 @@ textarea{resize:vertical;min-height:70px;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -133,107 +212,207 @@ const app = initializeApp({
   appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
 });
 
-// ── FIREBASE APP CHECK ──
-// AŞAĞIDAKİ 'BURAYA_RECAPTCHA_SITE_KEY' KISMINI Firebase konsolundan aldığın
-// gerçek reCAPTCHA v3 site key ile değiştir. Bu key gizli değildir, herkese açıktır.
 const RECAPTCHA_SITE_KEY = "6LcRbiYtAAAAAIGKlktUMuX-RYyIe1BpZxS7ycen";
 if(RECAPTCHA_SITE_KEY !== "BURAYA_RECAPTCHA_SITE_KEY") {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true
-  });
+  initializeAppCheck(app, { provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
 }
 
 const db = getFirestore(app);
 
+// ── DİL SİSTEMİ ──
+const METINLER = {
+  tr: {
+    subtitle: "Rezervasyon talebinizi iletin, en kısa sürede size dönüş yapacağız.",
+    sec_kisi: "Kişisel Bilgiler", sec_konaklama: "Konaklama", sec_odeme: "Ödeme Tercihi",
+    lbl_ad: "Ad Soyad *", lbl_tel: "Telefon *", lbl_ig: "Instagram",
+    lbl_giris: "Giriş Tarihi *", lbl_gece: "Gece Sayısı *",
+    lbl_yetiskin: "Yetişkin", lbl_cocuk: "Çocuk",
+    lbl_not: "Not", lbl_not_sub: "(özel istek, oda tercihi vb.)",
+    ozet_giris: "Giriş:", ozet_cikis: "Çıkış:", ozet_sure: "Konaklama:",
+    odeme_nakit: "Nakit", odeme_nakit_sub: "Kapıda ödeme",
+    odeme_kart: "Kredi/Banka Kartı", odeme_kart_sub: "Kapıda ödeme",
+    odeme_havale: "Havale / EFT", odeme_havale_sub: "Banka transferi",
+    odeme_depozito: "Depozito", odeme_depozito_sub: "Ön ödeme ile rezervasyon",
+    btn: "TALEBİ GÖNDER", note: "Bu bir ön talep formudur. Rezervasyonunuz onaylandıktan sonra kesinleşir.",
+    success_title: "Talebiniz Alındı", success_body: "Rezervasyon talebiniz iletildi. En kısa sürede sizinle iletişime geçeceğiz.",
+    err_zorunlu: "Lütfen zorunlu alanları doldurun.", err_cikis: "Geçerli bir tarih ve gece sayısı girin.",
+    err_sunucu: "Bir hata oluştu, lütfen tekrar deneyin.",
+    gece_txt: "gece", gece_txt2: "gecelik konaklama",
+    placeholder_ad: "Ad Soyad", placeholder_tel: "05XX XXX XX XX",
+  },
+  en: {
+    subtitle: "Send your reservation request and we'll get back to you as soon as possible.",
+    sec_kisi: "Personal Information", sec_konaklama: "Stay Details", sec_odeme: "Payment Preference",
+    lbl_ad: "Full Name *", lbl_tel: "Phone *", lbl_ig: "Instagram",
+    lbl_giris: "Check-in Date *", lbl_gece: "Number of Nights *",
+    lbl_yetiskin: "Adults", lbl_cocuk: "Children",
+    lbl_not: "Note", lbl_not_sub: "(special requests, room preferences, etc.)",
+    ozet_giris: "Check-in:", ozet_cikis: "Check-out:", ozet_sure: "Stay:",
+    odeme_nakit: "Cash", odeme_nakit_sub: "Pay at arrival",
+    odeme_kart: "Credit/Debit Card", odeme_kart_sub: "Pay at arrival",
+    odeme_havale: "Bank Transfer", odeme_havale_sub: "Wire transfer",
+    odeme_depozito: "Deposit", odeme_depozito_sub: "Pre-payment reservation",
+    btn: "SEND REQUEST", note: "This is a preliminary request form. Your reservation will be confirmed after approval.",
+    success_title: "Request Received", success_body: "Your reservation request has been sent. We will contact you shortly.",
+    err_zorunlu: "Please fill in all required fields.", err_cikis: "Please enter a valid date and number of nights.",
+    err_sunucu: "An error occurred. Please try again.",
+    gece_txt: "night", gece_txt2: "night stay",
+    placeholder_ad: "Full Name", placeholder_tel: "+90 5XX XXX XX XX",
+  },
+  fa: {
+    subtitle: "درخواست رزرو خود را ارسال کنید، در اسرع وقت با شما تماس خواهیم گرفت.",
+    sec_kisi: "اطلاعات شخصی", sec_konaklama: "جزئیات اقامت", sec_odeme: "روش پرداخت",
+    lbl_ad: "نام و نام خانوادگی *", lbl_tel: "تلفن *", lbl_ig: "اینستاگرام",
+    lbl_giris: "تاریخ ورود *", lbl_gece: "تعداد شب *",
+    lbl_yetiskin: "بزرگسال", lbl_cocuk: "کودک",
+    lbl_not: "یادداشت", lbl_not_sub: "(درخواست‌های ویژه، ترجیحات اتاق و غیره)",
+    ozet_giris: "ورود:", ozet_cikis: "خروج:", ozet_sure: "اقامت:",
+    odeme_nakit: "نقدی", odeme_nakit_sub: "پرداخت در محل",
+    odeme_kart: "کارت بانکی", odeme_kart_sub: "پرداخت در محل",
+    odeme_havale: "انتقال بانکی", odeme_havale_sub: "حواله بانکی",
+    odeme_depozito: "پیش‌پرداخت", odeme_depozito_sub: "رزرو با پیش‌پرداخت",
+    btn: "ارسال درخواست", note: "این یک فرم درخواست اولیه است. رزرو شما پس از تأیید قطعی می‌شود.",
+    success_title: "درخواست دریافت شد", success_body: "درخواست رزرو شما ارسال شد. به زودی با شما تماس خواهیم گرفت.",
+    err_zorunlu: "لطفاً فیلدهای اجباری را پر کنید.", err_cikis: "لطفاً تاریخ معتبر و تعداد شب را وارد کنید.",
+    err_sunucu: "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+    gece_txt: "شب", gece_txt2: "شب اقامت",
+    placeholder_ad: "نام و نام خانوادگی", placeholder_tel: "+98 9XX XXX XXXX",
+  }
+};
+
+let dil = 'tr';
+window.setLang = function(d) {
+  dil = d;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(`'${d}'`)));
+  const m = METINLER[d];
+  document.getElementById('txt_subtitle').textContent = m.subtitle;
+  document.getElementById('txt_sec_kisi').textContent = m.sec_kisi;
+  document.getElementById('txt_sec_konaklama').textContent = m.sec_konaklama;
+  document.getElementById('txt_sec_odeme').textContent = m.sec_odeme;
+  document.getElementById('txt_lbl_ad').textContent = m.lbl_ad;
+  document.getElementById('txt_lbl_tel').textContent = m.lbl_tel;
+  document.getElementById('txt_lbl_ig').textContent = m.lbl_ig;
+  document.getElementById('txt_lbl_giris').textContent = m.lbl_giris;
+  document.getElementById('txt_lbl_gece').textContent = m.lbl_gece;
+  document.getElementById('txt_lbl_yetiskin').textContent = m.lbl_yetiskin;
+  document.getElementById('txt_lbl_cocuk').textContent = m.lbl_cocuk;
+  document.getElementById('txt_lbl_not').childNodes[0].textContent = m.lbl_not + ' ';
+  document.getElementById('txt_lbl_not_sub').textContent = m.lbl_not_sub;
+  document.getElementById('txt_ozet_giris').textContent = m.ozet_giris;
+  document.getElementById('txt_ozet_cikis').textContent = m.ozet_cikis;
+  document.getElementById('txt_ozet_sure').textContent = m.ozet_sure;
+  document.getElementById('txt_odeme_nakit').textContent = m.odeme_nakit;
+  document.getElementById('txt_odeme_nakit_sub').textContent = m.odeme_nakit_sub;
+  document.getElementById('txt_odeme_kart').textContent = m.odeme_kart;
+  document.getElementById('txt_odeme_kart_sub').textContent = m.odeme_kart_sub;
+  document.getElementById('txt_odeme_havale').textContent = m.odeme_havale;
+  document.getElementById('txt_odeme_havale_sub').textContent = m.odeme_havale_sub;
+  document.getElementById('txt_odeme_depozito').textContent = m.odeme_depozito;
+  document.getElementById('txt_odeme_depozito_sub').textContent = m.odeme_depozito_sub;
+  document.getElementById('gonderBtn').textContent = m.btn;
+  document.getElementById('txt_note').textContent = m.note;
+  document.getElementById('t_ad').placeholder = m.placeholder_ad;
+  document.getElementById('t_tel').placeholder = m.placeholder_tel;
+  // RTL sadece Farsça için
+  document.getElementById('formWrap').style.direction = d === 'fa' ? 'rtl' : 'ltr';
+  hesaplaKonaklama(); // özet kutusunu dil değişiminde güncelle
+};
+
+// ── KONAKLAMA HESAPLAMA ──
 const today = () => new Date().toISOString().slice(0,10);
 document.getElementById('t_giris').min = today();
-document.getElementById('t_cikis').min = today();
-document.getElementById('t_giris').addEventListener('change', () => {
-  document.getElementById('t_cikis').min = document.getElementById('t_giris').value;
-});
 
-// Sayfa yüklenme zamanı — bot tespiti için (botlar formu genelde saniyeler içinde, çok hızlı doldurur)
+function addDays(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+function formatTarih(iso) {
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+window.hesaplaKonaklama = function() {
+  const giris = document.getElementById('t_giris').value;
+  const gece = parseInt(document.getElementById('t_gece').value) || 0;
+  const ozetKart = document.getElementById('ozetKart');
+  if(!giris || gece < 1) { ozetKart.classList.remove('goster'); return; }
+  const cikis = addDays(giris, gece);
+  const m = METINLER[dil];
+  document.getElementById('oz_giris').textContent = formatTarih(giris);
+  document.getElementById('oz_cikis').textContent = formatTarih(cikis);
+  document.getElementById('oz_sure').textContent = `${gece} ${m.gece_txt2}`;
+  ozetKart.classList.add('goster');
+  return cikis;
+};
+
+// ── ÖDEME SEÇİMİ ──
+window.secOdeme = function(tip) {
+  document.querySelectorAll('.odeme-kart').forEach(k => k.classList.remove('secili'));
+  document.getElementById('okart_'+tip).classList.add('secili');
+  document.getElementById('t_odeme').value = tip;
+};
+
+// ── SPAM KORUMALARI ──
 const sayfaYuklenmeZamani = Date.now();
-
-// Basit istemci-taraflı rate limit: aynı tarayıcıdan kısa sürede tekrar gönderimi engelle
-const SON_GONDERIM_KEY = 'swisshouse_son_talep_zamani';
+const SON_GONDERIM_KEY = 'swisshouse_son_talep';
 function rateLimitKontrol() {
-  try {
-    const son = localStorage.getItem(SON_GONDERIM_KEY);
-    if(son && (Date.now() - Number(son)) < 60000) return false; // 60 saniye içinde tekrar gönderim yok
-    return true;
-  } catch(e) { return true; } // localStorage erişilemezse engelleme
+  try { const s=localStorage.getItem(SON_GONDERIM_KEY); return !s||(Date.now()-Number(s))>60000; } catch(e){return true;}
 }
-function rateLimitKaydet() {
-  try { localStorage.setItem(SON_GONDERIM_KEY, String(Date.now())); } catch(e) {}
-}
+function rateLimitKaydet() { try{localStorage.setItem(SON_GONDERIM_KEY,String(Date.now()));}catch(e){} }
 
+// ── FORM GÖNDERME ──
 document.getElementById('talepForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = document.getElementById('errorText');
+  const m = METINLER[dil];
   errEl.style.display = 'none';
   const btn = document.getElementById('gonderBtn');
 
-  // 1) Honeypot kontrolü — bu alan doluysa bot demektir, sessizce reddet
-  if(document.getElementById('hp_website').value.trim() !== '') {
-    return; // bot — hiçbir şey söylemeden çık (gerçek bot bunun farkına bile varmaz)
-  }
-
-  // 2) Çok hızlı gönderim kontrolü — insan bu formu 3 saniyeden kısa sürede dolduramaz
-  if(Date.now() - sayfaYuklenmeZamani < 3000) {
-    errEl.textContent = 'Lütfen formu doldurduktan sonra gönderin.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  // 3) Tarayıcı bazlı rate limit
-  if(!rateLimitKontrol()) {
-    errEl.textContent = 'Az önce bir talep gönderdiniz. Lütfen biraz bekleyip tekrar deneyin.';
-    errEl.style.display = 'block';
-    return;
-  }
+  // Spam kontrolleri
+  if(document.getElementById('hp_website').value.trim() !== '') return;
+  if(Date.now() - sayfaYuklenmeZamani < 3000) { errEl.textContent = m.err_zorunlu; errEl.style.display='block'; return; }
+  if(!rateLimitKontrol()) { errEl.textContent = m.err_zorunlu; errEl.style.display='block'; return; }
 
   const ad = document.getElementById('t_ad').value.trim();
   const tel = document.getElementById('t_tel').value.trim();
   const instagram = document.getElementById('t_instagram').value.trim();
   const giris = document.getElementById('t_giris').value;
-  const cikis = document.getElementById('t_cikis').value;
-  const yetiskin = parseInt(document.getElementById('t_yetiskin').value) || 1;
-  const cocuk = parseInt(document.getElementById('t_cocuk').value) || 0;
+  const gece = parseInt(document.getElementById('t_gece').value)||0;
+  const yetiskin = parseInt(document.getElementById('t_yetiskin').value)||1;
+  const cocuk = parseInt(document.getElementById('t_cocuk').value)||0;
   const not_ = document.getElementById('t_not').value.trim();
+  const odeme = document.getElementById('t_odeme').value;
 
-  if(!ad || !tel || !giris || !cikis) {
-    errEl.textContent = 'Lütfen zorunlu alanları doldurun.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if(cikis <= giris) {
-    errEl.textContent = 'Çıkış tarihi, giriş tarihinden sonra olmalıdır.';
-    errEl.style.display = 'block';
-    return;
-  }
+  if(!ad||!tel||!giris||gece<1) { errEl.textContent=m.err_zorunlu; errEl.style.display='block'; return; }
+  const cikis = hesaplaKonaklama();
+  if(!cikis) { errEl.textContent=m.err_cikis; errEl.style.display='block'; return; }
 
   btn.disabled = true;
-  btn.textContent = 'Gönderiliyor...';
+  btn.textContent = '...';
 
   try {
-    await addDoc(collection(db, 'rezervasyon_talepleri'), {
-      misafir: ad, tel, instagram: instagram || null,
-      giris, cikis, yetiskin, cocuk,
-      not: not_ || null,
+    await addDoc(collection(db,'rezervasyon_talepleri'), {
+      misafir: ad, tel, instagram: instagram||null,
+      giris, cikis, gece, yetiskin, cocuk,
+      odemeTercihi: odeme,
+      not: not_||null,
+      dil,
       kaynak: 'instagram',
-      durum: 'bekliyor', // bekliyor | onaylandi | reddedildi
+      durum: 'bekliyor',
       kayitTarih: new Date().toISOString()
     });
     rateLimitKaydet();
-    document.getElementById('formWrap').style.display = 'none';
-    document.getElementById('successWrap').style.display = 'block';
+    document.getElementById('formWrap').style.display='none';
+    document.getElementById('txt_success_title').textContent = m.success_title;
+    document.getElementById('txt_success_body').textContent = m.success_body;
+    document.getElementById('successWrap').style.display='block';
   } catch(err) {
-    errEl.textContent = 'Bir hata oluştu, lütfen tekrar deneyin veya bizi doğrudan arayın.';
+    errEl.textContent = m.err_sunucu;
     errEl.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = 'Talebi Gönder';
+    btn.textContent = m.btn;
   }
 });
 </script>
