@@ -257,8 +257,9 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
           <input type="number" id="f_gece" min="1" value="1" oninput="hesaplaOzet()">
         </div>
         <div class="form-group">
-          <label id="lbl_fiyat">Gecelik Ücret (₺) *</label>
+          <label id="lbl_fiyat">Sözleşme Fiyatı — Gecelik (₺) *</label>
           <input type="number" id="f_fiyat" min="0" placeholder="0" oninput="hesaplaOzet()">
+          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="lbl_fiyat_aciklama">Komisyon dahil gecelik fiyat (misafire yansıtılan tutar)</div>
         </div>
       </div>
 
@@ -356,7 +357,7 @@ const M = {
     giris_btn:'Giriş Yap', giris_hata:'Kullanıcı adı veya şifre hatalı.',
     takvim_baslik:'Oda Takvimi', talepler_baslik:'Taleplerim',
     sec_odeme:'Ödeme Bilgileri', sec_misafir:'Misafir Bilgileri',
-    lbl_gece:'Kaç Gece *', lbl_fiyat:'Gecelik Ücret (₺) *',
+    lbl_gece:'Kaç Gece *', lbl_fiyat:'Sözleşme Fiyatı — Gecelik (₺) *',
     lbl_odeme_durum:'Ödeme Durumu', lbl_odeme_tur:'Ödeme Türü',
     lbl_kismi_tutar:'Alınan Tutar (₺)',
     lbl_misafir:'Misafir Adı Soyadı *', lbl_tc:'TC Kimlik / Pasaport No',
@@ -384,7 +385,7 @@ const M = {
     giris_btn:'Sign In', giris_hata:'Invalid username or password.',
     takvim_baslik:'Room Calendar', talepler_baslik:'My Requests',
     sec_odeme:'Payment Details', sec_misafir:'Guest Information',
-    lbl_gece:'Nights *', lbl_fiyat:'Nightly Rate (₺) *',
+    lbl_gece:'Nights *', lbl_fiyat:'Contract Price — Per Night (₺) *',
     lbl_odeme_durum:'Payment Status', lbl_odeme_tur:'Payment Type',
     lbl_kismi_tutar:'Amount Received (₺)',
     lbl_misafir:'Guest Full Name *', lbl_tc:'ID / Passport No',
@@ -412,7 +413,7 @@ const M = {
     giris_btn:'ورود', giris_hata:'نام کاربری یا رمز عبور اشتباه است.',
     takvim_baslik:'تقویم اتاق‌ها', talepler_baslik:'درخواست‌های من',
     sec_odeme:'اطلاعات پرداخت', sec_misafir:'اطلاعات مهمان',
-    lbl_gece:'تعداد شب *', lbl_fiyat:'نرخ شبانه (₺) *',
+    lbl_gece:'تعداد شب *', lbl_fiyat:'قیمت قرارداد — هر شب (₺) *',
     lbl_odeme_durum:'وضعیت پرداخت', lbl_odeme_tur:'نوع پرداخت',
     lbl_kismi_tutar:'مبلغ دریافتی (₺)',
     lbl_misafir:'نام و نام خانوادگی مهمان *', lbl_tc:'کد ملی / شماره پاسپورت',
@@ -466,14 +467,42 @@ window.setLang = function(d) {
   document.getElementById('lbl_not_sub').textContent = m.lbl_not_sub;
   document.getElementById('lbl_carpısma').textContent = m.carpısma;
   document.getElementById('gonderBtn').textContent = m.gonder;
-  // Select seçenekleri
-  document.getElementById('opt_odenmedi').textContent = m.opt_odenmedi;
-  document.getElementById('opt_odendi').textContent = m.opt_odendi;
-  document.getElementById('opt_depozito').textContent = m.opt_depozito;
-  document.getElementById('opt_kismi').textContent = m.opt_kismi;
-  document.getElementById('opt_nakit').textContent = m.opt_nakit;
-  document.getElementById('opt_kart').textContent = m.opt_kart;
-  document.getElementById('opt_havale').textContent = m.opt_havale;
+  // Select seçenekleri — innerHTML ile yeniden yaz (textContent güvenilmez)
+  const odemeDurumSel = document.getElementById('f_odeme_durum');
+  if(odemeDurumSel) {
+    const curVal = odemeDurumSel.value;
+    odemeDurumSel.innerHTML = `
+      <option value="odenmedi">${m.opt_odenmedi}</option>
+      <option value="odendi">${m.opt_odendi}</option>
+      <option value="depozito">${m.opt_depozito}</option>
+      <option value="kismi">${m.opt_kismi}</option>
+    `;
+    odemeDurumSel.value = curVal;
+  }
+  const odemeTurSel = document.getElementById('f_odeme_tur');
+  if(odemeTurSel) {
+    const curVal2 = odemeTurSel.value;
+    odemeTurSel.innerHTML = `
+      <option value="nakit">${m.opt_nakit}</option>
+      <option value="kart">${m.opt_kart}</option>
+      <option value="havale">${m.opt_havale}</option>
+    `;
+    odemeTurSel.value = curVal2;
+  }
+  // Oda select'i — sadece "Seç" placeholder'ını güncelle
+  const odaSel = document.getElementById('f_oda');
+  if(odaSel && odaSel.options[0]) {
+    odaSel.options[0].textContent = d === 'fa' ? '— انتخاب کنید —' : d === 'en' ? '— Select —' : '— Seç —';
+  }
+  // Fiyat açıklama notu
+  const fiyatAciklama = document.getElementById('lbl_fiyat_aciklama');
+  if(fiyatAciklama) {
+    fiyatAciklama.textContent = d === 'fa'
+      ? 'قیمت شامل کمیسیون (مبلغی که به مهمان تعلق می‌گیرد)'
+      : d === 'en'
+      ? 'Contract price incl. commission (amount charged to guest)'
+      : 'Komisyon dahil gecelik fiyat (misafire yansıtılan tutar)';
+  }
   // Placeholder
   const pfld = {f_misafir:m.ph_misafir, f_tel:m.ph_tel, f_tc:m.ph_tc};
   Object.entries(pfld).forEach(([id,ph]) => { const el=document.getElementById(id); if(el) el.placeholder=ph; });
@@ -495,8 +524,8 @@ window.setLang = function(d) {
 // Yeni komisyoncu eklemek için buraya satır ekle
 const KOMISYONCULAR = {
   'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
-  'pune': { ad: 'pune iran', sifre: 'pune2026' },
   'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
+  'pune':   { ad: 'pune iran',     sifre: 'pune2026'   },
 };
 
 let aktifKom = null; // { key, ad }
@@ -543,23 +572,27 @@ function baslatPortal() {
     renderTakvim();
   });
 
-  // Kendi taleplerimi CANLI dinle
+  // Kendi taleplerimi CANLI dinle — orderBy kaldırıldı (Firestore bileşik index gerektiriyor)
+  // İstemci tarafında sıralıyoruz
   onSnapshot(
     query(collection(db,'rezervasyon_talepleri'),
-      where('komisyoncu','==', aktifKom.key),
-      orderBy('kayitTarih','desc')),
+      where('komisyoncu','==', aktifKom.key)),
     snap => {
-      _beniimTalepler = snap.docs.map(d=>({id:d.id,...d.data()}));
+      _beniimTalepler = snap.docs
+        .map(d=>({id:d.id,...d.data()}))
+        .sort((a,b) => (b.kayitTarih||'').localeCompare(a.kayitTarih||''));
       renderTalepler(_beniimTalepler);
-      renderTakvim(); // onaylananlar takvimde renklenmesi için
+      renderTakvim();
     }
   );
 
   // Oda select'ini doldur
   const sel = document.getElementById('f_oda');
+  const m0 = M[dil];
+  sel.innerHTML = `<option value="">${dil === 'fa' ? '— انتخاب کنید —' : dil === 'en' ? '— Select —' : '— Seç —'}</option>`;
   HOTEL_ODALAR.forEach(no => {
     const opt = document.createElement('option');
-    opt.value = no; opt.textContent = `Oda ${no}`;
+    opt.value = no; opt.textContent = `${dil === 'fa' ? 'اتاق' : 'Oda'} ${no}`;
     sel.appendChild(opt);
   });
 
@@ -595,7 +628,7 @@ function renderTakvim() {
     gunList.push({ iso, gun: d, gunAdi });
   }
 
-  let html = '<thead><tr><th style="text-align:left;padding:6px 10px">ODA</th>';
+  let html = `<thead><tr><th style="text-align:left;padding:6px 10px">${dil === 'fa' ? 'اتاق' : 'ODA'}</th>`;
   gunList.forEach(g => {
     const isToday = g.iso === today;
     html += `<th class="${isToday?'bugun-col':''}">${g.gunAdi}<br>${g.gun}</th>`;
@@ -604,7 +637,8 @@ function renderTakvim() {
 
   HOTEL_ODALAR.forEach(odaNo => {
     const oda = _O['oda'+odaNo] || {durum:'bos'};
-    html += `<tr><td class="oda-col">Oda ${odaNo}</td>`;
+    const odaLabel = dil === 'fa' ? `اتاق ${odaNo}` : `Oda ${odaNo}`;
+    html += `<tr><td class="oda-col">${odaLabel}</td>`;
 
     gunList.forEach(g => {
       const iso = g.iso;
@@ -794,7 +828,9 @@ window.talepGonder = async function() {
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
-      fiyat, yetiskin, cocuk,
+      fiyat: null,           // gerçek oda fiyatı resepsiyonist tarafından belirlenecek
+      sozlesmeFiyat: fiyat,  // komisyoncunun girdiği = sözleşme/komisyon dahil fiyat
+      yetiskin, cocuk,
       odemeDurum, odemeTuru,
       kismiTutar: kismiTutar,
       kismiKalan: kismiTutar !== null ? Math.max(0, fiyat*gece - kismiTutar) : null,
@@ -837,7 +873,7 @@ function renderTalepler(talepler) {
       <td>${t.giris||'?'} → ${t.cikis||'?'}</td>
       <td>${t.gece||'?'}</td>
       <td>${(t.yetiskin||1)+(t.cocuk||0)}</td>
-      <td>${t.fiyat ? fmt(t.fiyat)+' ₺' : '—'}</td>
+      <td>${t.sozlesmeFiyat ? fmt(t.sozlesmeFiyat)+' ₺' : (t.fiyat ? fmt(t.fiyat)+' ₺' : '—')}</td>
       <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||t.durum}</span></td>
       <td>${t.durum==='onaylandi' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="sozlesmeGoster('${t.id}')">${m.sozlesme}</button>` : '—'}</td>
     </tr>
