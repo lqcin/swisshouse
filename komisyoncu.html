@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Swiss House — Komisyoncu Portalı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#C8102E; --cream:#f7f8fa; --parchment:#f0f2f5;
+  --border:#e2e6eb; --gold:#9a7c3f; --gold2:#c4a55a;
+  --dark:#1a1d23; --text:#1a1d23; --muted:#6b7280; --white:#fff;
+  --green:#16a34a; --green-bg:#f0fdf4;
+  --red:#dc2626; --red-bg:#fef2f2;
+  --blue:#1d4ed8; --shadow:0 1px 8px rgba(0,0,0,.07);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.11);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;font-size:14px;min-height:100vh;}
+
+/* ── GİRİŞ EKRANI ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.login-card{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:360px;width:100%;padding:36px 30px;text-align:center;}
+.login-logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--dark);margin-bottom:4px;}
+.login-logo em{color:var(--primary);font-style:italic;}
+.login-sub{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-bottom:28px;}
+.login-label{display:block;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;text-align:left;}
+.login-input{width:100%;border:1px solid var(--border);padding:11px 13px;font-family:'Jost',sans-serif;font-size:14px;background:var(--cream);outline:none;margin-bottom:14px;}
+.login-input:focus{border-color:var(--gold2);background:var(--white);}
+.login-btn{width:100%;padding:13px;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:var(--primary);color:#fff;border:none;cursor:pointer;}
+.login-btn:hover{opacity:.9;}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;min-height:18px;}
+
+/* ── ANA PORTAL ── */
+#portal{display:none;}
+.portal-header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.portal-header-strip{position:fixed;top:0;left:0;right:0;height:4px;background:var(--primary);}
+.portal-brand{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark);}
+.portal-brand em{color:var(--primary);font-style:italic;}
+.portal-user{font-size:12px;color:var(--muted);}
+.portal-body{max-width:1300px;margin:0 auto;padding:24px;}
+
+/* ── TAKVİM ── */
+.takvim-wrap{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:24px;}
+.takvim-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+.takvim-baslik{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark);}
+.takvim-nav{display:flex;gap:8px;align-items:center;}
+.takvim-nav button{padding:6px 14px;border:1px solid var(--border);background:var(--cream);font-family:'Jost',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--dark);}
+.takvim-nav button:hover{background:var(--parchment);}
+.takvim-table{width:100%;border-collapse:collapse;font-size:11px;overflow-x:auto;display:block;}
+.takvim-table th{padding:6px 4px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;min-width:32px;}
+.takvim-table th.bugun-col{background:#fffbf0;color:var(--gold);}
+.takvim-table td{padding:3px 2px;text-align:center;border:1px solid #f0f0f0;height:32px;position:relative;white-space:nowrap;font-size:10px;}
+.takvim-table td.t-bos{background:#fff;cursor:pointer;}
+.takvim-table td.t-bos:hover{background:#e8f5e9;}
+.takvim-table td.t-dolu{background:#fde8e8;}
+.takvim-table td.t-rezerve{background:#ede8f8;}
+.takvim-table td.t-temizlik{background:#fdf8ee;}
+.takvim-table td.t-arizali{background:#f5ece0;}
+.takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
+.takvim-table .oda-col{font-weight:700;font-size:11px;color:var(--dark);padding:4px 10px;text-align:left;background:var(--parchment);border-right:2px solid var(--border);position:sticky;left:0;z-index:2;white-space:nowrap;}
+
+/* Legenda */
+.legenda{display:flex;gap:16px;padding:10px 20px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.legenda-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);}
+.legenda-renk{width:14px;height:14px;border:1px solid rgba(0,0,0,.08);}
+
+/* ── REZERVASYON FORMU MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);}
+.modal-overlay.aktif{display:flex;}
+.modal{background:var(--white);border:1px solid var(--border);padding:0;width:100%;max-width:640px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:var(--parchment);}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--dark);}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px 8px;}
+.modal-body{padding:24px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);padding:10px 12px;font-family:'Jost',sans-serif;font-size:14px;background:var(--cream);outline:none;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold2);background:var(--white);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.ozet-kutu{background:var(--parchment);border:1px solid var(--border);padding:12px 16px;margin-bottom:16px;}
+.ozet-satir{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.ozet-satir:last-child{font-weight:700;font-size:14px;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;color:var(--gold2);}
+.modal-actions{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.btn{padding:10px 20px;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{opacity:.9;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--dark);color:var(--dark);}
+.alert{padding:10px 14px;font-size:12px;margin-bottom:14px;display:none;}
+.alert.red{background:var(--red-bg);color:var(--red);}
+.alert.green{background:var(--green-bg);color:var(--green);}
+
+/* ── GEÇMİŞ TALEPLER ── */
+.talepler-wrap{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow);}
+.talepler-header{padding:14px 20px;border-bottom:1px solid var(--border);}
+.talepler-baslik{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--dark);}
+.talepler-table{width:100%;border-collapse:collapse;font-size:12px;}
+.talepler-table th{padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+.talepler-table td{padding:10px 12px;border-bottom:1px solid #f5f5f5;}
+.durum-badge{padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.durum-bekliyor{background:#fef9e7;color:#d97706;}
+.durum-onaylandi{background:var(--green-bg);color:var(--green);}
+.durum-reddedildi{background:var(--red-bg);color:var(--red);}
+.bos-mesaj{text-align:center;padding:32px;color:var(--muted);font-style:italic;}
+
+@media(max-width:640px){.form-row,.form-row-3{grid-template-columns:1fr;} .portal-body{padding:16px;}}
+</style>
+</head>
+<body>
+
+<div class="portal-header-strip"></div>
+
+<!-- GİRİŞ EKRANI -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">SWISS <em>HOUSE</em></div>
+    <div class="login-sub">Komisyoncu Portalı</div>
+    <label class="login-label">Kullanıcı Adı</label>
+    <input class="login-input" type="text" id="loginKullanici" placeholder="kullanici_adi" onkeydown="if(event.key==='Enter')girisYap()">
+    <label class="login-label">Şifre</label>
+    <input class="login-input" type="password" id="loginSifre" placeholder="••••••••" onkeydown="if(event.key==='Enter')girisYap()">
+    <button class="login-btn" onclick="girisYap()">Giriş Yap</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ANA PORTAL -->
+<div id="portal">
+  <div class="portal-header">
+    <div class="portal-brand">SWISS <em>HOUSE</em> <span style="font-size:12px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— Komisyoncu Portalı</span></div>
+    <div class="portal-user">👤 <span id="portalKullaniciAd"></span></div>
+  </div>
+
+  <div class="portal-body">
+
+    <!-- TAKVİM -->
+    <div class="takvim-wrap">
+      <div class="takvim-header">
+        <div class="takvim-baslik">Oda <em style="color:var(--gold2);font-style:italic">Takvimi</em></div>
+        <div class="takvim-nav">
+          <button onclick="takvimAyDegistir(-1)">‹</button>
+          <span id="takvimAyLabel" style="font-size:13px;font-weight:600;color:var(--dark);min-width:130px;text-align:center"></span>
+          <button onclick="takvimAyDegistir(1)">›</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="takvim-table" id="takvimTable"></table>
+      </div>
+      <div class="legenda">
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div>Boş (tıklayarak rezervasyon ekle)</div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div>Dolu</div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div>Rezerveli</div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div>Temizlik</div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div>Arızalı</div>
+      </div>
+    </div>
+
+    <!-- GEÇMİŞ TALEPLERİM -->
+    <div class="talepler-wrap">
+      <div class="talepler-header">
+        <div class="talepler-baslik">Taleplerim</div>
+      </div>
+      <table class="talepler-table">
+        <thead>
+          <tr>
+            <th>Misafir</th>
+            <th>Oda</th>
+            <th>Tarih</th>
+            <th>Gece</th>
+            <th>Kişi</th>
+            <th>Fiyat/Gece</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody id="taleplerBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- REZERVASYON MODAL -->
+<div class="modal-overlay" id="rezervModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalBaslik">Rezervasyon Talebi</div>
+      <button class="modal-close" onclick="modalKapat()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert red" id="formHata"></div>
+      <div class="alert green" id="formBasari"></div>
+
+      <!-- Özet -->
+      <div class="ozet-kutu" id="ozetKutu" style="display:none">
+        <div class="ozet-satir"><span style="color:var(--muted)">Oda:</span><span id="oz_oda" style="font-weight:600"></span></div>
+        <div class="ozet-satir"><span style="color:var(--muted)">Giriş:</span><span id="oz_giris"></span></div>
+        <div class="ozet-satir"><span style="color:var(--muted)">Çıkış:</span><span id="oz_cikis"></span></div>
+        <div class="ozet-satir"><span style="color:var(--muted)">Toplam:</span><span id="oz_toplam"></span></div>
+      </div>
+
+      <!-- Konaklama -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Oda *</label>
+          <select id="f_oda" onchange="hesaplaOzet()">
+            <option value="">— Seç —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Giriş Tarihi *</label>
+          <input type="date" id="f_giris" onchange="hesaplaOzet()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kaç Gece *</label>
+          <input type="number" id="f_gece" min="1" value="1" oninput="hesaplaOzet()">
+        </div>
+        <div class="form-group">
+          <label>Gecelik Ücret (₺) *</label>
+          <input type="number" id="f_fiyat" min="0" placeholder="0" oninput="hesaplaOzet()">
+        </div>
+      </div>
+      <div id="carpısmaUyari" style="display:none;background:var(--red-bg);color:var(--red);padding:8px 12px;font-size:12px;margin-bottom:14px">
+        ⚠ Bu oda seçilen tarihlerde müsait değil!
+      </div>
+
+      <!-- Misafir -->
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px">Misafir Bilgileri</div>
+      <div class="form-group">
+        <label>Misafir Adı Soyadı *</label>
+        <input type="text" id="f_misafir" placeholder="Ad Soyad">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>TC Kimlik / Pasaport No</label>
+          <input type="text" id="f_tc" placeholder="TC veya Pasaport" maxlength="20" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Telefon</label>
+          <input type="tel" id="f_tel" placeholder="05XX XXX XX XX">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Yetişkin</label>
+          <input type="number" id="f_yetiskin" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Çocuk</label>
+          <input type="number" id="f_cocuk" min="0" value="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Not <span style="font-weight:400;text-transform:none;font-size:9px">(özel istek vb.)</span></label>
+        <input type="text" id="f_not" placeholder="İsteğe bağlı...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="modalKapat()">Vazgeç</button>
+      <button class="btn btn-primary" id="gonderBtn" onclick="talepGonder()">Talebi Gönder</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
+  authDomain:"swiss-hotel-64451.firebaseapp.com",
+  projectId:"swiss-hotel-64451",
+  storageBucket:"swiss-hotel-64451.firebasestorage.app",
+  messagingSenderId:"1051421740248",
+  appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
+});
+const db = getFirestore(app);
+
+const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
+
+// ── KOMİSYONCU ŞİFRELERİ ──
+// Yeni komisyoncu eklemek için buraya satır ekle
+const KOMISYONCULAR = {
+  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
+  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
+};
+
+let aktifKom = null; // { key, ad }
+let _R = [];  // rezervasyonlar
+let _O = {};  // oda durumları
+let takvimAy = new Date().getMonth();
+let takvimYil = new Date().getFullYear();
+
+// ── GİRİŞ ──
+// URL'den komisyoncu id'sini al (opsiyonel, yoksa kullanıcı kendisi girer)
+const urlParams = new URLSearchParams(window.location.search);
+const urlKom = urlParams.get('k') || '';
+if(urlKom) document.getElementById('loginKullanici').value = urlKom;
+
+window.girisYap = function() {
+  const kullanici = document.getElementById('loginKullanici').value.trim().toLowerCase();
+  const sifre = document.getElementById('loginSifre').value;
+  const kom = KOMISYONCULAR[kullanici];
+  if(!kom || kom.sifre !== sifre) {
+    document.getElementById('loginErr').textContent = 'Kullanıcı adı veya şifre hatalı.';
+    return;
+  }
+  aktifKom = { key: kullanici, ad: kom.ad };
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('portal').style.display = 'block';
+  document.getElementById('portalKullaniciAd').textContent = kom.ad;
+  baslatPortal();
+};
+
+// ── PORTAL BAŞLATMA ──
+function baslatPortal() {
+  // Oda durumlarını yükle
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ getDoc, doc }) => {
+    getDoc(doc(db,'meta','odalar')).then(snap => {
+      if(snap.exists()) _O = snap.data();
+      renderTakvim();
+    });
+  });
+
+  // Rezervasyonları dinle
+  onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','desc')), snap => {
+    _R = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderTakvim();
+  });
+
+  // Kendi taleplerimi dinle
+  onSnapshot(
+    query(collection(db,'rezervasyon_talepleri'),
+      where('komisyoncu','==', aktifKom.key),
+      orderBy('kayitTarih','desc')),
+    snap => {
+      renderTalepler(snap.docs.map(d=>({id:d.id,...d.data()})));
+    }
+  );
+
+  // Oda select'ini doldur
+  const sel = document.getElementById('f_oda');
+  HOTEL_ODALAR.forEach(no => {
+    const opt = document.createElement('option');
+    opt.value = no; opt.textContent = `Oda ${no}`;
+    sel.appendChild(opt);
+  });
+
+  // Bugünü minimum tarih olarak set et
+  const bugun = new Date().toISOString().slice(0,10);
+  document.getElementById('f_giris').min = bugun;
+  document.getElementById('f_giris').value = bugun;
+}
+
+// ── TAKVİM ──
+window.takvimAyDegistir = function(delta) {
+  takvimAy += delta;
+  if(takvimAy > 11) { takvimAy = 0; takvimYil++; }
+  if(takvimAy < 0)  { takvimAy = 11; takvimYil--; }
+  renderTakvim();
+};
+
+function renderTakvim() {
+  const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const gunler = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  document.getElementById('takvimAyLabel').textContent = `${aylar[takvimAy]} ${takvimYil}`;
+
+  const today = new Date().toISOString().slice(0,10);
+  const ilkGun = new Date(takvimYil, takvimAy, 1);
+  const sonGun = new Date(takvimYil, takvimAy+1, 0).getDate();
+
+  // Gün dizisi oluştur
+  const gunList = [];
+  for(let d=1; d<=sonGun; d++) {
+    const dt = new Date(takvimYil, takvimAy, d);
+    const iso = dt.toISOString().slice(0,10);
+    const gunAdi = gunler[(dt.getDay()+6)%7];
+    gunList.push({ iso, gun: d, gunAdi });
+  }
+
+  let html = '<thead><tr><th style="text-align:left;padding:6px 10px">ODA</th>';
+  gunList.forEach(g => {
+    const isToday = g.iso === today;
+    html += `<th class="${isToday?'bugun-col':''}">${g.gunAdi}<br>${g.gun}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  HOTEL_ODALAR.forEach(odaNo => {
+    const oda = _O['oda'+odaNo] || {durum:'bos'};
+    html += `<tr><td class="oda-col">Oda ${odaNo}</td>`;
+
+    gunList.forEach(g => {
+      const iso = g.iso;
+      const isToday = iso === today;
+
+      // Rezervasyon var mı?
+      const rev = _R.find(r =>
+        Number(r.odaNo) === odaNo &&
+        (r.giris||'') <= iso &&
+        (r.cikis||'') > iso &&
+        r.durum !== 'iptal'
+      );
+
+      // Fiili doluluk
+      const fiiliDolu = oda.durum === 'dolu' && oda.giris && oda.giris <= iso && oda.cikis > iso;
+      const bugunDolu = oda.durum === 'dolu' && isToday;
+
+      let cls, onclick = '';
+      if(rev || fiiliDolu || bugunDolu) {
+        cls = rev ? 't-rezerve' : 't-dolu';
+        // Misafir adı GÖSTERILMEZ — sadece renk
+      } else if(oda.durum === 'temizlik') {
+        cls = 't-temizlik';
+      } else if(oda.durum === 'arizali' && iso >= today) {
+        cls = 't-arizali';
+      } else if(isToday) {
+        cls = 't-bugun';
+        onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
+      } else if(iso < today) {
+        cls = 't-bos'; // geçmiş günler tıklanamaz
+      } else {
+        cls = 't-bos';
+        onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
+      }
+
+      html += `<td class="${cls}" ${onclick} title="Oda ${odaNo} · ${iso}"></td>`;
+    });
+
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  document.getElementById('takvimTable').innerHTML = html;
+}
+
+// ── MODAL ──
+let secilenOda = null;
+
+window.modalAc = function(odaNo, tarih) {
+  secilenOda = odaNo;
+  document.getElementById('modalBaslik').textContent = `Oda ${odaNo} — Rezervasyon Talebi`;
+  document.getElementById('f_oda').value = odaNo;
+  document.getElementById('f_giris').value = tarih || new Date().toISOString().slice(0,10);
+  document.getElementById('f_gece').value = 1;
+  document.getElementById('f_fiyat').value = '';
+  document.getElementById('f_misafir').value = '';
+  document.getElementById('f_tc').value = '';
+  document.getElementById('f_tel').value = '';
+  document.getElementById('f_yetiskin').value = 1;
+  document.getElementById('f_cocuk').value = 0;
+  document.getElementById('f_not').value = '';
+  document.getElementById('formHata').style.display = 'none';
+  document.getElementById('formBasari').style.display = 'none';
+  document.getElementById('carpısmaUyari').style.display = 'none';
+  document.getElementById('gonderBtn').disabled = false;
+  document.getElementById('gonderBtn').textContent = 'Talebi Gönder';
+  hesaplaOzet();
+  document.getElementById('rezervModal').classList.add('aktif');
+};
+
+window.modalKapat = function() {
+  document.getElementById('rezervModal').classList.remove('aktif');
+};
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr); d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function fmt(n) { return Number(n).toLocaleString('tr-TR'); }
+function formatTarih(iso) {
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+window.hesaplaOzet = function() {
+  const odaNo = Number(document.getElementById('f_oda').value);
+  const giris = document.getElementById('f_giris').value;
+  const gece = parseInt(document.getElementById('f_gece').value)||0;
+  const fiyat = Number(document.getElementById('f_fiyat').value)||0;
+  const ozetKutu = document.getElementById('ozetKutu');
+
+  if(!odaNo || !giris || gece < 1) { ozetKutu.style.display='none'; return; }
+  const cikis = addDays(giris, gece);
+
+  document.getElementById('oz_oda').textContent = `Oda ${odaNo}`;
+  document.getElementById('oz_giris').textContent = formatTarih(giris);
+  document.getElementById('oz_cikis').textContent = formatTarih(cikis);
+  document.getElementById('oz_toplam').textContent = fiyat > 0 ? `${fmt(fiyat*gece)} ₺ (${gece} gece × ${fmt(fiyat)} ₺)` : '—';
+  ozetKutu.style.display = 'block';
+
+  // Çakışma kontrolü
+  const cakısma = _R.find(r =>
+    Number(r.odaNo) === odaNo &&
+    r.durum !== 'iptal' &&
+    (r.giris||'') < cikis &&
+    (r.cikis||'') > giris
+  );
+  const odaDurum = _O['oda'+odaNo];
+  const odaCakısma = odaDurum?.durum === 'dolu' && odaDurum?.giris < cikis && odaDurum?.cikis > giris;
+  document.getElementById('carpısmaUyari').style.display = (cakısma||odaCakısma) ? 'block' : 'none';
+};
+
+// ── TALEP GÖNDER ──
+window.talepGonder = async function() {
+  const errEl = document.getElementById('formHata');
+  const okEl = document.getElementById('formBasari');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  const odaNo = Number(document.getElementById('f_oda').value);
+  const giris = document.getElementById('f_giris').value;
+  const gece = parseInt(document.getElementById('f_gece').value)||0;
+  const fiyat = Number(document.getElementById('f_fiyat').value)||0;
+  const misafir = document.getElementById('f_misafir').value.trim();
+  const tc = document.getElementById('f_tc').value.trim();
+  const tel = document.getElementById('f_tel').value.trim();
+  const yetiskin = parseInt(document.getElementById('f_yetiskin').value)||1;
+  const cocuk = parseInt(document.getElementById('f_cocuk').value)||0;
+  const not_ = document.getElementById('f_not').value.trim();
+
+  if(!odaNo || !giris || gece<1 || !misafir || fiyat<=0) {
+    errEl.textContent = 'Lütfen zorunlu alanları doldurun (Oda, Giriş, Gece, Misafir Adı, Fiyat).';
+    errEl.style.display = 'block'; return;
+  }
+
+  const cikis = addDays(giris, gece);
+
+  // Çakışma kontrolü
+  const cakısma = _R.find(r =>
+    Number(r.odaNo) === odaNo && r.durum !== 'iptal' &&
+    (r.giris||'') < cikis && (r.cikis||'') > giris
+  );
+  if(cakısma) {
+    errEl.textContent = '⚠ Bu oda seçilen tarihlerde müsait değil!';
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('gonderBtn');
+  btn.disabled = true; btn.textContent = 'Gönderiliyor...';
+
+  try {
+    await addDoc(collection(db,'rezervasyon_talepleri'), {
+      misafir, tc: tc||null, tel: tel||null,
+      odaNo, giris, cikis, gece,
+      fiyat, yetiskin, cocuk,
+      not: not_||null,
+      komisyoncu: aktifKom.key,
+      komisyoncuAd: aktifKom.ad,
+      kaynak: 'komisyoncu',
+      durum: 'bekliyor',
+      kayitTarih: new Date().toISOString()
+    });
+    okEl.textContent = `✓ Talebiniz iletildi! Oda ${odaNo} · ${formatTarih(giris)} → ${formatTarih(cikis)}`;
+    okEl.style.display = 'block';
+    btn.textContent = 'Gönderildi ✓';
+    setTimeout(() => modalKapat(), 2500);
+  } catch(err) {
+    errEl.textContent = 'Bir hata oluştu, lütfen tekrar deneyin.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Talebi Gönder';
+  }
+};
+
+// ── TALEPLERİ RENDER ET ──
+function renderTalepler(talepler) {
+  const durumMap = { bekliyor:'Bekliyor', onaylandi:'Onaylandı', reddedildi:'Reddedildi' };
+  const durumKls  = { bekliyor:'durum-bekliyor', onaylandi:'durum-onaylandi', reddedildi:'durum-reddedildi' };
+  const tbody = document.getElementById('taleplerBody');
+  if(!talepler.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="bos-mesaj">Henüz rezervasyon talebi göndermediniz.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = talepler.map(t => `
+    <tr>
+      <td style="font-weight:600">${t.misafir||'—'}</td>
+      <td>Oda ${t.odaNo||'?'}</td>
+      <td>${t.giris||'?'} → ${t.cikis||'?'}</td>
+      <td>${t.gece||'?'}</td>
+      <td>${(t.yetiskin||1)+(t.cocuk||0)}</td>
+      <td>${t.fiyat ? fmt(t.fiyat)+' ₺' : '—'}</td>
+      <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||t.durum}</span></td>
+    </tr>
+  `).join('');
+}
+
+// Dışarı tıklanınca modal kapat
+document.getElementById('rezervModal').addEventListener('click', function(e) {
+  if(e.target === this) modalKapat();
+});
+</script>
+</body>
+</html>
