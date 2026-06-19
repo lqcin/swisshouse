@@ -1537,7 +1537,7 @@ input[type="number"], input[type="date"], input[type="password"] {
         <tr>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Telefon</th>
-          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Instagram</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">TC / Pasaport</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
           <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kişi</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
@@ -2040,7 +2040,7 @@ window.renderInstagramTalepleri = function() {
     <tr>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${dilBayragi} ${t.misafir||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.tel||'—'}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.instagram?`<a href="https://instagram.com/${t.instagram.replace('@','')}" target="_blank" style="color:var(--primary)">${t.instagram}</a>`:'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${t.tc||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${t.giris||'?'} → ${t.cikis||'?'}${t.gece?` (${t.gece}g)`:''}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${(t.yetiskin||1)+(t.cocuk||0)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${odemeIkon} ${odemeAd}</td>
