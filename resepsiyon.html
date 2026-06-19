@@ -1530,11 +1530,12 @@ input[type="number"], input[type="date"], input[type="password"] {
   <!-- Instagram Talepleri -->
   <div class="table-card" id="instagramTalepKart" style="display:none;border-left:4px solid var(--primary);margin-bottom:20px">
     <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px">
-      📷 Instagram Rezervasyon Talepleri <span id="talep-sayac" style="background:var(--primary);color:#fff;border-radius:50%;font-size:10px;padding:1px 7px"></span>
+      📋 Rezervasyon Talepleri <span id="talep-sayac" style="background:var(--primary);color:#fff;border-radius:50%;font-size:10px;padding:1px 7px"></span>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead>
         <tr>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kaynak</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Telefon</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">TC / Pasaport</th>
@@ -1763,6 +1764,15 @@ function gunAdiGoster(iso) {
 }
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
+
+// ── KOMİSYONCU LİSTESİ ──
+// Yeni komisyoncu eklemek için buraya satır ekle:
+// 'url_adi': { ad: 'Görünen Ad', sifre: 'sifre123' }
+// Link: https://lqcin.github.io/swisshouse/komisyoncu.html?k=url_adi
+window.KOMISYONCULAR = {
+  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
+  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
+};
 
 // Takvimde ardışık farklı misafirlerin görsel olarak ayrışması için
 // her misafir/rezervasyon kaydına (isim+giriş tarihine göre) sabit ama
@@ -2036,8 +2046,12 @@ window.renderInstagramTalepleri = function() {
     const odemeIkon = {nakit:'💵',kart:'💳',havale:'🏦',depozito:'🔒'}[t.odemeTercihi||'nakit']||'💵';
     const odemeAd = {nakit:'Nakit',kart:'Kart',havale:'Havale',depozito:'Depozito'}[t.odemeTercihi||'nakit']||'—';
     const dilBayragi = {tr:'🇹🇷',en:'🇬🇧',fa:'🇮🇷'}[t.dil||'tr']||'';
+    const kaynakLabel = t.kaynak === 'komisyoncu'
+      ? `🤝 ${t.komisyoncuAd||t.komisyoncu||'Komisyoncu'}`
+      : `📷 Instagram`;
     return `
     <tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;white-space:nowrap">${kaynakLabel}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${dilBayragi} ${t.misafir||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.tel||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${t.tc||'—'}</td>
@@ -2056,21 +2070,40 @@ window.renderInstagramTalepleri = function() {
 window.talepOnayla = function(id) {
   const t = (window._TALEP||[]).find(x => x.id === id);
   if(!t) return;
-  // Talebi rezervasyon formuna taşı — kullanıcı oda seçip onaylasın
-  openRezervModalForOda(null);
+  // Talebi rezervasyon formuna taşı — kullanıcı kontrol edip onaylasın
+  openRezervModalForOda(t.odaNo ? Number(t.odaNo) : null);
   setTimeout(() => {
     document.getElementById('rev_giris').value = t.giris || '';
     document.getElementById('rev_ad').value = t.misafir || '';
     document.getElementById('rev_tel').value = t.tel || '';
+    document.getElementById('rev_tc').value = t.tc || '';
     document.getElementById('rev_yetiskin').value = t.yetiskin || 1;
     document.getElementById('rev_cocuk').value = t.cocuk || 0;
-    document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + (t.instagram ? `[IG: ${t.instagram}]` : '[Instagram talebi]');
+    const kaynakNot = t.kaynak === 'komisyoncu'
+      ? `[Komisyoncu: ${t.komisyoncuAd||t.komisyoncu}]`
+      : `[Instagram talebi]`;
+    document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + kaynakNot;
     document.getElementById('rev_kaynak').value = 'diger';
+    // Komisyoncu fiyatı varsa doldur
+    if(t.fiyat) {
+      const rf = document.getElementById('rev_fiyat');
+      if(rf) { rf.value = t.fiyat; rf.dataset.manuelDegisim='1'; }
+    }
+    // Komisyoncu adını komisyon alanına yaz
+    if(t.komisyoncu) {
+      const rk = document.getElementById('rev_komisyoncu');
+      if(rk) rk.value = t.komisyoncuAd || t.komisyoncu;
+    }
     const gece = geceSayisi(t.giris, t.cikis) || 1;
     document.getElementById('rev_gece').value = gece;
+    // Oda seçiliyse dropdown'a set et
+    if(t.odaNo) {
+      const sel = document.getElementById('rev_oda');
+      if(sel) { sel.value = t.odaNo; revOdaSecildi(); }
+    }
     revHesapla();
   }, 100);
-  window._onaylananTalepId = id; // saveRezervasyon başarılı olunca talep kaydını güncellemek için
+  window._onaylananTalepId = id;
 };
 
 window.talepReddet = async function(id) {
