@@ -1540,6 +1540,7 @@ input[type="number"], input[type="date"], input[type="password"] {
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Instagram</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
           <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kişi</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Not</th>
           <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">İşlem</th>
         </tr>
@@ -2005,20 +2006,25 @@ window.renderInstagramTalepleri = function() {
   if(kart) kart.style.display = 'block';
   if(sayac) sayac.textContent = bekleyenler.length;
 
-  document.getElementById('instagramTalepBody').innerHTML = bekleyenler.map(t => `
+  document.getElementById('instagramTalepBody').innerHTML = bekleyenler.map(t => {
+    const odemeIkon = {nakit:'💵',kart:'💳',havale:'🏦',depozito:'🔒'}[t.odemeTercihi||'nakit']||'💵';
+    const odemeAd = {nakit:'Nakit',kart:'Kart',havale:'Havale',depozito:'Depozito'}[t.odemeTercihi||'nakit']||'—';
+    const dilBayragi = {tr:'🇹🇷',en:'🇬🇧',fa:'🇮🇷'}[t.dil||'tr']||'';
+    return `
     <tr>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${t.misafir||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${dilBayragi} ${t.misafir||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.tel||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${t.instagram?`<a href="https://instagram.com/${t.instagram.replace('@','')}" target="_blank" style="color:var(--primary)">${t.instagram}</a>`:'—'}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${t.giris||'?'} → ${t.cikis||'?'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${t.giris||'?'} → ${t.cikis||'?'}${t.gece?` (${t.gece}g)`:''}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${(t.yetiskin||1)+(t.cocuk||0)}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(t.not||'').replace(/"/g,'&quot;')}">${t.not||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${odemeIkon} ${odemeAd}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(t.not||'').replace(/"/g,'&quot;')}">${t.not||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">
         <button class="btn btn-primary btn-sm" onclick="talepOnayla('${t.id}')">✓ Onayla</button>
         <button class="btn btn-ghost btn-sm" onclick="talepReddet('${t.id}')">✕ Reddet</button>
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 };
 
 window.talepOnayla = function(id) {
