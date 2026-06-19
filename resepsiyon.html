@@ -1771,7 +1771,7 @@ const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
 // Link: https://lqcin.github.io/swisshouse/komisyoncu.html?k=url_adi
 window.KOMISYONCULAR = {
   'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
-  'pune': { ad: 'pune iran', sifre: 'pune2026' },
+  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
 };
 
 // Takvimde ardışık farklı misafirlerin görsel olarak ayrışması için
@@ -2071,7 +2071,8 @@ window.talepOnayla = function(id) {
   const t = (window._TALEP||[]).find(x => x.id === id);
   if(!t) return;
   // Talebi rezervasyon formuna taşı — kullanıcı kontrol edip onaylasın
-  openRezervModalForOda(t.odaNo ? Number(t.odaNo) : null);
+  window._onaylananTalepId = id; // ÖNCE set et, openRezervModalForOda sıfırlamasın
+  openRezervModalForOda(t.odaNo ? Number(t.odaNo) : null, id);
   setTimeout(() => {
     document.getElementById('rev_giris').value = t.giris || '';
     document.getElementById('rev_ad').value = t.misafir || '';
@@ -2103,7 +2104,6 @@ window.talepOnayla = function(id) {
     }
     revHesapla();
   }, 100);
-  window._onaylananTalepId = id;
 };
 
 window.talepReddet = async function(id) {
@@ -3487,8 +3487,10 @@ window.saveDurum = async function() {
 };
 
 // ── REZERVASYONLAR ──
-window.openRezervModalForOda = function(odaNo) {
-  window._onaylananTalepId = null;
+window.openRezervModalForOda = function(odaNo, kaynakTalepId = null) {
+  // Sadece doğrudan "Yeni Rezervasyon" butonundan açılınca sıfırla
+  // talepOnayla'dan geliyorsa (kaynakTalepId var) sıfırlama
+  if(!kaynakTalepId) window._onaylananTalepId = null;
   if(odaNo && window._O['oda'+odaNo]?.durum === 'arizali') {
     toast(`Oda ${odaNo} arızalı/bakımda — rezervasyon alınamaz.`, 'error');
     return;
