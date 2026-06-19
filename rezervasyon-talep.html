@@ -106,8 +106,8 @@ input[readonly]{color:var(--muted);cursor:default;}
           <input type="tel" id="t_tel" required maxlength="20">
         </div>
         <div class="form-group">
-          <label id="txt_lbl_ig">Instagram</label>
-          <input type="text" id="t_instagram" placeholder="@kullaniciadi" maxlength="40">
+          <label id="txt_lbl_ig">TC Kimlik / Pasaport No</label>
+          <input type="text" id="t_instagram" placeholder="TC Kimlik veya Pasaport No" maxlength="20" style="text-transform:uppercase">
         </div>
       </div>
 
@@ -224,7 +224,7 @@ const METINLER = {
   tr: {
     subtitle: "Rezervasyon talebinizi iletin, en kısa sürede size dönüş yapacağız.",
     sec_kisi: "Kişisel Bilgiler", sec_konaklama: "Konaklama", sec_odeme: "Ödeme Tercihi",
-    lbl_ad: "Ad Soyad *", lbl_tel: "Telefon *", lbl_ig: "Instagram",
+    lbl_ad: "Ad Soyad *", lbl_tel: "Telefon *", lbl_ig: "TC Kimlik / Pasaport No",
     lbl_giris: "Giriş Tarihi *", lbl_gece: "Gece Sayısı *",
     lbl_yetiskin: "Yetişkin", lbl_cocuk: "Çocuk",
     lbl_not: "Not", lbl_not_sub: "(özel istek, oda tercihi vb.)",
@@ -238,12 +238,12 @@ const METINLER = {
     err_zorunlu: "Lütfen zorunlu alanları doldurun.", err_cikis: "Geçerli bir tarih ve gece sayısı girin.",
     err_sunucu: "Bir hata oluştu, lütfen tekrar deneyin.",
     gece_txt: "gece", gece_txt2: "gecelik konaklama",
-    placeholder_ad: "Ad Soyad", placeholder_tel: "05XX XXX XX XX",
+    placeholder_ad: "Ad Soyad", placeholder_tel: "05XX XXX XX XX", placeholder_ig: "TC Kimlik veya Pasaport No",
   },
   en: {
     subtitle: "Send your reservation request and we'll get back to you as soon as possible.",
     sec_kisi: "Personal Information", sec_konaklama: "Stay Details", sec_odeme: "Payment Preference",
-    lbl_ad: "Full Name *", lbl_tel: "Phone *", lbl_ig: "Instagram",
+    lbl_ad: "Full Name *", lbl_tel: "Phone *", lbl_ig: "ID / Passport No",
     lbl_giris: "Check-in Date *", lbl_gece: "Number of Nights *",
     lbl_yetiskin: "Adults", lbl_cocuk: "Children",
     lbl_not: "Note", lbl_not_sub: "(special requests, room preferences, etc.)",
@@ -257,12 +257,12 @@ const METINLER = {
     err_zorunlu: "Please fill in all required fields.", err_cikis: "Please enter a valid date and number of nights.",
     err_sunucu: "An error occurred. Please try again.",
     gece_txt: "night", gece_txt2: "night stay",
-    placeholder_ad: "Full Name", placeholder_tel: "+90 5XX XXX XX XX",
+    placeholder_ad: "Full Name", placeholder_tel: "+90 5XX XXX XX XX", placeholder_ig: "ID or Passport Number",
   },
   fa: {
     subtitle: "درخواست رزرو خود را ارسال کنید، در اسرع وقت با شما تماس خواهیم گرفت.",
     sec_kisi: "اطلاعات شخصی", sec_konaklama: "جزئیات اقامت", sec_odeme: "روش پرداخت",
-    lbl_ad: "نام و نام خانوادگی *", lbl_tel: "تلفن *", lbl_ig: "اینستاگرام",
+    lbl_ad: "نام و نام خانوادگی *", lbl_tel: "تلفن *", lbl_ig: "کد ملی / شماره پاسپورت",
     lbl_giris: "تاریخ ورود *", lbl_gece: "تعداد شب *",
     lbl_yetiskin: "بزرگسال", lbl_cocuk: "کودک",
     lbl_not: "یادداشت", lbl_not_sub: "(درخواست‌های ویژه، ترجیحات اتاق و غیره)",
@@ -276,7 +276,7 @@ const METINLER = {
     err_zorunlu: "لطفاً فیلدهای اجباری را پر کنید.", err_cikis: "لطفاً تاریخ معتبر و تعداد شب را وارد کنید.",
     err_sunucu: "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
     gece_txt: "شب", gece_txt2: "شب اقامت",
-    placeholder_ad: "نام و نام خانوادگی", placeholder_tel: "+98 9XX XXX XXXX",
+    placeholder_ad: "نام و نام خانوادگی", placeholder_tel: "+98 9XX XXX XXXX", placeholder_ig: "کد ملی یا شماره پاسپورت",
   }
 };
 
@@ -313,6 +313,7 @@ window.setLang = function(d) {
   document.getElementById('txt_note').textContent = m.note;
   document.getElementById('t_ad').placeholder = m.placeholder_ad;
   document.getElementById('t_tel').placeholder = m.placeholder_tel;
+  document.getElementById('t_instagram').placeholder = m.placeholder_ig;
   // RTL sadece Farsça için
   document.getElementById('formWrap').style.direction = d === 'fa' ? 'rtl' : 'ltr';
   hesaplaKonaklama(); // özet kutusunu dil değişiminde güncelle
@@ -377,7 +378,7 @@ document.getElementById('talepForm').addEventListener('submit', async (e) => {
 
   const ad = document.getElementById('t_ad').value.trim();
   const tel = document.getElementById('t_tel').value.trim();
-  const instagram = document.getElementById('t_instagram').value.trim();
+  const tc = document.getElementById('t_instagram').value.trim();
   const giris = document.getElementById('t_giris').value;
   const gece = parseInt(document.getElementById('t_gece').value)||0;
   const yetiskin = parseInt(document.getElementById('t_yetiskin').value)||1;
@@ -394,7 +395,7 @@ document.getElementById('talepForm').addEventListener('submit', async (e) => {
 
   try {
     await addDoc(collection(db,'rezervasyon_talepleri'), {
-      misafir: ad, tel, instagram: instagram||null,
+      misafir: ad, tel, tc: tc||null,
       giris, cikis, gece, yetiskin, cocuk,
       odemeTercihi: odeme,
       not: not_||null,
