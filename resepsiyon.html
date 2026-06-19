@@ -1777,11 +1777,11 @@ function takvimRenkTonu(anahtar, taban) {
   const sat = taban === 'dolu' ? 32 : taban === 'gecmis' ? 45 : 38;
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
-if('serviceWorker' in navigator) { navigator.serviceWorker.register('/house/sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator) { navigator.serviceWorker.register('/swisshouse/sw.js').catch(()=>{}); }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, setDoc, getDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, setDoc, getDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -1792,7 +1792,33 @@ const app = initializeApp({
   appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
 });
 const auth = getAuth(app);
-const db   = getFirestore(app);
+
+// ── OFFLİNE DESTEK ──
+// IndexedDB tabanlı kalıcı önbellek — internet kesilince son bilinen veriyi gösterir,
+// yapılan değişiklikler kuyruğa alınır, internet gelince otomatik senkronize olur.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch(e) {
+  // Persistence başlatılamazsa (eski tarayıcı, özel sekme vb.) normal moda düş
+  db = getFirestore(app);
+}
+
+// Bağlantı durumu göstergesi
+window.addEventListener('online',  () => {
+  const el = document.getElementById('syncLabel');
+  if(el) { el.textContent = 'Bağlı'; el.parentElement.style.opacity='1'; }
+  const bd = document.getElementById('baglanti-durum'); if(bd){bd.textContent='● Bağlı';bd.style.color='var(--green)';}
+  toast('İnternet bağlantısı yeniden kuruldu — veriler senkronize ediliyor', 'success');
+});
+window.addEventListener('offline', () => {
+  const el = document.getElementById('syncLabel');
+  if(el) { el.textContent = 'Çevrimdışı'; el.parentElement.style.opacity='.7'; }
+  const bd = document.getElementById('baglanti-durum'); if(bd){bd.textContent='● Çevrimdışı';bd.style.color='var(--gold2)';}
+  toast('İnternet bağlantısı kesildi — sistem önbellekten çalışmaya devam ediyor', 'info');
+});
 
 // Auth kontrolü
 onAuthStateChanged(auth, user => {
