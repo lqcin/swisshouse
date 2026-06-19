@@ -19,6 +19,10 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;font-size:14px;min-height:100vh;}
 
+.lang-row{display:flex;gap:8px;justify-content:flex-end;margin-bottom:18px;}
+.lang-btn{padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:.5px;border:1px solid var(--border);background:var(--cream);color:var(--muted);cursor:pointer;transition:all .2s;}
+.lang-btn.active{background:var(--dark);color:#fff;border-color:var(--dark);}
+
 /* ── GİRİŞ EKRANI ── */
 #loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
 .login-card{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:360px;width:100%;padding:36px 30px;text-align:center;}
@@ -59,6 +63,17 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#f5ece0;}
 .takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
+.takvim-table td.t-benim{background:#fff8e1;border-color:rgba(196,165,90,.4);}
+.takvim-table td.t-benim:hover{background:#fff3cd;}
+
+/* Sözleşme modal */
+.sozlesme-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center;padding:20px;}
+.sozlesme-overlay.aktif{display:flex;}
+.sozlesme-kart{background:#fff;width:100%;max-width:820px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.sozlesme-kart-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#1a1d23;color:#fff;flex-shrink:0;}
+.sozlesme-kart-header h3{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;}
+.sozlesme-kart-actions{display:flex;gap:10px;align-items:center;}
+.sozlesme-iframe{flex:1;border:none;width:100%;}
 .takvim-table .oda-col{font-weight:700;font-size:11px;color:var(--dark);padding:4px 10px;text-align:left;background:var(--parchment);border-right:2px solid var(--border);position:sticky;left:0;z-index:2;white-space:nowrap;}
 
 /* Legenda */
@@ -117,13 +132,18 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 <!-- GİRİŞ EKRANI -->
 <div id="loginScreen">
   <div class="login-card">
+    <div class="lang-row">
+      <button class="lang-btn active" onclick="setLang('tr')">🇹🇷 TR</button>
+      <button class="lang-btn" onclick="setLang('en')">🇬🇧 EN</button>
+      <button class="lang-btn" onclick="setLang('fa')">🇮🇷 FA</button>
+    </div>
     <div class="login-logo">SWISS <em>HOUSE</em></div>
-    <div class="login-sub">Komisyoncu Portalı</div>
-    <label class="login-label">Kullanıcı Adı</label>
+    <div class="login-sub" id="lbl_portal_sub">Komisyoncu Portalı</div>
+    <label class="login-label" id="lbl_kullanici">Kullanıcı Adı</label>
     <input class="login-input" type="text" id="loginKullanici" placeholder="kullanici_adi" onkeydown="if(event.key==='Enter')girisYap()">
-    <label class="login-label">Şifre</label>
+    <label class="login-label" id="lbl_sifre">Şifre</label>
     <input class="login-input" type="password" id="loginSifre" placeholder="••••••••" onkeydown="if(event.key==='Enter')girisYap()">
-    <button class="login-btn" onclick="girisYap()">Giriş Yap</button>
+    <button class="login-btn" id="lbl_giris_btn" onclick="girisYap()">Giriş Yap</button>
     <div class="login-err" id="loginErr"></div>
   </div>
 </div>
@@ -151,11 +171,12 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         <table class="takvim-table" id="takvimTable"></table>
       </div>
       <div class="legenda">
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div>Boş (tıklayarak rezervasyon ekle)</div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div>Dolu</div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div>Rezerveli</div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div>Temizlik</div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div>Arızalı</div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div><span id="legenda_bos">Boş (tıklayarak rezervasyon ekle)</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div><span id="legenda_dolu">Dolu</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div><span id="legenda_rezerve">Rezerveli</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fff8e1;border:1px solid rgba(196,165,90,.4)"></div><span id="legenda_benim">Benim Rezervasyonum</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div><span id="legenda_temizlik">Temizlik</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div><span id="legenda_arizali">Arızalı</span></div>
       </div>
     </div>
 
@@ -174,12 +195,27 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
             <th>Kişi</th>
             <th>Fiyat/Gece</th>
             <th>Durum</th>
+            <th>İşlem</th>
           </tr>
         </thead>
         <tbody id="taleplerBody"></tbody>
       </table>
     </div>
 
+  </div>
+</div>
+
+<!-- SÖZLEŞME MODAL -->
+<div class="sozlesme-overlay" id="sozlesmeOverlay">
+  <div class="sozlesme-kart">
+    <div class="sozlesme-kart-header">
+      <h3>📄 Konaklama Sözleşmesi</h3>
+      <div class="sozlesme-kart-actions">
+        <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="sozlesmeYazdir()">🖨 Yazdır</button>
+        <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="sozlesmeKapat()">✕ Kapat</button>
+      </div>
+    </div>
+    <iframe id="sozlesmeIframe" class="sozlesme-iframe"></iframe>
   </div>
 </div>
 
@@ -217,51 +253,81 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Kaç Gece *</label>
+          <label id="lbl_gece">Kaç Gece *</label>
           <input type="number" id="f_gece" min="1" value="1" oninput="hesaplaOzet()">
         </div>
         <div class="form-group">
-          <label>Gecelik Ücret (₺) *</label>
+          <label id="lbl_fiyat">Gecelik Ücret (₺) *</label>
           <input type="number" id="f_fiyat" min="0" placeholder="0" oninput="hesaplaOzet()">
         </div>
       </div>
+
+      <!-- Ödeme -->
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px" id="lbl_sec_odeme">Ödeme Bilgileri</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label id="lbl_odeme_durum">Ödeme Durumu</label>
+          <select id="f_odeme_durum" onchange="odemeSecildi()">
+            <option value="odenmedi" id="opt_odenmedi">Ödenmedi</option>
+            <option value="odendi" id="opt_odendi">Ödendi</option>
+            <option value="depozito" id="opt_depozito">Depozito Alındı</option>
+            <option value="kismi" id="opt_kismi">Kısmi Ödeme</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="lbl_odeme_tur">Ödeme Türü</label>
+          <select id="f_odeme_tur">
+            <option value="nakit" id="opt_nakit">Nakit</option>
+            <option value="kart" id="opt_kart">Kredi/Banka Kartı</option>
+            <option value="havale" id="opt_havale">Havale / EFT</option>
+          </select>
+        </div>
+      </div>
+      <div id="kismi_wrap" style="display:none;margin-bottom:14px">
+        <div class="form-group" style="margin-bottom:0">
+          <label id="lbl_kismi_tutar">Alınan Tutar (₺)</label>
+          <input type="number" id="f_kismi_tutar" min="0" placeholder="0" oninput="hesaplaOzet()">
+          <div id="kismi_kalan" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
+        </div>
+      </div>
+
       <div id="carpısmaUyari" style="display:none;background:var(--red-bg);color:var(--red);padding:8px 12px;font-size:12px;margin-bottom:14px">
-        ⚠ Bu oda seçilen tarihlerde müsait değil!
+        ⚠ <span id="lbl_carpısma">Bu oda seçilen tarihlerde müsait değil!</span>
       </div>
 
       <!-- Misafir -->
-      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px">Misafir Bilgileri</div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:14px" id="lbl_sec_misafir">Misafir Bilgileri</div>
       <div class="form-group">
-        <label>Misafir Adı Soyadı *</label>
+        <label id="lbl_misafir">Misafir Adı Soyadı *</label>
         <input type="text" id="f_misafir" placeholder="Ad Soyad">
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>TC Kimlik / Pasaport No</label>
+          <label id="lbl_tc">TC Kimlik / Pasaport No</label>
           <input type="text" id="f_tc" placeholder="TC veya Pasaport" maxlength="20" style="text-transform:uppercase">
         </div>
         <div class="form-group">
-          <label>Telefon</label>
+          <label id="lbl_tel">Telefon</label>
           <input type="tel" id="f_tel" placeholder="05XX XXX XX XX">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Yetişkin</label>
+          <label id="lbl_yetiskin">Yetişkin</label>
           <input type="number" id="f_yetiskin" min="1" value="1">
         </div>
         <div class="form-group">
-          <label>Çocuk</label>
+          <label id="lbl_cocuk">Çocuk</label>
           <input type="number" id="f_cocuk" min="0" value="0">
         </div>
       </div>
       <div class="form-group">
-        <label>Not <span style="font-weight:400;text-transform:none;font-size:9px">(özel istek vb.)</span></label>
+        <label id="lbl_not">Not <span style="font-weight:400;text-transform:none;font-size:9px" id="lbl_not_sub">(özel istek vb.)</span></label>
         <input type="text" id="f_not" placeholder="İsteğe bağlı...">
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="modalKapat()">Vazgeç</button>
+      <button class="btn btn-ghost" id="lbl_vazgec" onclick="modalKapat()">Vazgeç</button>
       <button class="btn btn-primary" id="gonderBtn" onclick="talepGonder()">Talebi Gönder</button>
     </div>
   </div>
@@ -283,16 +349,160 @@ const db = getFirestore(app);
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
 
+// ── DİL SİSTEMİ ──
+const M = {
+  tr: {
+    portal_sub:'Komisyoncu Portalı', kullanici:'Kullanıcı Adı', sifre:'Şifre',
+    giris_btn:'Giriş Yap', giris_hata:'Kullanıcı adı veya şifre hatalı.',
+    takvim_baslik:'Oda Takvimi', talepler_baslik:'Taleplerim',
+    sec_odeme:'Ödeme Bilgileri', sec_misafir:'Misafir Bilgileri',
+    lbl_gece:'Kaç Gece *', lbl_fiyat:'Gecelik Ücret (₺) *',
+    lbl_odeme_durum:'Ödeme Durumu', lbl_odeme_tur:'Ödeme Türü',
+    lbl_kismi_tutar:'Alınan Tutar (₺)',
+    lbl_misafir:'Misafir Adı Soyadı *', lbl_tc:'TC Kimlik / Pasaport No',
+    lbl_tel:'Telefon', lbl_yetiskin:'Yetişkin', lbl_cocuk:'Çocuk',
+    lbl_not:'Not', lbl_not_sub:'(özel istek vb.)',
+    vazgec:'Vazgeç', gonder:'Talebi Gönder',
+    opt_odenmedi:'Ödenmedi', opt_odendi:'Ödendi',
+    opt_depozito:'Depozito Alındı', opt_kismi:'Kısmi Ödeme',
+    opt_nakit:'Nakit', opt_kart:'Kredi/Banka Kartı', opt_havale:'Havale / EFT',
+    carpısma:'Bu oda seçilen tarihlerde müsait değil!',
+    err_zorunlu:'Lütfen zorunlu alanları doldurun (Oda, Giriş, Gece, Misafir Adı, Fiyat).',
+    err_carpısma:'⚠ Bu oda seçilen tarihlerde müsait değil!',
+    err_sunucu:'Bir hata oluştu, lütfen tekrar deneyin.',
+    gonderildi:'✓ Talebiniz iletildi!', gonderiliyor:'Gönderiliyor...',
+    gonderildi_ok:'Gönderildi ✓', bos_mesaj:'Henüz rezervasyon talebi göndermediniz.',
+    durum_bekliyor:'Bekliyor', durum_onaylandi:'Onaylandı', durum_reddedildi:'Reddedildi',
+    kalan:'Kalan:', islem:'İşlem', sozlesme:'📄 Sözleşme',
+    legenda_bos:'Boş (tıklayarak rezervasyon ekle)', legenda_dolu:'Dolu',
+    legenda_rezerve:'Rezerveli', legenda_benim:'Benim Rezervasyonum',
+    legenda_temizlik:'Temizlik', legenda_arizali:'Arızalı',
+    ph_misafir:'Ad Soyad', ph_tel:'05XX XXX XX XX', ph_tc:'TC veya Pasaport',
+  },
+  en: {
+    portal_sub:'Agent Portal', kullanici:'Username', sifre:'Password',
+    giris_btn:'Sign In', giris_hata:'Invalid username or password.',
+    takvim_baslik:'Room Calendar', talepler_baslik:'My Requests',
+    sec_odeme:'Payment Details', sec_misafir:'Guest Information',
+    lbl_gece:'Nights *', lbl_fiyat:'Nightly Rate (₺) *',
+    lbl_odeme_durum:'Payment Status', lbl_odeme_tur:'Payment Type',
+    lbl_kismi_tutar:'Amount Received (₺)',
+    lbl_misafir:'Guest Full Name *', lbl_tc:'ID / Passport No',
+    lbl_tel:'Phone', lbl_yetiskin:'Adults', lbl_cocuk:'Children',
+    lbl_not:'Note', lbl_not_sub:'(special requests etc.)',
+    vazgec:'Cancel', gonder:'Send Request',
+    opt_odenmedi:'Not Paid', opt_odendi:'Paid',
+    opt_depozito:'Deposit Taken', opt_kismi:'Partial Payment',
+    opt_nakit:'Cash', opt_kart:'Credit/Debit Card', opt_havale:'Bank Transfer',
+    carpısma:'This room is not available on selected dates!',
+    err_zorunlu:'Please fill in all required fields (Room, Date, Nights, Guest Name, Price).',
+    err_carpısma:'⚠ This room is not available on selected dates!',
+    err_sunucu:'An error occurred. Please try again.',
+    gonderildi:'✓ Request sent!', gonderiliyor:'Sending...',
+    gonderildi_ok:'Sent ✓', bos_mesaj:'No reservation requests yet.',
+    durum_bekliyor:'Pending', durum_onaylandi:'Approved', durum_reddedildi:'Rejected',
+    kalan:'Remaining:', islem:'Action', sozlesme:'📄 Contract',
+    legenda_bos:'Available (click to reserve)', legenda_dolu:'Occupied',
+    legenda_rezerve:'Reserved', legenda_benim:'My Reservation',
+    legenda_temizlik:'Cleaning', legenda_arizali:'Out of Service',
+    ph_misafir:'Full Name', ph_tel:'+90 5XX XXX XX XX', ph_tc:'ID or Passport Number',
+  },
+  fa: {
+    portal_sub:'پورتال کمیسیون‌کار', kullanici:'نام کاربری', sifre:'رمز عبور',
+    giris_btn:'ورود', giris_hata:'نام کاربری یا رمز عبور اشتباه است.',
+    takvim_baslik:'تقویم اتاق‌ها', talepler_baslik:'درخواست‌های من',
+    sec_odeme:'اطلاعات پرداخت', sec_misafir:'اطلاعات مهمان',
+    lbl_gece:'تعداد شب *', lbl_fiyat:'نرخ شبانه (₺) *',
+    lbl_odeme_durum:'وضعیت پرداخت', lbl_odeme_tur:'نوع پرداخت',
+    lbl_kismi_tutar:'مبلغ دریافتی (₺)',
+    lbl_misafir:'نام و نام خانوادگی مهمان *', lbl_tc:'کد ملی / شماره پاسپورت',
+    lbl_tel:'تلفن', lbl_yetiskin:'بزرگسال', lbl_cocuk:'کودک',
+    lbl_not:'یادداشت', lbl_not_sub:'(درخواست‌های ویژه و غیره)',
+    vazgec:'انصراف', gonder:'ارسال درخواست',
+    opt_odenmedi:'پرداخت نشده', opt_odendi:'پرداخت شده',
+    opt_depozito:'ودیعه دریافت شد', opt_kismi:'پرداخت جزئی',
+    opt_nakit:'نقدی', opt_kart:'کارت بانکی', opt_havale:'انتقال بانکی',
+    carpısma:'این اتاق در تاریخ‌های انتخابی در دسترس نیست!',
+    err_zorunlu:'لطفاً فیلدهای اجباری را پر کنید.',
+    err_carpısma:'⚠ این اتاق در تاریخ‌های انتخابی در دسترس نیست!',
+    err_sunucu:'خطایی رخ داد. لطفاً دوباره تلاش کنید.',
+    gonderildi:'✓ درخواست ارسال شد!', gonderiliyor:'در حال ارسال...',
+    gonderildi_ok:'ارسال شد ✓', bos_mesaj:'هنوز هیچ درخواست رزروی ارسال نشده است.',
+    durum_bekliyor:'در انتظار', durum_onaylandi:'تأیید شده', durum_reddedildi:'رد شده',
+    kalan:'مانده:', islem:'عملیات', sozlesme:'📄 قرارداد',
+    legenda_bos:'خالی (برای رزرو کلیک کنید)', legenda_dolu:'اشغال',
+    legenda_rezerve:'رزرو شده', legenda_benim:'رزرو من',
+    legenda_temizlik:'در حال نظافت', legenda_arizali:'خارج از سرویس',
+    ph_misafir:'نام و نام خانوادگی', ph_tel:'+98 9XX XXX XXXX', ph_tc:'کد ملی یا شماره پاسپورت',
+  }
+};
+
+let dil = 'tr';
+window.setLang = function(d) {
+  dil = d;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${d}'`))
+  );
+  const m = M[d];
+  const dir = d === 'fa' ? 'rtl' : 'ltr';
+  // Giriş ekranı
+  document.getElementById('lbl_portal_sub').textContent = m.portal_sub;
+  document.getElementById('lbl_kullanici').textContent = m.kullanici;
+  document.getElementById('lbl_sifre').textContent = m.sifre;
+  document.getElementById('lbl_giris_btn').textContent = m.giris_btn;
+  // Form alanları
+  const ids = {
+    lbl_gece:m.lbl_gece, lbl_fiyat:m.lbl_fiyat,
+    lbl_sec_odeme:m.sec_odeme, lbl_sec_misafir:m.sec_misafir,
+    lbl_odeme_durum:m.lbl_odeme_durum, lbl_odeme_tur:m.lbl_odeme_tur,
+    lbl_kismi_tutar:m.lbl_kismi_tutar,
+    lbl_misafir:m.lbl_misafir, lbl_tc:m.lbl_tc,
+    lbl_tel:m.lbl_tel, lbl_yetiskin:m.lbl_yetiskin, lbl_cocuk:m.lbl_cocuk,
+    lbl_not:m.lbl_not, lbl_vazgec:m.vazgec,
+  };
+  Object.entries(ids).forEach(([id,txt]) => {
+    const el = document.getElementById(id); if(el) el.textContent = txt;
+  });
+  document.getElementById('lbl_not_sub').textContent = m.lbl_not_sub;
+  document.getElementById('lbl_carpısma').textContent = m.carpısma;
+  document.getElementById('gonderBtn').textContent = m.gonder;
+  // Select seçenekleri
+  document.getElementById('opt_odenmedi').textContent = m.opt_odenmedi;
+  document.getElementById('opt_odendi').textContent = m.opt_odendi;
+  document.getElementById('opt_depozito').textContent = m.opt_depozito;
+  document.getElementById('opt_kismi').textContent = m.opt_kismi;
+  document.getElementById('opt_nakit').textContent = m.opt_nakit;
+  document.getElementById('opt_kart').textContent = m.opt_kart;
+  document.getElementById('opt_havale').textContent = m.opt_havale;
+  // Placeholder
+  const pfld = {f_misafir:m.ph_misafir, f_tel:m.ph_tel, f_tc:m.ph_tc};
+  Object.entries(pfld).forEach(([id,ph]) => { const el=document.getElementById(id); if(el) el.placeholder=ph; });
+  // RTL
+  document.getElementById('portal') && (document.getElementById('portal').style.direction = dir);
+  document.querySelector('.login-card') && (document.querySelector('.login-card').style.direction = dir);
+  // Legenda
+  const legIds = {
+    'legenda_bos':m.legenda_bos, 'legenda_dolu':m.legenda_dolu,
+    'legenda_rezerve':m.legenda_rezerve, 'legenda_benim':m.legenda_benim,
+    'legenda_temizlik':m.legenda_temizlik, 'legenda_arizali':m.legenda_arizali,
+  };
+  Object.entries(legIds).forEach(([id,txt]) => { const el=document.getElementById(id); if(el) el.textContent=txt; });
+  // Talepler tablosu
+  renderTalepler(_beniimTalepler);
+};
+
 // ── KOMİSYONCU ŞİFRELERİ ──
 // Yeni komisyoncu eklemek için buraya satır ekle
 const KOMISYONCULAR = {
   'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
   'pune': { ad: 'pune iran', sifre: 'pune2026' },
+  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
 };
 
 let aktifKom = null; // { key, ad }
 let _R = [];  // rezervasyonlar
 let _O = {};  // oda durumları
+let _beniimTalepler = []; // komisyoncunun kendi talepleri
 let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
 
@@ -327,19 +537,21 @@ function baslatPortal() {
     });
   });
 
-  // Rezervasyonları dinle
+  // Rezervasyonları CANLI dinle
   onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','desc')), snap => {
     _R = snap.docs.map(d => ({id:d.id,...d.data()}));
     renderTakvim();
   });
 
-  // Kendi taleplerimi dinle
+  // Kendi taleplerimi CANLI dinle
   onSnapshot(
     query(collection(db,'rezervasyon_talepleri'),
       where('komisyoncu','==', aktifKom.key),
       orderBy('kayitTarih','desc')),
     snap => {
-      renderTalepler(snap.docs.map(d=>({id:d.id,...d.data()})));
+      _beniimTalepler = snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderTalepler(_beniimTalepler);
+      renderTakvim(); // onaylananlar takvimde renklenmesi için
     }
   );
 
@@ -351,7 +563,6 @@ function baslatPortal() {
     sel.appendChild(opt);
   });
 
-  // Bugünü minimum tarih olarak set et
   const bugun = new Date().toISOString().slice(0,10);
   document.getElementById('f_giris').min = bugun;
   document.getElementById('f_giris').value = bugun;
@@ -374,11 +585,12 @@ function renderTakvim() {
   const ilkGun = new Date(takvimYil, takvimAy, 1);
   const sonGun = new Date(takvimYil, takvimAy+1, 0).getDate();
 
-  // Gün dizisi oluştur
+  // Gün dizisi oluştur — sadece bugün ve sonrası
   const gunList = [];
   for(let d=1; d<=sonGun; d++) {
     const dt = new Date(takvimYil, takvimAy, d);
     const iso = dt.toISOString().slice(0,10);
+    if(iso < today) continue; // geçmiş günleri atla
     const gunAdi = gunler[(dt.getDay()+6)%7];
     gunList.push({ iso, gun: d, gunAdi });
   }
@@ -398,6 +610,14 @@ function renderTakvim() {
       const iso = g.iso;
       const isToday = iso === today;
 
+      // Kendi onaylanan taleplerinden gelen rezervasyon mu?
+      const beniimTalep = _beniimTalepler.find(t =>
+        t.durum === 'onaylandi' &&
+        Number(t.odaNo) === odaNo &&
+        (t.giris||'') <= iso &&
+        (t.cikis||'') > iso
+      );
+
       // Rezervasyon var mı?
       const rev = _R.find(r =>
         Number(r.odaNo) === odaNo &&
@@ -407,22 +627,23 @@ function renderTakvim() {
       );
 
       // Fiili doluluk
-      const fiiliDolu = oda.durum === 'dolu' && oda.giris && oda.giris <= iso && oda.cikis > iso;
-      const bugunDolu = oda.durum === 'dolu' && isToday;
+      const fiiliDolu = _O['oda'+odaNo]?.durum === 'dolu' &&
+        _O['oda'+odaNo]?.giris <= iso && _O['oda'+odaNo]?.cikis > iso;
+      const bugunDolu = _O['oda'+odaNo]?.durum === 'dolu' && isToday;
 
       let cls, onclick = '';
-      if(rev || fiiliDolu || bugunDolu) {
+      if(beniimTalep) {
+        // Benim onaylanan rezervasyonum — altın tonda göster, tıklanabilir değil
+        cls = 't-benim';
+      } else if(rev || fiiliDolu || bugunDolu) {
         cls = rev ? 't-rezerve' : 't-dolu';
-        // Misafir adı GÖSTERILMEZ — sadece renk
-      } else if(oda.durum === 'temizlik') {
+      } else if(_O['oda'+odaNo]?.durum === 'temizlik') {
         cls = 't-temizlik';
-      } else if(oda.durum === 'arizali' && iso >= today) {
+      } else if(_O['oda'+odaNo]?.durum === 'arizali') {
         cls = 't-arizali';
       } else if(isToday) {
         cls = 't-bugun';
         onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
-      } else if(iso < today) {
-        cls = 't-bos'; // geçmiş günler tıklanamaz
       } else {
         cls = 't-bos';
         onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
@@ -448,6 +669,11 @@ window.modalAc = function(odaNo, tarih) {
   document.getElementById('f_giris').value = tarih || new Date().toISOString().slice(0,10);
   document.getElementById('f_gece').value = 1;
   document.getElementById('f_fiyat').value = '';
+  document.getElementById('f_odeme_durum').value = 'odenmedi';
+  document.getElementById('f_odeme_tur').value = 'nakit';
+  document.getElementById('f_kismi_tutar').value = '';
+  document.getElementById('kismi_wrap').style.display = 'none';
+  document.getElementById('kismi_kalan').textContent = '';
   document.getElementById('f_misafir').value = '';
   document.getElementById('f_tc').value = '';
   document.getElementById('f_tel').value = '';
@@ -478,6 +704,12 @@ function formatTarih(iso) {
   return `${d}.${m}.${y}`;
 }
 
+window.odemeSecildi = function() {
+  const val = document.getElementById('f_odeme_durum').value;
+  document.getElementById('kismi_wrap').style.display = val === 'kismi' ? 'block' : 'none';
+  hesaplaOzet();
+};
+
 window.hesaplaOzet = function() {
   const odaNo = Number(document.getElementById('f_oda').value);
   const giris = document.getElementById('f_giris').value;
@@ -493,6 +725,17 @@ window.hesaplaOzet = function() {
   document.getElementById('oz_cikis').textContent = formatTarih(cikis);
   document.getElementById('oz_toplam').textContent = fiyat > 0 ? `${fmt(fiyat*gece)} ₺ (${gece} gece × ${fmt(fiyat)} ₺)` : '—';
   ozetKutu.style.display = 'block';
+
+  // Kısmi ödeme kalan hesabı
+  const odemeDurum = document.getElementById('f_odeme_durum').value;
+  if(odemeDurum === 'kismi' && fiyat > 0) {
+    const kismiTutar = Number(document.getElementById('f_kismi_tutar').value)||0;
+    const kalan = Math.max(0, fiyat*gece - kismiTutar);
+    const m = M[dil];
+    document.getElementById('kismi_kalan').textContent = `${m.kalan} ${fmt(kalan)} ₺`;
+  } else {
+    document.getElementById('kismi_kalan').textContent = '';
+  }
 
   // Çakışma kontrolü
   const cakısma = _R.find(r =>
@@ -510,6 +753,7 @@ window.hesaplaOzet = function() {
 window.talepGonder = async function() {
   const errEl = document.getElementById('formHata');
   const okEl = document.getElementById('formBasari');
+  const m = M[dil];
   errEl.style.display = 'none'; okEl.style.display = 'none';
 
   const odaNo = Number(document.getElementById('f_oda').value);
@@ -522,9 +766,12 @@ window.talepGonder = async function() {
   const yetiskin = parseInt(document.getElementById('f_yetiskin').value)||1;
   const cocuk = parseInt(document.getElementById('f_cocuk').value)||0;
   const not_ = document.getElementById('f_not').value.trim();
+  const odemeDurum = document.getElementById('f_odeme_durum').value;
+  const odemeTuru = document.getElementById('f_odeme_tur').value;
+  const kismiTutar = odemeDurum === 'kismi' ? (Number(document.getElementById('f_kismi_tutar').value)||0) : null;
 
   if(!odaNo || !giris || gece<1 || !misafir || fiyat<=0) {
-    errEl.textContent = 'Lütfen zorunlu alanları doldurun (Oda, Giriş, Gece, Misafir Adı, Fiyat).';
+    errEl.textContent = m.err_zorunlu;
     errEl.style.display = 'block'; return;
   }
 
@@ -536,18 +783,21 @@ window.talepGonder = async function() {
     (r.giris||'') < cikis && (r.cikis||'') > giris
   );
   if(cakısma) {
-    errEl.textContent = '⚠ Bu oda seçilen tarihlerde müsait değil!';
+    errEl.textContent = m.err_carpısma;
     errEl.style.display = 'block'; return;
   }
 
   const btn = document.getElementById('gonderBtn');
-  btn.disabled = true; btn.textContent = 'Gönderiliyor...';
+  btn.disabled = true; btn.textContent = m.gonderiliyor;
 
   try {
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
       fiyat, yetiskin, cocuk,
+      odemeDurum, odemeTuru,
+      kismiTutar: kismiTutar,
+      kismiKalan: kismiTutar !== null ? Math.max(0, fiyat*gece - kismiTutar) : null,
       not: not_||null,
       komisyoncu: aktifKom.key,
       komisyoncuAd: aktifKom.ad,
@@ -555,24 +805,29 @@ window.talepGonder = async function() {
       durum: 'bekliyor',
       kayitTarih: new Date().toISOString()
     });
-    okEl.textContent = `✓ Talebiniz iletildi! Oda ${odaNo} · ${formatTarih(giris)} → ${formatTarih(cikis)}`;
+    okEl.textContent = `${m.gonderildi} Oda ${odaNo} · ${formatTarih(giris)} → ${formatTarih(cikis)}`;
     okEl.style.display = 'block';
-    btn.textContent = 'Gönderildi ✓';
+    btn.textContent = m.gonderildi_ok;
     setTimeout(() => modalKapat(), 2500);
   } catch(err) {
-    errEl.textContent = 'Bir hata oluştu, lütfen tekrar deneyin.';
+    errEl.textContent = m.err_sunucu;
     errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Talebi Gönder';
+    btn.disabled = false; btn.textContent = m.gonder;
   }
 };
 
 // ── TALEPLERİ RENDER ET ──
 function renderTalepler(talepler) {
-  const durumMap = { bekliyor:'Bekliyor', onaylandi:'Onaylandı', reddedildi:'Reddedildi' };
-  const durumKls  = { bekliyor:'durum-bekliyor', onaylandi:'durum-onaylandi', reddedildi:'durum-reddedildi' };
+  const m = M[dil];
+  const durumMap = {
+    bekliyor: m.durum_bekliyor,
+    onaylandi: m.durum_onaylandi,
+    reddedildi: m.durum_reddedildi
+  };
+  const durumKls = { bekliyor:'durum-bekliyor', onaylandi:'durum-onaylandi', reddedildi:'durum-reddedildi' };
   const tbody = document.getElementById('taleplerBody');
   if(!talepler.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="bos-mesaj">Henüz rezervasyon talebi göndermediniz.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="8" class="bos-mesaj">${m.bos_mesaj}</td></tr>`;
     return;
   }
   tbody.innerHTML = talepler.map(t => `
@@ -584,14 +839,156 @@ function renderTalepler(talepler) {
       <td>${(t.yetiskin||1)+(t.cocuk||0)}</td>
       <td>${t.fiyat ? fmt(t.fiyat)+' ₺' : '—'}</td>
       <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||t.durum}</span></td>
+      <td>${t.durum==='onaylandi' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="sozlesmeGoster('${t.id}')">${m.sozlesme}</button>` : '—'}</td>
     </tr>
   `).join('');
 }
+
+// ── SÖZLEŞME ──
+window.sozlesmeGoster = function(talepId) {
+  const t = _beniimTalepler.find(x => x.id === talepId);
+  if(!t) return;
+
+  function fmtTarih(iso) {
+    if(!iso) return '—';
+    const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`;
+  }
+  const gece = t.gece || 1;
+  const fiyat = t.fiyat || 0;
+  const toplam = fiyat * gece;
+  const sozNo = 'K-' + talepId.slice(-6).toUpperCase();
+
+  const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Swiss House Sözleşme</title>
+<style>
+@page{size:A4;margin:8mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#111;background:#fff;font-size:11px}
+.page{width:100%;max-width:190mm;margin:0 auto;padding:0 4mm}
+.header{text-align:center;margin-bottom:8px}
+.logo{font-size:26px;font-weight:800;letter-spacing:1px}
+.logo span{color:#c8102e}
+.sub{font-size:10px;letter-spacing:3px;margin-top:2px}
+h1{font-size:21px;margin:10px 0 6px 0;letter-spacing:.5px}
+.red-line{border-top:2px solid #c8102e;margin:8px 0 12px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.3fr;gap:8px;margin-bottom:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.box{border:1px solid #ccc;padding:8px 10px;min-height:48px}
+.label{font-size:9px;letter-spacing:1.3px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+.value{font-size:14px;font-weight:700}
+.section-title{color:#c8102e;font-size:15px;font-weight:800;letter-spacing:1px;margin:12px 0 8px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+td,th{border:1px solid #ccc;padding:7px 8px;font-size:10.5px}
+th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;font-size:11px;line-height:1.45}
+.rule{display:flex;gap:8px;margin-bottom:7px}
+.rule b{color:#c8102e;min-width:16px}
+.note{border:1px solid #ccc;min-height:45px;padding:8px;font-size:11px}
+.signatures{border-top:2px solid #c8102e;margin-top:10px;padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:60px;text-align:center}
+.sig-title{color:#c8102e;font-weight:800;font-size:11px;letter-spacing:1px}
+.sig-name{margin:8px 0 28px;font-weight:700}
+.sig-line{border-top:1px solid #999;padding-top:6px;font-size:10px}
+.footer{border-top:2px solid #c8102e;margin-top:12px;padding-top:9px;display:flex;justify-content:space-around;font-size:10.5px}
+@media print{body{font-size:10px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="logo"><span>SWISS</span> HOUSE</div>
+    <div class="sub">YÖNETİM SİSTEMİ</div>
+    <h1>GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ</h1>
+  </div>
+  <div class="red-line"></div>
+  <div class="grid4">
+    <div class="box"><div class="label">Sözleşme No</div><div class="value">${sozNo}</div></div>
+    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(new Date().toISOString().slice(0,10))}</div></div>
+    <div class="box"><div class="label">Komisyoncu</div><div class="value" style="font-size:11px">${t.komisyoncuAd||t.komisyoncu||'—'}</div></div>
+    <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:11px">Hafiziye Mah. Telli Sok. No:11/A İpekyolu / VAN</div></div>
+  </div>
+  <div class="section-title">1. TARAFLAR</div>
+  <table>
+    <tr><th>Kiraya Veren</th><td><b>Swiss House Yönetimi</b></td></tr>
+  </table>
+  <table>
+    <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC / Pasaport No</th></tr>
+    <tr><td>Kiracı</td><td><b>${t.misafir||'—'}</b></td><td><b>${t.tc||'—'}</b></td></tr>
+  </table>
+  <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
+  <div class="grid3" style="margin-bottom:8px">
+    <div class="box"><div class="label">Oda No</div><div class="value">Oda ${t.odaNo||'?'}</div></div>
+    <div class="box"><div class="label">Giriş Tarihi</div><div class="value">${fmtTarih(t.giris)}</div></div>
+    <div class="box"><div class="label">Çıkış Tarihi</div><div class="value">${fmtTarih(t.cikis)}</div></div>
+  </div>
+  <div class="grid4" style="margin-bottom:8px">
+    <div class="box"><div class="label">Konaklama Süresi</div><div class="value">${gece} Gece</div></div>
+    <div class="box"><div class="label">Kişi Sayısı</div><div class="value">${(t.yetiskin||1)+(t.cocuk||0)} Kişi</div></div>
+    <div class="box"><div class="label">Gecelik Ücret</div><div class="value">${fiyat.toLocaleString('tr-TR')} ₺</div></div>
+    <div class="box" style="border-left:3px solid #c8102e"><div class="label">Toplam Tutar</div><div class="value" style="color:#c8102e">${toplam.toLocaleString('tr-TR')} ₺</div></div>
+  </div>
+  <div class="section-title">3. GENEL HÜKÜMLER</div>
+  <div class="rules">
+    <div>
+      <div class="rule"><b>1.</b><span>İşbu sözleşme, taraflar arasında belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</span></div>
+      <div class="rule"><b>2.</b><span>Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.</span></div>
+      <div class="rule"><b>3.</b><span>Erken çıkış halinde kalan günlere ait kira bedelinin iadesi talep edilemez.</span></div>
+      <div class="rule"><b>4.</b><span>Konuta verilen hasar kiracı tarafından tazmin edilecektir.</span></div>
+      <div class="rule"><b>5.</b><span>Kira bedeli, sözleşme imzalanırken peşin ödenecektir.</span></div>
+    </div>
+    <div>
+      <div class="rule"><b>6.</b><span>Sözleşmede belirtilenden fazla kişi konaklatılamaz.</span></div>
+      <div class="rule"><b>7.</b><span>Konut içinde ateş yakmak, yüksek sesle müzik çalmak yasaktır.</span></div>
+      <div class="rule"><b>8.</b><span>Anahtar çıkış tarihinde kiraya verene iade edilecektir.</span></div>
+      <div class="rule"><b>9.</b><span>Check-in en erken 12:00, check-out en geç 10:00'dır.</span></div>
+      <div class="rule"><b>10.</b><span>Uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
+    </div>
+  </div>
+  <div class="section-title">4. NOT</div>
+  <div class="note">${t.not||'—'}</div>
+  <div class="signatures">
+    <div>
+      <div class="sig-title">KİRAYA VEREN</div>
+      <div class="sig-name">Swiss House Yönetimi</div>
+      <div class="sig-line">İMZA</div>
+    </div>
+    <div>
+      <div class="sig-title">KİRACI</div>
+      <div class="sig-name">${t.misafir||'—'}</div>
+      <div class="sig-line">İMZA</div>
+    </div>
+  </div>
+  <div class="footer">
+    <div>📍 Hafiziye Mah. Telli Sok. No:11/A İpekyolu / VAN</div>
+    <div>☎ +90 506 150 83 00</div>
+  </div>
+</div>
+</body>
+</html>`;
+
+  const iframe = document.getElementById('sozlesmeIframe');
+  iframe.srcdoc = html;
+  document.getElementById('sozlesmeOverlay').classList.add('aktif');
+};
+
+window.sozlesmeYazdir = function() {
+  document.getElementById('sozlesmeIframe').contentWindow.print();
+};
+
+window.sozlesmeKapat = function() {
+  document.getElementById('sozlesmeOverlay').classList.remove('aktif');
+};
 
 // Dışarı tıklanınca modal kapat
 document.getElementById('rezervModal').addEventListener('click', function(e) {
   if(e.target === this) modalKapat();
 });
+document.getElementById('sozlesmeOverlay').addEventListener('click', function(e) {
+  if(e.target === this) sozlesmeKapat();
+});
 </script>
 </body>
 </html>
+<!-- Overlay click handler appended -->
