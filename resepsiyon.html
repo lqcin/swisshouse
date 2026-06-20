@@ -1082,6 +1082,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       </div>
       <div class="mxl-header-actions">
         <button class="btn btn-ghost" onclick="window._onaylananTalepId=null;closeModal('rezervModal')">✕ İptal</button>
+        <button class="btn btn-ghost" onclick="saveRezervasyon('yeniOda')" style="border-color:var(--gold2);color:var(--gold2)">➕ Kaydet & Yeni Oda</button>
         <button class="btn btn-primary" onclick="saveRezervasyon()">💾 Kaydet</button>
       </div>
     </div>
@@ -3617,7 +3618,7 @@ window.revTcAra = async function(tc) {
   } else document.getElementById('revMusteriBulundu').style.display='none';
 };
 
-window.saveRezervasyon = async function() {
+window.saveRezervasyon = async function(mod = '') {
   const giris   = document.getElementById('rev_giris').value;
   const cikis   = document.getElementById('rev_cikis').value;
   const gece    = parseInt(document.getElementById('rev_gece').value)||1;
@@ -3663,24 +3664,44 @@ window.saveRezervasyon = async function() {
     kayitTarih:now
   });
 
-  ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt','rev_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('rev_oda').value='';
-  document.getElementById('rev_cikis_goster').value='';
-  document.getElementById('rev_carpısma').style.display='none';
-  document.getElementById('rev_kismi_wrap').style.display='none';
-  clearRefakatciler('revRefakatciListesi');
-  const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
-  const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
-  const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.style.display='none';
-  const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
-  closeModal('rezervModal');
   await logAktivite('rezervasyon', `${ad} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(gece*fiyat)}`, odaNo);
-  // Bu rezervasyon bir Instagram talebinden onaylandıysa, talebin durumunu güncelle
+  // Bu rezervasyon bir Instagram/komisyoncu talebinden onaylandıysa, talebin durumunu güncelle
   if(window._onaylananTalepId) {
     await updateDoc(doc(db,'rezervasyon_talepleri', window._onaylananTalepId), {durum:'onaylandi', islemTarih: nowISO()});
     window._onaylananTalepId = null;
   }
-  toast('Rezervasyon kaydedildi ✓','success');
+
+  if(mod === 'yeniOda') {
+    // Sadece oda/tarih/fiyat alanlarını sıfırla — misafir bilgileri kalsın
+    ['rev_giris','rev_gece','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_not','rev_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('rev_oda').value='';
+    document.getElementById('rev_cikis_goster').value='';
+    document.getElementById('rev_carpısma').style.display='none';
+    document.getElementById('rev_kismi_wrap').style.display='none';
+    const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+    const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.textContent='0,00 ₺';
+    const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
+    ['rev_ozet_giris','rev_ozet_gece','rev_ozet_cikis','rev_ozet_oda','rev_ozet_toplam','rev_ozet_giris_gun','rev_ozet_cikis_gun','rev_ozet_oda_tip'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+    // Gece sayısını 1'e sıfırla
+    const revGeceEl = document.getElementById('rev_gece'); if(revGeceEl) revGeceEl.value=1;
+    toast(`Oda ${odaNo} kaydedildi ✓ — ${ad} için yeni oda ekleyebilirsiniz`, 'success');
+    // Modal açık kalır, scroll en üste
+    document.querySelector('#rezervModal .modal')?.scrollTo(0,0);
+  } else {
+    // Normal kaydet — her şeyi temizle ve kapat
+    ['rev_giris','rev_gece','rev_tc','rev_ad','rev_tel','rev_not','rev_fiyat','rev_sozlesme_fiyat','rev_kismi_tutar','rev_dt','rev_komisyoncu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('rev_oda').value='';
+    document.getElementById('rev_cikis_goster').value='';
+    document.getElementById('rev_carpısma').style.display='none';
+    document.getElementById('rev_kismi_wrap').style.display='none';
+    clearRefakatciler('revRefakatciListesi');
+    const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+    const arEl = document.getElementById('rev_araci'); if(arEl){ arEl.checked=false; document.getElementById('rev_ad_label').textContent='Misafir Adı *'; }
+    const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.textContent='0,00 ₺';
+    const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
+    closeModal('rezervModal');
+    toast('Rezervasyon kaydedildi ✓','success');
+  }
 };
 
 window.renderRezervasyonlar = function() {
