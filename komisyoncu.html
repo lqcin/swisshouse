@@ -900,37 +900,36 @@ window.sozlesmeGoster = function(talepId) {
 <meta charset="UTF-8">
 <title>Swiss House Sözleşme</title>
 <style>
-@page{size:A4 landscape;margin:4mm}
+@page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;}
-body{font-family:Arial,sans-serif;color:#111;background:#fff;font-size:9px;}
-.page{width:100%;height:100vh;padding:4mm 6mm;display:flex;flex-direction:column;}
-.header{text-align:center;margin-bottom:4px}
-.logo{font-size:20px;font-weight:800;letter-spacing:1px}
+body{font-family:Arial,sans-serif;color:#111;background:#fff;font-size:9.5px;}
+.page{width:100%;height:100vh;padding:4mm 6mm;display:flex;flex-direction:column;gap:0;}
+.header{text-align:center;margin-bottom:5px}
+.logo{font-size:22px;font-weight:800;letter-spacing:1px}
 .logo span{color:#c8102e}
 .sub{font-size:8px;letter-spacing:3px;margin-top:1px}
-h1{font-size:14px;margin:4px 0 3px 0;letter-spacing:.5px}
+h1{font-size:15px;margin:4px 0 3px 0;letter-spacing:.5px}
 .red-line{border-top:2px solid #c8102e;margin:3px 0 6px}
-.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.3fr;gap:5px;margin-bottom:5px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px}
-.box{border:1px solid #ccc;padding:4px 6px;min-height:32px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:5px}
+.box{border:1px solid #ccc;padding:5px 8px;}
 .label{font-size:7px;letter-spacing:1px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:3px}
-.value{font-size:11px;font-weight:700}
-.section-title{color:#c8102e;font-size:11px;font-weight:800;letter-spacing:1px;margin:5px 0 4px}
+.value{font-size:12px;font-weight:700}
+.section-title{color:#c8102e;font-size:11px;font-weight:800;letter-spacing:1px;margin:6px 0 4px}
 table{width:100%;border-collapse:collapse;margin-bottom:5px}
-td,th{border:1px solid #ccc;padding:4px 6px;font-size:8.5px}
+td,th{border:1px solid #ccc;padding:5px 8px;font-size:9px}
 th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
-.body{flex:1;display:flex;flex-direction:column;}
-.rules{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:8px;line-height:1.4}
-.rule{display:flex;gap:5px;margin-bottom:4px}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:8.5px;line-height:1.45;margin-bottom:5px}
+.rule{display:flex;gap:5px;margin-bottom:3px}
 .rule b{color:#c8102e;min-width:12px}
-.note{border:1px solid #ccc;min-height:28px;padding:5px;font-size:8.5px}
-.signatures{border-top:2px solid #c8102e;margin-top:5px;padding-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center}
+.note{border:1px solid #ccc;min-height:30px;padding:6px;font-size:9px;margin-bottom:6px}
+.signatures{border-top:2px solid #c8102e;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:60px;text-align:center;margin-top:auto}
 .sig-title{color:#c8102e;font-weight:800;font-size:9px;letter-spacing:1px}
-.sig-name{margin:4px 0 16px;font-weight:700;font-size:9px}
+.sig-name{margin:5px 0 22px;font-weight:700;font-size:9px}
 .sig-line{border-top:1px solid #999;padding-top:4px;font-size:8px}
-.footer{border-top:2px solid #c8102e;margin-top:5px;padding-top:5px;display:flex;justify-content:space-around;font-size:8.5px}
-@media print{html,body{overflow:visible;height:auto;} .page{height:auto;} @page{margin:6mm}}
+.footer{border-top:2px solid #c8102e;margin-top:6px;padding-top:5px;display:flex;justify-content:space-around;font-size:8.5px}
+@media print{html,body{overflow:visible;height:auto;} .page{height:auto;} @page{margin:8mm}}
 </style>
 </head>
 <body>
@@ -941,13 +940,13 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
     <h1>GEÇİCİ KONUT KİRALAMA SÖZLEŞMESİ</h1>
   </div>
   <div class="red-line"></div>
-  <div class="body">
-  <div class="grid4">
+
+  <div class="grid3">
     <div class="box"><div class="label">Sözleşme No</div><div class="value">${sozNo}</div></div>
     <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(new Date().toISOString().slice(0,10))}</div></div>
-    <div class="box"><div class="label">Komisyoncu</div><div class="value" style="font-size:9px">${t.komisyoncuAd||t.komisyoncu||'—'}</div></div>
-    <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:8px">Hafiziye Mah. Telli Sok. No:11/A İpekyolu / VAN</div></div>
+    <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:8.5px">Hafiziye Mah. Telli Sok. No:11/A İpekyolu / VAN</div></div>
   </div>
+
   <div class="section-title">1. TARAFLAR</div>
   <table>
     <tr><th>Kiraya Veren</th><td><b>Swiss House Yönetimi</b></td></tr>
@@ -956,26 +955,28 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
     <tr><th>Kişi</th><th>Adı Soyadı</th><th>TC / Pasaport No</th></tr>
     <tr><td>Kiracı</td><td><b>${t.misafir||'—'}</b></td><td><b>${t.tc||'—'}</b></td></tr>
   </table>
+
   <div class="section-title">2. KİRALAMA BİLGİLERİ</div>
-  <div class="grid4" style="margin-bottom:5px">
+  <div class="grid4">
     <div class="box"><div class="label">Oda No</div><div class="value">Oda ${t.odaNo||'?'}</div></div>
     <div class="box"><div class="label">Giriş Tarihi</div><div class="value">${fmtTarih(t.giris)}</div></div>
     <div class="box"><div class="label">Çıkış Tarihi</div><div class="value">${fmtTarih(t.cikis)}</div></div>
     <div class="box" style="border-left:3px solid #c8102e"><div class="label">Toplam Tutar</div><div class="value" style="color:#c8102e">${toplam.toLocaleString('tr-TR')} ₺</div></div>
   </div>
-  <div class="grid3" style="margin-bottom:5px">
+  <div class="grid3">
     <div class="box"><div class="label">Konaklama Süresi</div><div class="value">${gece} Gece</div></div>
     <div class="box"><div class="label">Kişi Sayısı</div><div class="value">${(t.yetiskin||1)+(t.cocuk||0)} Kişi</div></div>
     <div class="box"><div class="label">Gecelik Ücret</div><div class="value">${fiyat.toLocaleString('tr-TR')} ₺</div></div>
   </div>
+
   <div class="section-title">3. GENEL HÜKÜMLER</div>
   <div class="rules">
     <div>
-      <div class="rule"><b>1.</b><span>İşbu sözleşme, taraflar arasında belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</span></div>
+      <div class="rule"><b>1.</b><span>İşbu sözleşme taraflar arasında belirtilen konut için geçici kiralama amacıyla düzenlenmiştir.</span></div>
       <div class="rule"><b>2.</b><span>Kiracı, kiralanan konutu özenle kullanmayı ve teslim aldığı hâliyle iade etmeyi kabul eder.</span></div>
       <div class="rule"><b>3.</b><span>Erken çıkış halinde kalan günlere ait kira bedelinin iadesi talep edilemez.</span></div>
       <div class="rule"><b>4.</b><span>Konuta verilen hasar kiracı tarafından tazmin edilecektir.</span></div>
-      <div class="rule"><b>5.</b><span>Kira bedeli, sözleşme imzalanırken peşin ödenecektir.</span></div>
+      <div class="rule"><b>5.</b><span>Kira bedeli sözleşme imzalanırken peşin ödenecektir.</span></div>
     </div>
     <div>
       <div class="rule"><b>6.</b><span>Sözleşmede belirtilenden fazla kişi konaklatılamaz.</span></div>
@@ -985,8 +986,10 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
       <div class="rule"><b>10.</b><span>Uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
     </div>
   </div>
+
   <div class="section-title">4. NOT</div>
   <div class="note">${t.not||'—'}</div>
+
   <div class="signatures">
     <div>
       <div class="sig-title">KİRAYA VEREN</div>
@@ -1002,7 +1005,6 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   <div class="footer">
     <div>📍 Hafiziye Mah. Telli Sok. No:11/A İpekyolu / VAN</div>
     <div>☎ +90 506 150 83 00</div>
-  </div>
   </div>
 </div>
 </body>
