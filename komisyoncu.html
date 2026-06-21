@@ -601,7 +601,9 @@ function baslatPortal() {
     sel.appendChild(opt);
   });
 
-  const bugun = new Date().toISOString().slice(0,10);
+  const _now = new Date();
+  const _pad = n => String(n).padStart(2,'0');
+  const bugun = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}`;
   document.getElementById('f_giris').min = bugun;
   document.getElementById('f_giris').value = bugun;
 }
@@ -619,16 +621,17 @@ function renderTakvim() {
   const gunler = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
   document.getElementById('takvimAyLabel').textContent = `${aylar[takvimAy]} ${takvimYil}`;
 
-  const today = new Date().toISOString().slice(0,10);
+  const pad = n => String(n).padStart(2,'0');
+  const now = new Date();
+  const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const ilkGun = new Date(takvimYil, takvimAy, 1);
   const sonGun = new Date(takvimYil, takvimAy+1, 0).getDate();
 
-  // Gün dizisi oluştur — sadece bugün ve sonrası
   const gunList = [];
   for(let d=1; d<=sonGun; d++) {
     const dt = new Date(takvimYil, takvimAy, d);
-    const iso = dt.toISOString().slice(0,10);
-    if(iso < today) continue; // geçmiş günleri atla
+    const iso = `${takvimYil}-${pad(takvimAy+1)}-${pad(d)}`;
+    if(iso < today) continue;
     const gunAdi = gunler[(dt.getDay()+6)%7];
     gunList.push({ iso, gun: d, gunAdi });
   }
@@ -713,7 +716,9 @@ window.modalAc = function(odaNo, tarih) {
   secilenOda = odaNo;
   document.getElementById('modalBaslik').textContent = `Oda ${odaNo} — Rezervasyon Talebi`;
   document.getElementById('f_oda').value = odaNo;
-  document.getElementById('f_giris').value = tarih || new Date().toISOString().slice(0,10);
+  const _n = new Date(), _p = x => String(x).padStart(2,'0');
+  const _bugun = `${_n.getFullYear()}-${_p(_n.getMonth()+1)}-${_p(_n.getDate())}`;
+  document.getElementById('f_giris').value = tarih || _bugun;
   document.getElementById('f_gece').value = 1;
   document.getElementById('f_fiyat').value = '';
   document.getElementById('f_odeme_durum').value = 'odenmedi';
@@ -741,8 +746,10 @@ window.modalKapat = function() {
 };
 
 function addDays(dateStr, n) {
-  const d = new Date(dateStr); d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d+n);
+  const pad = x => String(x).padStart(2,'0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
 }
 function fmt(n) { return Number(n).toLocaleString('tr-TR'); }
 function formatTarih(iso) {
