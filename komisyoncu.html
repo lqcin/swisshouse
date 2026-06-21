@@ -336,7 +336,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -528,10 +528,11 @@ const KOMISYONCULAR = {
   'pune':   { ad: 'pune iran',     sifre: 'pune2026'   },
 };
 
-let aktifKom = null; // { key, ad }
-let _R = [];  // rezervasyonlar
-let _O = {};  // oda durumları
-let _beniimTalepler = []; // komisyoncunun kendi talepleri
+let aktifKom = null;
+let _R = [];   // rezervasyonlar
+let _O = {};   // oda durumları
+let _G = [];   // gelirler (check-in yapılmış konaklamalar)
+let _beniimTalepler = [];
 let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
 
@@ -558,12 +559,11 @@ window.girisYap = function() {
 
 // ── PORTAL BAŞLATMA ──
 function baslatPortal() {
-  // Oda durumlarını yükle
-  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ getDoc, doc }) => {
-    getDoc(doc(db,'meta','odalar')).then(snap => {
-      if(snap.exists()) _O = snap.data();
-      renderTakvim();
-    });
+  // Oda durumlarını CANLI dinle (meta/odalar belgesi)
+  onSnapshot(doc(db,'meta','odalar'), snap => {
+    if(snap.exists()) _O = snap.data();
+    else _O = {};
+    renderTakvim();
   });
 
   // Rezervasyonları CANLI dinle
@@ -572,8 +572,13 @@ function baslatPortal() {
     renderTakvim();
   });
 
-  // Kendi taleplerimi CANLI dinle — orderBy kaldırıldı (Firestore bileşik index gerektiriyor)
-  // İstemci tarafında sıralıyoruz
+  // Gelirler (check-in yapılmış konaklamalar) CANLI dinle
+  onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), snap => {
+    _G = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderTakvim();
+  });
+
+  // Kendi taleplerimi CANLI dinle
   onSnapshot(
     query(collection(db,'rezervasyon_talepleri'),
       where('komisyoncu','==', aktifKom.key)),
@@ -660,20 +665,28 @@ function renderTakvim() {
         r.durum !== 'iptal'
       );
 
-      // Fiili doluluk
-      const fiiliDolu = _O['oda'+odaNo]?.durum === 'dolu' &&
-        _O['oda'+odaNo]?.giris <= iso && _O['oda'+odaNo]?.cikis > iso;
-      const bugunDolu = _O['oda'+odaNo]?.durum === 'dolu' && isToday;
+      // Gelir (check-in yapılmış konaklama) var mı?
+      const gelir = _G.find(g =>
+        Number(g.odaNo) === odaNo &&
+        (g.giris||'') <= iso &&
+        (g.cikis||'') > iso
+      );
+
+      // Oda meta durumu
+      const odaMeta = _O['oda'+odaNo] || {durum:'bos'};
+      const fiiliDolu = odaMeta.durum === 'dolu' && odaMeta.giris && odaMeta.giris <= iso && odaMeta.cikis > iso;
+      const bugunDolu = odaMeta.durum === 'dolu' && isToday;
 
       let cls, onclick = '';
       if(beniimTalep) {
-        // Benim onaylanan rezervasyonum — altın tonda göster, tıklanabilir değil
         cls = 't-benim';
-      } else if(rev || fiiliDolu || bugunDolu) {
-        cls = rev ? 't-rezerve' : 't-dolu';
-      } else if(_O['oda'+odaNo]?.durum === 'temizlik') {
+      } else if(gelir || fiiliDolu || bugunDolu) {
+        cls = 't-dolu';
+      } else if(rev) {
+        cls = 't-rezerve';
+      } else if(odaMeta.durum === 'temizlik') {
         cls = 't-temizlik';
-      } else if(_O['oda'+odaNo]?.durum === 'arizali') {
+      } else if(odaMeta.durum === 'arizali') {
         cls = 't-arizali';
       } else if(isToday) {
         cls = 't-bugun';
