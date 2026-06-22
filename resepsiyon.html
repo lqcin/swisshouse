@@ -3653,7 +3653,7 @@ window.saveRezervasyon = async function(mod = '') {
   const refakatciler = getRefakatciler('revRefakatciListesi');
   const kismiTutar = odemeDurum === 'kismi' ? (Number(document.getElementById('rev_kismi_tutar')?.value)||0) : null;
 
-  await addDoc(collection(db,'rezervasyonlar'),{
+  const revRef = await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:ad,tel,
     yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
@@ -3661,6 +3661,7 @@ window.saveRezervasyon = async function(mod = '') {
     aracirez:araci, araciAd: araci ? ad : (komisyoncuAdi || null),
     refakatciler,
     dt: document.getElementById('rev_dt')?.value || '',
+    kaynakTalepId: window._onaylananTalepId || null,
     kayitTarih:now
   });
 
@@ -4961,6 +4962,50 @@ window.revDuzenleKaydet = async function() {
     kismiKalan: kismiTutarVal!=null ? Math.max(0, kismiToplamBaz - kismiTutarVal) : null,
     guncelleme: nowISO()
   });
+
+  // Eğer bu rezervasyon komisyoncu kaynağından geldiyse, değişikliği talep kaydına not olarak ekle
+  try {
+    const kaynakTalepId = duzenlenenRev?.kaynakTalepId;
+    let eslesen = null;
+
+    if(kaynakTalepId) {
+      // Direkt ID ile bul — en güvenilir yöntem
+      const talepSnap = await getDocs(
+        query(collection(db,'rezervasyon_talepleri'), where('__name__','==', kaynakTalepId))
+      );
+      if(!talepSnap.empty) eslesen = talepSnap.docs[0];
+    } else {
+      // Eski rezervasyonlar için fallback: misafir adı + kaynak ile eşleştir
+      const kaynakTalepSorgu = await getDocs(
+        query(collection(db,'rezervasyon_talepleri'),
+          where('durum','==','onaylandi'),
+          where('kaynak','==','komisyoncu')
+        )
+      );
+      eslesen = kaynakTalepSorgu.docs.find(d => {
+        const t = d.data();
+        return t.misafir === (duzenlenenRev?.misafir||ad) &&
+               Number(t.odaNo) === Number(duzenlenenRev?.odaNo||odaNo);
+      }) || null;
+    }
+
+    if(eslesen) {
+      const eskiNot = eslesen.data().not || '';
+      const degisimZamani = new Date().toLocaleString('tr-TR');
+      const odaDegisti = duzenlenenRev && Number(duzenlenenRev.odaNo) !== Number(odaNo);
+      const degisimOzeti = [
+        `[Resepsiyon düzenlemesi — ${degisimZamani}]`,
+        odaDegisti ? `Oda: ${duzenlenenRev.odaNo} → ${odaNo}` : null,
+        duzenlenenRev?.giris !== giris ? `Giriş: ${duzenlenenRev.giris} → ${giris}` : null,
+        duzenlenenRev?.cikis !== cikis ? `Çıkış: ${duzenlenenRev.cikis} → ${cikis}` : null,
+        duzenlenenRev?.fiyat !== fiyat ? `Fiyat: ${fmt(duzenlenenRev.fiyat)} → ${fmt(fiyat)} ₺` : null,
+      ].filter(Boolean).join(' | ');
+      await updateDoc(doc(db,'rezervasyon_talepleri', eslesen.id), {
+        not: eskiNot ? eskiNot + '\n' + degisimOzeti : degisimOzeti,
+        sonDegisim: nowISO()
+      });
+    }
+  } catch(e) { /* Talep bulunamazsa sessizce geç */ }
 
   closeModal('revDuzenleModal');
   const odaDegisti = duzenlenenRev && Number(duzenlenenRev.odaNo) !== Number(odaNo);
