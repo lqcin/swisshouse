@@ -3793,6 +3793,9 @@ window.saveNoShow = async function(tip) {
     });
   }
 
+  // Bağlı komisyoncu talebini güncelle
+  await talepIptalGuncelle(rev, 'noshow', 'No-show olarak işaretlendi');
+
   await logAktivite('no_show', `${rev?.misafir||'?'} · Oda ${odaNo} · ${tip==='ucret'?fiyat.toLocaleString('tr-TR')+' ₺ ücret kesildi':'ücretsiz iptal'}`, odaNo);
   closeModal('noShowModal');
   toast(`No-show işlendi${tip==='ucret'?' — '+Number(fiyat).toLocaleString('tr-TR')+' ₺ gelir kaydedildi':''}`, 'success');
@@ -3800,10 +3803,46 @@ window.saveNoShow = async function(tip) {
 
 window.iptalRezervasyon = async function(id) {
   if(!confirm('Rezervasyon iptal edilsin mi?')) return;
+  const rev = window._R.find(r => r.id === id);
   await deleteDoc(doc(db,'rezervasyonlar',id));
+  // Bağlı komisyoncu talebini güncelle
+  await talepIptalGuncelle(rev, 'iptal', 'Rezervasyon iptal edildi');
   await logAktivite('rezervasyon_iptal', `Rezervasyon iptal edildi (ID: ${id})`);
   toast('Rezervasyon iptal edildi','success');
 };
+
+// Bağlı komisyoncu talebini bul ve durumunu güncelle
+async function talepIptalGuncelle(rev, yeniDurum, not) {
+  if(!rev) return;
+  try {
+    // Önce kaynakTalepId ile direkt bul
+    if(rev.kaynakTalepId) {
+      await updateDoc(doc(db,'rezervasyon_talepleri', rev.kaynakTalepId), {
+        durum: yeniDurum,
+        iptalNot: not,
+        iptalTarih: nowISO()
+      });
+      return;
+    }
+    // Fallback: misafir + oda ile eşleştir
+    const snap = await getDocs(query(
+      collection(db,'rezervasyon_talepleri'),
+      where('kaynak','==','komisyoncu'),
+      where('durum','==','onaylandi')
+    ));
+    const eslesen = snap.docs.find(d => {
+      const t = d.data();
+      return t.misafir === rev.misafir && Number(t.odaNo) === Number(rev.odaNo);
+    });
+    if(eslesen) {
+      await updateDoc(doc(db,'rezervasyon_talepleri', eslesen.id), {
+        durum: yeniDurum,
+        iptalNot: not,
+        iptalTarih: nowISO()
+      });
+    }
+  } catch(e) { console.warn('Talep güncelleme hatası:', e); }
+}
 
 // ── MASRAF LİSTESİ ──
 window.renderMasraflar = function() {
