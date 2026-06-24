@@ -734,7 +734,19 @@ function renderTakvim() {
       } else if(rev) {
         cls = 't-rezerve';
       } else if(odaMeta.durum === 'temizlik') {
-        cls = 't-temizlik';
+        // Temizlik: sadece bugün saat 12:00'a kadar engeller
+        // Bugünden sonraki günler ve bugün 12:00 sonrası tıklanabilir
+        const simdi = new Date();
+        const bugunOgle = isToday && simdi.getHours() < 12;
+        if(bugunOgle) {
+          cls = 't-temizlik'; // engelle
+        } else if(isToday) {
+          cls = 't-bugun'; // 12 sonrası bugün tıklanabilir
+          onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
+        } else {
+          cls = 't-bos'; // gelecek günler tıklanabilir
+          onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
+        }
       } else if(odaMeta.durum === 'arizali') {
         cls = 't-arizali';
       } else if(isToday) {
