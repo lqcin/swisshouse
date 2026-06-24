@@ -641,14 +641,24 @@ window.takvimAyDegistir = function(delta) {
 function renderTakvim() {
   const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const gunler = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
-  document.getElementById('takvimAyLabel').textContent = `${aylar[takvimAy]} ${takvimYil}`;
 
   const pad = n => String(n).padStart(2,'0');
   const now = new Date();
   const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const ilkGun = new Date(takvimYil, takvimAy, 1);
+
+  // Eğer gösterilecek ay tamamen geçmişte kaldıysa otomatik ilerle
+  const sonGunBu = new Date(takvimYil, takvimAy+1, 0);
+  const sonGunIso = `${takvimYil}-${pad(takvimAy+1)}-${pad(sonGunBu.getDate())}`;
+  if(sonGunIso < today) {
+    takvimAy = now.getMonth();
+    takvimYil = now.getFullYear();
+  }
+
+  document.getElementById('takvimAyLabel').textContent = `${aylar[takvimAy]} ${takvimYil}`;
+
   const sonGun = new Date(takvimYil, takvimAy+1, 0).getDate();
 
+  // Bu ayın bugünden sonraki günlerini topla
   const gunList = [];
   for(let d=1; d<=sonGun; d++) {
     const dt = new Date(takvimYil, takvimAy, d);
@@ -658,10 +668,24 @@ function renderTakvim() {
     gunList.push({ iso, gun: d, gunAdi });
   }
 
+  // Eğer bu ayda 14 günden az kaldıysa, bir sonraki ayın günlerini de ekle
+  if(gunList.length < 14) {
+    let sonraki = { ay: takvimAy + 1, yil: takvimYil };
+    if(sonraki.ay > 11) { sonraki.ay = 0; sonraki.yil++; }
+    const sonrakiSonGun = new Date(sonraki.yil, sonraki.ay+1, 0).getDate();
+    for(let d=1; d<=sonrakiSonGun && gunList.length < 30; d++) {
+      const dt = new Date(sonraki.yil, sonraki.ay, d);
+      const iso = `${sonraki.yil}-${pad(sonraki.ay+1)}-${pad(d)}`;
+      const gunAdi = gunler[(dt.getDay()+6)%7];
+      gunList.push({ iso, gun: d, gunAdi, sonrakiAy: true });
+    }
+  }
+
   let html = `<thead><tr><th style="text-align:left;padding:6px 10px">${dil === 'fa' ? 'اتاق' : 'ODA'}</th>`;
   gunList.forEach(g => {
     const isToday = g.iso === today;
-    html += `<th class="${isToday?'bugun-col':''}">${g.gunAdi}<br>${g.gun}</th>`;
+    const ayKisa = g.sonrakiAy ? `<span style="font-size:8px;color:var(--gold2)">${aylar[parseInt(g.iso.slice(5,7))-1].slice(0,3)}</span><br>` : '';
+    html += `<th class="${isToday?'bugun-col':''}" ${g.sonrakiAy?'style="opacity:.7"':''}>${ayKisa}${g.gunAdi}<br>${g.gun}</th>`;
   });
   html += '</tr></thead><tbody>';
 
