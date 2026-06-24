@@ -3454,9 +3454,39 @@ window.printFolio = function() {
 // ── DURUM MODAL ──
 window.openDurumModal = function(no) {
   const o = window._O['oda'+no]||{durum:'bos'};
+  const dolu = o.durum === 'dolu';
   document.getElementById('durumTitle').textContent = `Oda ${no} — Durum`;
   document.getElementById('durum_oda_no').value = no;
-  document.getElementById('durum_select').value = o.durum === 'dolu' ? 'bos' : o.durum;
+
+  // Dolu odada sadece Arızalı seçeneği aktif
+  const sel = document.getElementById('durum_select');
+  sel.innerHTML = dolu
+    ? `<option value="arizali">🔧 Arızalı / Bakımda</option>
+       <option value="bos" disabled style="color:#ccc">🚫 Boş (önce checkout yapın)</option>
+       <option value="temizlik" disabled style="color:#ccc">🚫 Temizlikte (önce checkout yapın)</option>`
+    : `<option value="bos">Boş</option>
+       <option value="temizlik">Temizlikte</option>
+       <option value="arizali">🔧 Arızalı / Bakımda</option>`;
+
+  sel.value = dolu ? 'arizali' : (o.durum === 'dolu' ? 'bos' : o.durum);
+  document.getElementById('durum_not_wrap').style.display = dolu ? 'block' : 'none';
+
+  if(dolu) {
+    // Uyarı mesajı göster
+    let uyari = document.getElementById('durum_dolu_uyari');
+    if(!uyari) {
+      uyari = document.createElement('div');
+      uyari.id = 'durum_dolu_uyari';
+      uyari.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px 14px;font-size:12px;margin-bottom:12px';
+      sel.parentElement.insertBefore(uyari, sel);
+    }
+    uyari.textContent = '⚠ Bu oda şu an dolu. Checkout yapmadan sadece Arızalı durumuna alınabilir.';
+    uyari.style.display = 'block';
+  } else {
+    const uyari = document.getElementById('durum_dolu_uyari');
+    if(uyari) uyari.style.display = 'none';
+  }
+
   openModal('durumModal');
 };
 
@@ -3465,6 +3495,13 @@ window.saveDurum = async function() {
   const durum = document.getElementById('durum_select').value;
   const arizaNot = document.getElementById('durum_not')?.value.trim() || '';
   const mevcutOda = window._O['oda'+no] || {};
+
+  // Dolu odaya boş/temizlik yazılamaz — önce checkout gerekir
+  if(mevcutOda.durum === 'dolu' && (durum === 'bos' || durum === 'temizlik')) {
+    toast('Dolu odada önce checkout yapılmalı.', 'error');
+    return;
+  }
+
   if(durum==='arizali' && mevcutOda.durum==='dolu' && mevcutOda.misafir) {
     if(!confirm(`Oda ${no}'da şu an "${mevcutOda.misafir}" konaklıyor. Arızalı/Bakımda işaretlemek misafir bilgilerini silecek. Önce check-out yapmanız önerilir. Devam edilsin mi?`)) return;
   }
