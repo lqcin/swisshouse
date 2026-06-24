@@ -700,7 +700,7 @@ function renderTakvim() {
 
       // Kendi onaylanan taleplerinden gelen rezervasyon mu?
       const beniimTalep = _beniimTalepler.find(t =>
-        t.durum === 'onaylandi' &&
+        t.durum === 'onaylandi' &&  // sadece aktif onaylananlar, iptal/noshow değil
         Number(t.odaNo) === odaNo &&
         (t.giris||'') <= iso &&
         (t.cikis||'') > iso
@@ -924,9 +924,17 @@ function renderTalepler(talepler) {
   const durumMap = {
     bekliyor: m.durum_bekliyor,
     onaylandi: m.durum_onaylandi,
-    reddedildi: m.durum_reddedildi
+    reddedildi: m.durum_reddedildi,
+    iptal: '❌ İptal',
+    noshow: '🚫 No-show'
   };
-  const durumKls = { bekliyor:'durum-bekliyor', onaylandi:'durum-onaylandi', reddedildi:'durum-reddedildi' };
+  const durumKls = {
+    bekliyor:'durum-bekliyor',
+    onaylandi:'durum-onaylandi',
+    reddedildi:'durum-reddedildi',
+    iptal:'durum-reddedildi',
+    noshow:'durum-reddedildi'
+  };
   const tbody = document.getElementById('taleplerBody');
   if(!talepler.length) {
     tbody.innerHTML = `<tr><td colspan="9" class="bos-mesaj">${m.bos_mesaj}</td></tr>`;
@@ -941,7 +949,11 @@ function renderTalepler(talepler) {
       <td>${(t.yetiskin||1)+(t.cocuk||0)}</td>
       <td>${t.sozlesmeFiyat ? fmt(t.sozlesmeFiyat)+' ₺' : (t.fiyat ? fmt(t.fiyat)+' ₺' : '—')}</td>
       <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||t.durum}</span></td>
-      <td style="font-size:10px;color:var(--muted);max-width:180px;white-space:pre-wrap;word-break:break-word">${(t.not||'—').split('\n').map(l=>l.startsWith('[') ? '<b style="color:var(--gold2)">'+ l +'</b>' : l).join('<br>')}</td>
+      <td style="font-size:10px;color:var(--muted);max-width:180px;white-space:pre-wrap;word-break:break-word">${
+        t.iptalNot
+          ? `<span style="color:var(--red);font-weight:600">${t.iptalNot}</span>${t.not ? '<br>' + t.not : ''}`
+          : (t.not||'—').split('\n').map(l=>l.startsWith('[') ? '<b style="color:var(--gold2)">'+ l +'</b>' : l).join('<br>')
+      }</td>
       <td>${t.durum==='onaylandi' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="sozlesmeGoster('${t.id}')">${m.sozlesme}</button>` : '—'}</td>
     </tr>
   `).join('');
