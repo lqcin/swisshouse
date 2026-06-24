@@ -161,10 +161,14 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
     <div class="takvim-wrap">
       <div class="takvim-header">
         <div class="takvim-baslik">Oda <em style="color:var(--gold2);font-style:italic">Takvimi</em></div>
-        <div class="takvim-nav">
-          <button onclick="takvimAyDegistir(-1)">‹</button>
-          <span id="takvimAyLabel" style="font-size:13px;font-weight:600;color:var(--dark);min-width:130px;text-align:center"></span>
-          <button onclick="takvimAyDegistir(1)">›</button>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="sonGuncelleme" style="font-size:10px;color:var(--muted)"></span>
+          <button onclick="takvimVerisiYukle()" style="padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--cream);cursor:pointer;color:var(--dark)" title="Takvimi yenile">🔄 Yenile</button>
+          <div class="takvim-nav">
+            <button onclick="takvimAyDegistir(-1)">‹</button>
+            <span id="takvimAyLabel" style="font-size:13px;font-weight:600;color:var(--dark);min-width:130px;text-align:center"></span>
+            <button onclick="takvimAyDegistir(1)">›</button>
+          </div>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -559,27 +563,44 @@ window.girisYap = function() {
 };
 
 // ── PORTAL BAŞLATMA ──
+let _yenilemeInterval = null;
+
+async function takvimVerisiYukle() {
+  try {
+    const [odaSnap, revSnap, gelirSnap] = await Promise.all([
+      getDoc(doc(db,'meta','odalar')),
+      getDocs(query(collection(db,'rezervasyonlar'), orderBy('giris','desc'))),
+      getDocs(query(collection(db,'gelirler'), orderBy('tarih','desc')))
+    ]);
+    if(odaSnap.exists()) _O = odaSnap.data(); else _O = {};
+    _R = revSnap.docs.map(d => ({id:d.id,...d.data()}));
+    _G = gelirSnap.docs.map(d => ({id:d.id,...d.data()}));
+    renderTakvim();
+    // Son güncelleme zamanını göster
+    const el = document.getElementById('sonGuncelleme');
+    if(el) {
+      const now = new Date();
+      el.textContent = `Son güncelleme: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    }
+  } catch(e) { console.warn('Takvim yükleme hatası:', e); }
+}
+
 function baslatPortal() {
-  // Oda durumlarını CANLI dinle (meta/odalar belgesi)
-  onSnapshot(doc(db,'meta','odalar'), snap => {
-    if(snap.exists()) _O = snap.data();
-    else _O = {};
-    renderTakvim();
+  // İlk yükleme + 60sn periyodik yenileme
+  takvimVerisiYukle();
+  _yenilemeInterval = setInterval(takvimVerisiYukle, 60000);
+
+  // Sayfa arka plana geçince durdur, tekrar gelince devam et
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) {
+      clearInterval(_yenilemeInterval);
+    } else {
+      takvimVerisiYukle();
+      _yenilemeInterval = setInterval(takvimVerisiYukle, 60000);
+    }
   });
 
-  // Rezervasyonları CANLI dinle
-  onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','desc')), snap => {
-    _R = snap.docs.map(d => ({id:d.id,...d.data()}));
-    renderTakvim();
-  });
-
-  // Gelirler (check-in yapılmış konaklamalar) CANLI dinle
-  onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), snap => {
-    _G = snap.docs.map(d => ({id:d.id,...d.data()}));
-    renderTakvim();
-  });
-
-  // Kendi taleplerimi CANLI dinle
+  // Kendi taleplerimi CANLI dinle (onSnapshot kalır — sadece kendi verimiz, az okuma)
   onSnapshot(
     query(collection(db,'rezervasyon_talepleri'),
       where('komisyoncu','==', aktifKom.key)),
