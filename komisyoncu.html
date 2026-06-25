@@ -964,7 +964,9 @@ function renderTalepler(talepler) {
       <td style="font-size:10px;color:var(--muted);max-width:180px;white-space:pre-wrap;word-break:break-word">${
         t.iptalNot
           ? `<span style="color:var(--red);font-weight:600">${t.iptalNot}</span>${t.not ? '<br>' + t.not : ''}`
-          : (t.not||'—').split('\n').map(l=>l.startsWith('[') ? '<b style="color:var(--gold2)">'+ l +'</b>' : l).join('<br>')
+          : t.degisiklikNot
+            ? `<span style="color:#d97706;font-weight:600">⚠ ${t.degisiklikNot}</span>${t.degisiklikTarih ? '<br><span style="font-size:9px">'+ (t.degisiklikTarih||'').slice(0,16).replace('T',' ') +'</span>' : ''}${t.not ? '<br>' + t.not : ''}`
+            : (t.not||'—').split('\n').map(l=>l.startsWith('[') ? '<b style="color:var(--gold2)">'+ l +'</b>' : l).join('<br>')
       }</td>
       <td>${t.durum==='onaylandi' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="sozlesmeGoster('${t.id}')">${m.sozlesme}</button>` : '—'}</td>
     </tr>
