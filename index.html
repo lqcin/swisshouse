@@ -279,3 +279,29 @@ if('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
+<script type="module">
+// Redirect parametresi desteği — veri.html gibi sayfalardan gelen yönlendirmeler
+// Obfuscated yonlendir() fonksiyonunu override etmeden, onAuthStateChanged'dan ÖNCE
+// redirect parametresi varsa giriş sonrası oraya gönder
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+const _redirectApp = getApps().length ? getApps()[0] : null;
+if(_redirectApp) {
+  const _redirectAuth = getAuth(_redirectApp);
+  const _redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  if(_redirectParam) {
+    // Oturum zaten açıksa direkt yönlendir
+    onAuthStateChanged(_redirectAuth, user => {
+      if(user) window.location.href = _redirectParam;
+    });
+    // Login formunun submit'ini dinle — giriş başarılı olunca redirect'e git
+    const _origGiris = window.giris;
+    window.giris = async function() {
+      if(_origGiris) await _origGiris();
+      // Giriş başarılıysa onAuthStateChanged yakalar ve yönlendirir
+    };
+  }
+}
+</script>
