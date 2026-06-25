@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swiss House — Veri Yönetimi</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#C8102E; --cream:#f7f8fa; --parchment:#f0f2f5;
+  --border:#e2e6eb; --gold:#9a7c3f; --gold2:#c4a55a;
+  --dark:#1a1d23; --text:#1a1d23; --muted:#6b7280; --white:#fff;
+  --green:#16a34a; --green-bg:#f0fdf4;
+  --red:#dc2626; --red-bg:#fef2f2;
+  --shadow:0 1px 8px rgba(0,0,0,.07);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.11);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;font-size:13px;min-height:100vh;}
+.header-strip{position:fixed;top:0;left:0;right:0;height:4px;background:var(--primary);z-index:200;}
+
+/* PIN EKRANI */
+#pinScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.pin-card{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:340px;width:100%;padding:36px 28px;text-align:center;}
+.pin-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:4px;}
+.pin-logo em{color:var(--primary);font-style:italic;}
+.pin-sub{font-size:11px;color:var(--muted);margin-bottom:24px;letter-spacing:.3px;}
+.pin-input{width:100%;border:1px solid var(--border);padding:12px;font-family:'Jost',sans-serif;font-size:20px;text-align:center;letter-spacing:8px;background:var(--cream);outline:none;margin-bottom:12px;}
+.pin-input:focus{border-color:var(--gold2);}
+.pin-btn{width:100%;padding:12px;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:var(--primary);color:#fff;border:none;cursor:pointer;}
+.pin-err{font-size:12px;color:var(--red);margin-top:8px;min-height:18px;}
+
+/* ANA PANEL */
+#mainPanel{display:none;}
+.top-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:4px;z-index:100;}
+.top-brand{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--dark);}
+.top-brand em{color:var(--primary);font-style:italic;}
+.top-right{display:flex;gap:12px;align-items:center;}
+.top-right a{font-size:11px;color:var(--muted);text-decoration:none;}
+.top-right a:hover{color:var(--dark);}
+
+/* SEKMELER */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--white);padding:0 24px;}
+.tab{padding:12px 18px;font-size:12px;font-weight:600;letter-spacing:.5px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .2s;}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.tab:hover{color:var(--dark);}
+
+.content{padding:20px 24px;max-width:1400px;margin:0 auto;}
+
+/* FİLTRE SATIRI */
+.filter-bar{background:var(--white);border:1px solid var(--border);padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-bar input,.filter-bar select{border:1px solid var(--border);padding:7px 10px;font-family:'Jost',sans-serif;font-size:12px;background:var(--cream);outline:none;}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--gold2);}
+.filter-bar label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.filter-group{display:flex;align-items:center;gap:6px;}
+.btn-sm{padding:7px 14px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;border:none;cursor:pointer;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--dark);color:var(--dark);}
+.btn-danger{background:var(--red);color:#fff;}
+
+/* ÖZET KUTU */
+.ozet-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.ozet-mini{background:var(--white);border:1px solid var(--border);padding:10px 16px;min-width:140px;}
+.ozet-mini-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.ozet-mini-val{font-size:18px;font-weight:700;color:var(--dark);}
+.ozet-mini-val.gold{color:var(--gold2);}
+.ozet-mini-val.green{color:var(--green);}
+.ozet-mini-val.red{color:var(--red);}
+
+/* TABLO */
+.tablo-wrap{background:var(--white);border:1px solid var(--border);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:8px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--parchment);white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+tr:hover td{background:#fafafa;}
+.badge{padding:2px 7px;font-size:10px;font-weight:600;letter-spacing:.3px;}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-blue{background:#eff6ff;color:#1d4ed8;}
+.badge-yellow{background:#fefce8;color:#854d0e;}
+.badge-gray{background:#f3f4f6;color:#374151;}
+.bos-mesaj{text-align:center;padding:40px;color:var(--muted);font-style:italic;}
+.yukluyor{text-align:center;padding:30px;color:var(--muted);}
+
+/* DÜZENLEME MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);}
+.modal-overlay.aktif{display:flex;}
+.modal{background:var(--white);border:1px solid var(--border);width:100%;max-width:560px;box-shadow:var(--shadow-lg);max-height:88vh;overflow-y:auto;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--parchment);}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;}
+.modal-body{padding:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);padding:9px 11px;font-family:'Jost',sans-serif;font-size:13px;background:var(--cream);outline:none;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold2);background:var(--white);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:10px 16px;font-size:12px;font-weight:600;color:#fff;max-width:300px;box-shadow:var(--shadow-lg);}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+.toast.info{background:var(--dark);}
+</style>
+</head>
+<body>
+<div class="header-strip"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- PIN EKRANI -->
+<div id="pinScreen">
+  <div class="pin-card">
+    <div class="pin-logo">SWISS <em>HOUSE</em></div>
+    <div class="pin-sub">Veri Yönetim Paneli — Yönetici Girişi</div>
+    <input class="pin-input" type="password" id="pinInput" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')pinGiris()">
+    <button class="pin-btn" onclick="pinGiris()">GİRİŞ</button>
+    <div class="pin-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- ANA PANEL -->
+<div id="mainPanel">
+  <div class="top-bar">
+    <div class="top-brand">SWISS <em>HOUSE</em> <span style="font-size:11px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— Veri Yönetimi</span></div>
+    <div class="top-right">
+      <a href="resepsiyon.html">← Resepsiyon</a>
+      <a href="#" onclick="location.reload()">🔒 Kilitle</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="sekmeAc('rezervasyonlar',this)">📋 Rezervasyonlar</div>
+    <div class="tab" onclick="sekmeAc('gelirler',this)">💰 Gelirler</div>
+    <div class="tab" onclick="sekmeAc('masraflar',this)">💳 Masraflar</div>
+    <div class="tab" onclick="sekmeAc('talepler',this)">📨 Talepler</div>
+  </div>
+
+  <div class="content">
+    <!-- FİLTRELER -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Oda</label>
+        <select id="f_oda" onchange="uygula()">
+          <option value="">Tümü</option>
+          <option>101</option><option>102</option><option>103</option>
+          <option>201</option><option>202</option><option>203</option>
+          <option>301</option><option>302</option><option>303</option>
+          <option>401</option><option>402</option><option>403</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Başlangıç</label>
+        <input type="date" id="f_bas" onchange="uygula()">
+      </div>
+      <div class="filter-group">
+        <label>Bitiş</label>
+        <input type="date" id="f_bit" onchange="uygula()">
+      </div>
+      <div class="filter-group">
+        <label>Ara</label>
+        <input type="text" id="f_ara" placeholder="Misafir, TC, not..." oninput="uygula()" style="min-width:180px">
+      </div>
+      <div class="filter-group">
+        <label>Durum</label>
+        <select id="f_durum" onchange="uygula()">
+          <option value="">Tümü</option>
+          <option value="bekliyor">Bekliyor</option>
+          <option value="aktif">Aktif</option>
+          <option value="tamamlandi">Tamamlandı</option>
+          <option value="iptal">İptal</option>
+          <option value="noshow">No-show</option>
+          <option value="onaylandi">Onaylandı</option>
+          <option value="reddedildi">Reddedildi</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-ghost" onclick="filtreTemizle()">✕ Temizle</button>
+    </div>
+
+    <!-- ÖZET -->
+    <div class="ozet-bar" id="ozetBar"></div>
+
+    <!-- TABLO -->
+    <div class="tablo-wrap">
+      <table id="anaTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"><tr><td class="yukluyor">Yükleniyor...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DÜZENLEME MODAL -->
+<div class="modal-overlay" id="duzenleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="duzenleBaslik">Kaydı Düzenle</div>
+      <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)" onclick="modalKapat()">✕</button>
+    </div>
+    <div class="modal-body" id="duzenleBody"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-ghost" onclick="modalKapat()">Vazgeç</button>
+      <button class="btn-sm btn-danger" id="silBtn" onclick="kaydSil()">🗑 Sil</button>
+      <button class="btn-sm btn-primary" onclick="kaydKaydet()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
+  authDomain:"swiss-hotel-64451.firebaseapp.com",
+  projectId:"swiss-hotel-64451",
+  storageBucket:"swiss-hotel-64451.firebasestorage.app",
+  messagingSenderId:"1051421740248",
+  appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Auth kontrolü
+onAuthStateChanged(auth, user => {
+  if(!user) window.location.href = 'index.html';
+});
+
+// ── PIN ──
+const PIN_HASH = 'a8c42a5a10da46f05265436854dc4e59d412d694214bbe67d22c656e481d97bf';
+window.pinGiris = async function() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if(!pin) return;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hash === PIN_HASH) {
+    document.getElementById('pinScreen').style.display = 'none';
+    document.getElementById('mainPanel').style.display = 'block';
+    sekmeYukle('rezervasyonlar');
+  } else {
+    document.getElementById('pinErr').textContent = 'Hatalı PIN.';
+    document.getElementById('pinInput').value = '';
+  }
+};
+document.getElementById('pinInput').addEventListener('keydown', e => { if(e.key==='Enter') window.pinGiris(); });
+
+// ── VERİ ──
+let aktifSekme = 'rezervasyonlar';
+let tumVeri = [];
+let filtreliVeri = [];
+let duzenleId = null;
+
+const KOLEKSIYON = {
+  rezervasyonlar: { col: 'rezervasyonlar', order: 'kayitTarih' },
+  gelirler:       { col: 'gelirler',        order: 'tarih' },
+  masraflar:      { col: 'masraflar',       order: 'tarih' },
+  talepler:       { col: 'rezervasyon_talepleri', order: 'kayitTarih' }
+};
+
+window.sekmeAc = function(sekme, el) {
+  aktifSekme = sekme;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  filtreTemizle(false);
+  sekmeYukle(sekme);
+};
+
+async function sekmeYukle(sekme) {
+  document.getElementById('tableBody').innerHTML = '<tr><td class="yukluyor" colspan="20">Yükleniyor...</td></tr>';
+  document.getElementById('ozetBar').innerHTML = '';
+  try {
+    const k = KOLEKSIYON[sekme];
+    let q;
+    try { q = query(collection(db, k.col), orderBy(k.order, 'desc')); }
+    catch(e) { q = collection(db, k.col); }
+    const snap = await getDocs(q);
+    tumVeri = snap.docs.map(d => ({_id: d.id, ...d.data()}));
+    uygula();
+  } catch(e) {
+    document.getElementById('tableBody').innerHTML = `<tr><td class="bos-mesaj" colspan="20">Hata: ${e.message}</td></tr>`;
+  }
+}
+
+window.uygula = function() {
+  const oda = document.getElementById('f_oda').value;
+  const bas = document.getElementById('f_bas').value;
+  const bit = document.getElementById('f_bit').value;
+  const ara = document.getElementById('f_ara').value.toLowerCase();
+  const durum = document.getElementById('f_durum').value;
+
+  filtreliVeri = tumVeri.filter(r => {
+    if(oda && String(r.odaNo) !== oda) return false;
+    const tarih = r.giris || r.tarih || r.kayitTarih || '';
+    if(bas && tarih && tarih.slice(0,10) < bas) return false;
+    if(bit && tarih && tarih.slice(0,10) > bit) return false;
+    if(durum && r.durum !== durum) return false;
+    if(ara) {
+      const metin = JSON.stringify(r).toLowerCase();
+      if(!metin.includes(ara)) return false;
+    }
+    return true;
+  });
+
+  renderTablo();
+  renderOzet();
+};
+
+window.filtreTemizle = function(yenile = true) {
+  document.getElementById('f_oda').value = '';
+  document.getElementById('f_bas').value = '';
+  document.getElementById('f_bit').value = '';
+  document.getElementById('f_ara').value = '';
+  document.getElementById('f_durum').value = '';
+  if(yenile) uygula();
+};
+
+// ── TABLO RENDER ──
+const BASLIKLAR = {
+  rezervasyonlar: ['Oda','Misafir','TC/Pasaport','Giriş','Çıkış','Gece','Fiyat','Sözleşme','Durum','Ödeme','Kaynak','Kayıt Tarihi',''],
+  gelirler:       ['Tarih','Oda','Misafir','Tutar','Ödeme Türü','Kaynak','Açıklama','Kayıt Tarihi',''],
+  masraflar:      ['Tarih','Tutar','Kategori','Açıklama','Kayıt Tarihi',''],
+  talepler:       ['Misafir','TC','Telefon','Oda','Giriş','Çıkış','Gece','Fiyat','Kaynak','Durum','Kayıt Tarihi',''],
+};
+
+function fmt(n) { return n ? Number(n).toLocaleString('tr-TR') + ' ₺' : '—'; }
+function fmtTarih(iso) {
+  if(!iso) return '—';
+  const s = iso.slice(0,10);
+  const [y,m,d] = s.split('-');
+  return `${d}.${m}.${y}`;
+}
+function durumBadge(d) {
+  const map = {
+    bekliyor:'badge-yellow', aktif:'badge-blue', tamamlandi:'badge-green',
+    iptal:'badge-red', noshow:'badge-red', onaylandi:'badge-green',
+    reddedildi:'badge-red', odendi:'badge-green', odenmedi:'badge-yellow', kismi:'badge-yellow'
+  };
+  return `<span class="badge ${map[d]||'badge-gray'}">${d||'—'}</span>`;
+}
+
+function renderTablo() {
+  const basliklar = BASLIKLAR[aktifSekme] || [];
+  document.getElementById('tableHead').innerHTML =
+    '<tr>' + basliklar.map(b => `<th>${b}</th>`).join('') + '</tr>';
+
+  if(!filtreliVeri.length) {
+    document.getElementById('tableBody').innerHTML = '<tr><td class="bos-mesaj" colspan="20">Kayıt bulunamadı.</td></tr>';
+    return;
+  }
+
+  document.getElementById('tableBody').innerHTML = filtreliVeri.map(r => {
+    let satirlar = '';
+    if(aktifSekme === 'rezervasyonlar') {
+      satirlar = `
+        <td><b>Oda ${r.odaNo||'—'}</b></td>
+        <td>${r.misafir||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${r.tc||'—'}</td>
+        <td>${fmtTarih(r.giris)}</td>
+        <td>${fmtTarih(r.cikis)}</td>
+        <td>${r.gece||'—'}</td>
+        <td>${fmt(r.fiyat)}</td>
+        <td>${fmt(r.sozlesmeFiyat)}</td>
+        <td>${durumBadge(r.durum)}</td>
+        <td>${durumBadge(r.odemeDurum)}</td>
+        <td style="font-size:11px">${r.kaynak||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
+    } else if(aktifSekme === 'gelirler') {
+      satirlar = `
+        <td>${fmtTarih(r.tarih)}</td>
+        <td>Oda ${r.odaNo||'—'}</td>
+        <td>${r.misafir||'—'}</td>
+        <td><b style="color:var(--green)">${fmt(r.tutar)}</b></td>
+        <td>${r.odemeTuru||'—'}</td>
+        <td style="font-size:11px">${r.kaynak||'—'}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.aciklama||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
+    } else if(aktifSekme === 'masraflar') {
+      satirlar = `
+        <td>${fmtTarih(r.tarih)}</td>
+        <td><b style="color:var(--red)">${fmt(r.tutar)}</b></td>
+        <td>${r.kategori||'—'}</td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.aciklama||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
+    } else if(aktifSekme === 'talepler') {
+      satirlar = `
+        <td><b>${r.misafir||'—'}</b></td>
+        <td style="font-size:11px;color:var(--muted)">${r.tc||'—'}</td>
+        <td style="font-size:11px">${r.tel||'—'}</td>
+        <td>Oda ${r.odaNo||'—'}</td>
+        <td>${fmtTarih(r.giris)}</td>
+        <td>${fmtTarih(r.cikis)}</td>
+        <td>${r.gece||'—'}</td>
+        <td>${fmt(r.sozlesmeFiyat||r.fiyat)}</td>
+        <td style="font-size:11px">${r.kaynak||'—'} ${r.komisyoncuAd?'('+r.komisyoncuAd+')':''}</td>
+        <td>${durumBadge(r.durum)}</td>
+        <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
+    }
+    return `<tr>
+      ${satirlar}
+      <td style="white-space:nowrap">
+        <button class="btn-sm btn-ghost" onclick="duzenleAc('${r._id}')" style="margin-right:4px">✏️</button>
+        <button class="btn-sm btn-danger" onclick="hizliSil('${r._id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ÖZET ──
+function renderOzet() {
+  const bar = document.getElementById('ozetBar');
+  const say = filtreliVeri.length;
+  let html = `<div class="ozet-mini"><div class="ozet-mini-label">Toplam Kayıt</div><div class="ozet-mini-val">${say}</div></div>`;
+
+  if(aktifSekme === 'rezervasyonlar') {
+    const toplamGece = filtreliVeri.reduce((s,r) => s+(Number(r.gece)||0), 0);
+    const toplamGelir = filtreliVeri.reduce((s,r) => s+(Number(r.sozlesmeFiyat||r.fiyat||0)*Number(r.gece||0)), 0);
+    html += `<div class="ozet-mini"><div class="ozet-mini-label">Toplam Gece</div><div class="ozet-mini-val">${toplamGece}</div></div>`;
+    html += `<div class="ozet-mini"><div class="ozet-mini-label">Tahmini Gelir</div><div class="ozet-mini-val gold">${toplamGelir.toLocaleString('tr-TR')} ₺</div></div>`;
+  } else if(aktifSekme === 'gelirler') {
+    const toplam = filtreliVeri.reduce((s,r) => s+(Number(r.tutar)||0), 0);
+    html += `<div class="ozet-mini"><div class="ozet-mini-label">Toplam Gelir</div><div class="ozet-mini-val green">${toplam.toLocaleString('tr-TR')} ₺</div></div>`;
+  } else if(aktifSekme === 'masraflar') {
+    const toplam = filtreliVeri.reduce((s,r) => s+(Number(r.tutar)||0), 0);
+    html += `<div class="ozet-mini"><div class="ozet-mini-label">Toplam Masraf</div><div class="ozet-mini-val red">${toplam.toLocaleString('tr-TR')} ₺</div></div>`;
+  }
+  bar.innerHTML = html;
+}
+
+// ── DÜZENLEME ──
+window.duzenleAc = function(id) {
+  const r = tumVeri.find(x => x._id === id);
+  if(!r) return;
+  duzenleId = id;
+  document.getElementById('duzenleBaslik').textContent = `Kayıt Düzenle — ${aktifSekme} / ${id.slice(-6)}`;
+
+  // Tüm alanları dinamik form olarak oluştur
+  const body = document.getElementById('duzenleBody');
+  const alanlar = Object.entries(r).filter(([k]) => k !== '_id');
+  body.innerHTML = alanlar.map(([k, v]) => {
+    if(typeof v === 'object' && v !== null) return ''; // array/object atla
+    const tip = k.includes('tarih') || k === 'giris' || k === 'cikis' ? 'date' :
+                k.includes('tutar') || k === 'fiyat' || k === 'sozlesmeFiyat' || k === 'gece' ? 'number' : 'text';
+    const val = v === null || v === undefined ? '' : String(v);
+    return `<div class="form-group">
+      <label>${k}</label>
+      <input type="${tip}" id="alan_${k}" value="${val.replace(/"/g,'&quot;')}" style="font-size:12px">
+    </div>`;
+  }).join('');
+
+  document.getElementById('duzenleModal').classList.add('aktif');
+};
+
+window.kaydKaydet = async function() {
+  if(!duzenleId) return;
+  const r = tumVeri.find(x => x._id === duzenleId);
+  if(!r) return;
+  const guncelleme = {};
+  Object.entries(r).forEach(([k, v]) => {
+    if(k === '_id' || typeof v === 'object') return;
+    const el = document.getElementById('alan_' + k);
+    if(!el) return;
+    let yeniVal = el.value;
+    if(typeof v === 'number') yeniVal = Number(yeniVal) || 0;
+    else if(yeniVal === 'null' || yeniVal === '') yeniVal = null;
+    guncelleme[k] = yeniVal;
+  });
+  try {
+    const kolAd = KOLEKSIYON[aktifSekme].col;
+    await updateDoc(doc(db, kolAd, duzenleId), guncelleme);
+    toast('Kayıt güncellendi ✓', 'success');
+    modalKapat();
+    await sekmeYukle(aktifSekme);
+  } catch(e) { toast('Hata: ' + e.message, 'error'); }
+};
+
+window.kaydSil = async function() {
+  if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
+  try {
+    await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
+    toast('Kayıt silindi', 'success');
+    modalKapat();
+    await sekmeYukle(aktifSekme);
+  } catch(e) { toast('Hata: ' + e.message, 'error'); }
+};
+
+window.hizliSil = async function(id) {
+  if(!confirm('Bu kayıt silinsin mi?')) return;
+  try {
+    await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
+    toast('Silindi', 'success');
+    await sekmeYukle(aktifSekme);
+  } catch(e) { toast('Hata: ' + e.message, 'error'); }
+};
+
+window.modalKapat = function() {
+  document.getElementById('duzenleModal').classList.remove('aktif');
+  duzenleId = null;
+};
+
+document.getElementById('duzenleModal').addEventListener('click', e => {
+  if(e.target === document.getElementById('duzenleModal')) modalKapat();
+});
+
+// ── TOAST ──
+function toast(msg, tip = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${tip}`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>
