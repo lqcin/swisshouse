@@ -208,7 +208,7 @@ tr:hover td{background:#fafafa;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -466,6 +466,10 @@ window.kaydKaydet = async function() {
   });
   try {
     const kolAd = KOLEKSIYON[aktifSekme].col;
+    // Rezervasyon güncellemesini komisyoncuya bildir (oda/tarih/fiyat/iptal değişimi)
+    if(aktifSekme === 'rezervasyonlar') {
+      await talepGuncellemeBildir(r, guncelleme);
+    }
     await updateDoc(doc(db, kolAd, duzenleId), guncelleme);
     toast('Kayıt güncellendi ✓', 'success');
     modalKapat();
@@ -476,6 +480,11 @@ window.kaydKaydet = async function() {
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
+    // Rezervasyon silme ise bağlı komisyoncu talebini iptal et
+    if(aktifSekme === 'rezervasyonlar') {
+      const rev = tumVeri.find(x => x._id === duzenleId);
+      if(rev) await talepBildir(rev, 'iptal', 'Rezervasyon silindi');
+    }
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
     toast('Kayıt silindi', 'success');
     modalKapat();
@@ -486,11 +495,69 @@ window.kaydSil = async function() {
 window.hizliSil = async function(id) {
   if(!confirm('Bu kayıt silinsin mi?')) return;
   try {
+    if(aktifSekme === 'rezervasyonlar') {
+      const rev = tumVeri.find(x => x._id === id);
+      if(rev) await talepBildir(rev, 'iptal', 'Rezervasyon silindi');
+    }
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
     toast('Silindi', 'success');
     await sekmeYukle(aktifSekme);
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
 };
+};
+
+// ── KOMİSYONCU TALEBİNE BİLDİRİM ──
+async function talepBildir(rev, yeniDurum, not) {
+  if(!rev) return;
+  const simdi = new Date().toISOString();
+  try {
+    // Önce kaynakTalepId ile direkt bul
+    if(rev.kaynakTalepId) {
+      await updateDoc(doc(db,'rezervasyon_talepleri', rev.kaynakTalepId), {
+        durum: yeniDurum, iptalNot: not, iptalTarih: simdi
+      });
+      return;
+    }
+    // Fallback: misafir + oda eşleştir
+    const snap = await getDocs(query(
+      collection(db,'rezervasyon_talepleri'),
+      where('kaynak','==','komisyoncu'),
+      where('durum','==','onaylandi')
+    ));
+    const eslesen = snap.docs.find(d => {
+      const t = d.data();
+      return t.misafir === rev.misafir && Number(t.odaNo) === Number(rev.odaNo);
+    });
+    if(eslesen) {
+      await updateDoc(doc(db,'rezervasyon_talepleri', eslesen.id), {
+        durum: yeniDurum, iptalNot: not, iptalTarih: simdi
+      });
+    }
+  } catch(e) { console.warn('Talep bildirim hatası:', e); }
+}
+
+// Düzenleme kaydedildiğinde rezervasyon değişikliğini komisyoncuya yansıt
+async function talepGuncellemeBildir(rev, guncelleme) {
+  if(!rev) return;
+  const bildirimAlanlari = {};
+  if(guncelleme.odaNo   !== undefined && guncelleme.odaNo   !== rev.odaNo)   bildirimAlanlari.odaNo   = guncelleme.odaNo;
+  if(guncelleme.giris   !== undefined && guncelleme.giris   !== rev.giris)   bildirimAlanlari.giris   = guncelleme.giris;
+  if(guncelleme.cikis   !== undefined && guncelleme.cikis   !== rev.cikis)   bildirimAlanlari.cikis   = guncelleme.cikis;
+  if(guncelleme.fiyat   !== undefined && guncelleme.fiyat   !== rev.fiyat)   bildirimAlanlari.fiyat   = guncelleme.fiyat;
+  if(guncelleme.durum   !== undefined && guncelleme.durum   === 'iptal')     { await talepBildir(rev, 'iptal', 'Rezervasyon iptal edildi'); return; }
+  if(Object.keys(bildirimAlanlari).length === 0) return;
+  const simdi = new Date().toISOString();
+  try {
+    const talepId = rev.kaynakTalepId;
+    if(talepId) {
+      await updateDoc(doc(db,'rezervasyon_talepleri', talepId), {
+        ...bildirimAlanlari,
+        degisiklikNot: 'Rezervasyon güncellendi',
+        degisiklikTarih: simdi
+      });
+    }
+  } catch(e) { console.warn('Talep güncelleme bildirimi hatası:', e); }
+}
 
 window.modalKapat = function() {
   document.getElementById('duzenleModal').classList.remove('aktif');
