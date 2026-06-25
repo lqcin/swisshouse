@@ -1916,6 +1916,14 @@ async function initOdalar() {
   await otomatikBosal();
 
   renderOdalar();
+
+  // ── meta/odalar canlı dinle — başka oturumdan değişiklik gelince otomatik güncelle ──
+  onSnapshot(doc(db,'meta','odalar'), snap => {
+    if(snap.exists()) {
+      window._O = snap.data();
+      renderOdalar();
+    }
+  });
 }
 
 // Çıkış tarihi bugünden önce olan dolu odaları otomatik temizliğe al
