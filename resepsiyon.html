@@ -2087,7 +2087,6 @@ window.talepOnayla = function(id) {
       : `[Instagram talebi]`;
     document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + kaynakNot;
     document.getElementById('rev_kaynak').value = 'diger';
-    // Komisyoncu fiyatı = sözleşme fiyatı (komisyon dahil), gerçek oda fiyatı resepsiyonist girer
     if(t.sozlesmeFiyat) {
       const rsf = document.getElementById('rev_sozlesme_fiyat');
       if(rsf) { rsf.value = t.sozlesmeFiyat; sozlesmeToplam('rev'); }
@@ -2096,37 +2095,37 @@ window.talepOnayla = function(id) {
       const rf = document.getElementById('rev_fiyat');
       if(rf) { rf.value = t.fiyat; rf.dataset.manuelDegisim='1'; }
     }
-    // Komisyoncu adını komisyon alanına yaz
     if(t.komisyoncu) {
       const rk = document.getElementById('rev_komisyoncu');
       if(rk) rk.value = t.komisyoncuAd || t.komisyoncu;
     }
-    // Ödeme bilgilerini aktar
-    if(t.odemeDurum) {
-      const rod = document.getElementById('rev_odeme_durum');
-      if(rod) {
-        rod.value = t.odemeDurum;
-        // Kısmi ödeme alanını göster/gizle
-        const kismiWrap = document.getElementById('rev_kismi_wrap');
-        if(kismiWrap) kismiWrap.style.display = t.odemeDurum === 'kismi' ? 'block' : 'none';
-      }
-    }
-    if(t.odemeTuru) {
-      const rot = document.getElementById('rev_odeme_tip');
-      if(rot) rot.value = t.odemeTuru;
-    }
-    if(t.kismiTutar && t.odemeDurum === 'kismi') {
-      const rkt = document.getElementById('rev_kismi_tutar');
-      if(rkt) rkt.value = t.kismiTutar;
-    }
     const gece = geceSayisi(t.giris, t.cikis) || 1;
     document.getElementById('rev_gece').value = gece;
-    // Oda seçiliyse dropdown'a set et
     if(t.odaNo) {
       const sel = document.getElementById('rev_oda');
       if(sel) { sel.value = t.odaNo; revOdaSecildi(); }
     }
     revHesapla();
+
+    // Ödeme bilgilerini EN SONA set et — revHesapla sıfırlamalarından sonra
+    setTimeout(() => {
+      if(t.odemeDurum) {
+        const rod = document.getElementById('rev_odeme_durum');
+        if(rod) {
+          rod.value = t.odemeDurum;
+          const kismiWrap = document.getElementById('rev_kismi_wrap');
+          if(kismiWrap) kismiWrap.style.display = t.odemeDurum === 'kismi' ? 'block' : 'none';
+        }
+      }
+      if(t.odemeTuru) {
+        const rot = document.getElementById('rev_odeme_tip');
+        if(rot) rot.value = t.odemeTuru;
+      }
+      if(t.kismiTutar && t.odemeDurum === 'kismi') {
+        const rkt = document.getElementById('rev_kismi_tutar');
+        if(rkt) rkt.value = t.kismiTutar;
+      }
+    }, 150);
   }, 100);
 };
 
