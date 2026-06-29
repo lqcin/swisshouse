@@ -917,7 +917,7 @@ window.talepGonder = async function() {
       komisyoncuAd: aktifKom.ad,
       kaynak: 'komisyoncu',
       durum: 'bekliyor',
-      kayitTarih: new Date().toISOString()
+      kayitTarih: (() => { const n=new Date(),p=x=>String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}T${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`; })()
     });
     okEl.textContent = `${m.gonderildi} Oda ${odaNo} · ${formatTarih(giris)} → ${formatTarih(cikis)}`;
     okEl.style.display = 'block';
@@ -1060,7 +1060,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   <div class="red-line"></div>
   <div class="grid4">
     <div class="box"><div class="label">Sözleşme No</div><div class="value">${sozNo}</div></div>
-    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih(new Date().toISOString().slice(0,10))}</div></div>
+    <div class="box"><div class="label">Düzenleme Tarihi</div><div class="value">${fmtTarih((() => { const n=new Date(),p=x=>String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`; })())}</div></div>
     <div class="box"><div class="label">Rezervasyon No</div><div class="value">${resNo}</div></div>
     <div class="box"><div class="label">Tesis Adresi</div><div class="value" style="font-size:11px">Hafiziye Mahallesi Telli Sokak No:11/A İpekyolu / VAN</div></div>
   </div>
