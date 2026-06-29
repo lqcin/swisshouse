@@ -1916,14 +1916,6 @@ async function initOdalar() {
   await otomatikBosal();
 
   renderOdalar();
-
-  // ── meta/odalar canlı dinle — başka oturumdan değişiklik gelince otomatik güncelle ──
-  onSnapshot(doc(db,'meta','odalar'), snap => {
-    if(snap.exists()) {
-      window._O = snap.data();
-      renderOdalar();
-    }
-  });
 }
 
 // Çıkış tarihi bugünden önce olan dolu odaları otomatik temizliğe al
@@ -2108,6 +2100,24 @@ window.talepOnayla = function(id) {
     if(t.komisyoncu) {
       const rk = document.getElementById('rev_komisyoncu');
       if(rk) rk.value = t.komisyoncuAd || t.komisyoncu;
+    }
+    // Ödeme bilgilerini aktar
+    if(t.odemeDurum) {
+      const rod = document.getElementById('rev_odeme_durum');
+      if(rod) {
+        rod.value = t.odemeDurum;
+        // Kısmi ödeme alanını göster/gizle
+        const kismiWrap = document.getElementById('rev_kismi_wrap');
+        if(kismiWrap) kismiWrap.style.display = t.odemeDurum === 'kismi' ? 'block' : 'none';
+      }
+    }
+    if(t.odemeTuru) {
+      const rot = document.getElementById('rev_odeme_tip');
+      if(rot) rot.value = t.odemeTuru;
+    }
+    if(t.kismiTutar && t.odemeDurum === 'kismi') {
+      const rkt = document.getElementById('rev_kismi_tutar');
+      if(rkt) rkt.value = t.kismiTutar;
     }
     const gece = geceSayisi(t.giris, t.cikis) || 1;
     document.getElementById('rev_gece').value = gece;
