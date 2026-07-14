@@ -3,9 +3,10 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v1';
+const CACHE_ADI = 'swisshouse-v2';
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
+  '/swisshouse/komisyoncu.html',
   '/swisshouse/index.html',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600;700&family=Big+Shoulders+Display:wght@600&display=swap',
 ];

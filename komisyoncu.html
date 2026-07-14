@@ -62,9 +62,17 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-rezerve{background:#ede8f8;}
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#f5ece0;}
+.takvim-table td.t-veri-hata{background:repeating-linear-gradient(135deg,#f3f4f6,#f3f4f6 5px,#e5e7eb 5px,#e5e7eb 10px);cursor:not-allowed;}
+.takvim-table td.t-veri-hata::after{content:'!';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-weight:800;}
 .takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
-.takvim-table td.t-benim{background:#fff8e1;border-color:rgba(196,165,90,.4);}
-.takvim-table td.t-benim:hover{background:#fff3cd;}
+.takvim-table td.t-benim{
+  background:linear-gradient(135deg,#5b21b6 0%,#2563eb 100%);
+  border:2px solid #22d3ee !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 0 8px rgba(37,99,235,.45);
+  cursor:default;
+}
+.takvim-table td.t-benim::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+.takvim-table td.t-benim:hover{filter:brightness(1.08);}
 
 /* Sözleşme modal */
 .sozlesme-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center;padding:0;}
@@ -178,7 +186,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div><span id="legenda_bos">Boş (tıklayarak rezervasyon ekle)</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div><span id="legenda_dolu">Dolu</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div><span id="legenda_rezerve">Rezerveli</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fff8e1;border:1px solid rgba(196,165,90,.4)"></div><span id="legenda_benim">Benim Rezervasyonum</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:linear-gradient(135deg,#5b21b6,#2563eb);border:2px solid #22d3ee;box-shadow:0 0 5px rgba(37,99,235,.4)"></div><span id="legenda_benim">Benim Rezervasyonum ✓</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div><span id="legenda_temizlik">Temizlik</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div><span id="legenda_arizali">Arızalı</span></div>
       </div>
@@ -241,6 +249,8 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         <div class="ozet-satir"><span style="color:var(--muted)">Giriş:</span><span id="oz_giris"></span></div>
         <div class="ozet-satir"><span style="color:var(--muted)">Çıkış:</span><span id="oz_cikis"></span></div>
         <div class="ozet-satir"><span style="color:var(--muted)">Toplam:</span><span id="oz_toplam"></span></div>
+        <div class="ozet-satir" id="oz_komisyon_satir" style="display:none"><span style="color:var(--muted)">Komisyon:</span><span id="oz_komisyon" style="color:var(--primary);font-weight:700"></span></div>
+        <div class="ozet-satir" id="oz_otel_satir" style="display:none"><span style="color:var(--muted)">Otel Payı:</span><span id="oz_otel" style="font-weight:700"></span></div>
       </div>
 
       <!-- Konaklama -->
@@ -291,7 +301,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       </div>
       <div id="kismi_wrap" style="display:none;margin-bottom:14px">
         <div class="form-group" style="margin-bottom:0">
-          <label id="lbl_kismi_tutar">Alınan Tutar (₺)</label>
+          <label id="lbl_kismi_tutar">Alınan / Depozito Tutarı (₺)</label>
           <input type="number" id="f_kismi_tutar" min="0" placeholder="0" oninput="hesaplaOzet()">
           <div id="kismi_kalan" style="font-size:11px;color:var(--gold2);font-weight:600;margin-top:4px"></div>
         </div>
@@ -528,15 +538,17 @@ window.setLang = function(d) {
 // ── KOMİSYONCU ŞİFRELERİ ──
 // Yeni komisyoncu eklemek için buraya satır ekle
 const KOMISYONCULAR = {
-  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024'  },
-  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024' },
-  'pune':   { ad: 'pune iran',     sifre: 'pune2026'   },
+  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024',  komisyonTip:'manuel', komisyonDeger:0 },
+  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024', komisyonTip:'manuel', komisyonDeger:0 },
+  'pune':   { ad: 'pune iran',     sifre: 'pune2026',   komisyonTip:'manuel', komisyonDeger:0 },
 };
 
 let aktifKom = null;
+let aktifKomAyar = { tip:'manuel', deger:0 };
 let _R = [];   // rezervasyonlar
 let _O = {};   // oda durumları
 let _G = [];   // gelirler (check-in yapılmış konaklamalar)
+let _takvimGuvenli = false; // oda + rezervasyon verisi birlikte yüklenmeden satışa açma
 let _beniimTalepler = [];
 let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
@@ -556,6 +568,7 @@ window.girisYap = function() {
     return;
   }
   aktifKom = { key: kullanici, ad: kom.ad };
+  aktifKomAyar = { tip: kom.komisyonTip || 'manuel', deger: Number(kom.komisyonDeger)||0 };
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('portal').style.display = 'block';
   document.getElementById('portalKullaniciAd').textContent = kom.ad;
@@ -566,24 +579,51 @@ window.girisYap = function() {
 let _yenilemeInterval = null;
 
 async function takvimVerisiYukle() {
-  try {
-    const [odaSnap, revSnap, gelirSnap] = await Promise.all([
-      getDoc(doc(db,'meta','odalar')),
-      getDocs(query(collection(db,'rezervasyonlar'), orderBy('giris','desc'))),
-      getDocs(query(collection(db,'gelirler'), orderBy('tarih','desc')))
-    ]);
-    if(odaSnap.exists()) _O = odaSnap.data(); else _O = {};
-    _R = revSnap.docs.map(d => ({id:d.id,...d.data()}));
-    _G = gelirSnap.docs.map(d => ({id:d.id,...d.data()}));
-    renderTakvim();
-    // Son güncelleme zamanını göster
-    const el = document.getElementById('sonGuncelleme');
-    if(el) {
-      const now = new Date();
-      el.textContent = `Son güncelleme: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-    }
-  } catch(e) { console.warn('Takvim yükleme hatası:', e); }
+  // Bir koleksiyonun yetkisi/bağlantısı hata verse bile portalın tamamı boş kalmasın.
+  const sonuc = await Promise.allSettled([
+    getDoc(doc(db,'meta','odalar')),
+    getDocs(query(collection(db,'rezervasyonlar'), orderBy('giris','desc'))),
+    getDocs(query(collection(db,'gelirler'), orderBy('tarih','desc'))),
+    getDoc(doc(db,'meta','komisyoncuAyarlar'))
+  ]);
+
+  const [odaRes, revRes, gelirRes, ayarRes] = sonuc;
+  if(odaRes.status === 'fulfilled') {
+    _O = odaRes.value.exists() ? odaRes.value.data() : {};
+  } else {
+    console.warn('Oda verisi yüklenemedi:', odaRes.reason);
+  }
+  if(revRes.status === 'fulfilled') {
+    _R = revRes.value.docs.map(d => ({id:d.id,...d.data()}));
+  } else {
+    console.warn('Rezervasyon verisi yüklenemedi:', revRes.reason);
+  }
+  // Gelirler komisyoncu portalı için yardımcı veridir; erişim yoksa takvimi durdurmaz.
+  if(gelirRes.status === 'fulfilled') {
+    _G = gelirRes.value.docs.map(d => ({id:d.id,...d.data()}));
+  } else {
+    _G = [];
+    console.warn('Konaklama verisi okunamadı, oda durumu üzerinden devam ediliyor:', gelirRes.reason);
+  }
+  if(ayarRes.status === 'fulfilled' && ayarRes.value.exists() && aktifKom) {
+    const ayar = ayarRes.value.data()?.[aktifKom.key];
+    if(ayar) aktifKomAyar = { tip: ayar.tip || 'manuel', deger: Number(ayar.deger)||0 };
+  }
+
+  _takvimGuvenli = odaRes.status === 'fulfilled' && revRes.status === 'fulfilled';
+  renderTakvim();
+  hesaplaOzet();
+  const el = document.getElementById('sonGuncelleme');
+  if(el) {
+    const now = new Date();
+    const kritikHata = !_takvimGuvenli;
+    el.textContent = kritikHata
+      ? 'Oda/rezervasyon verisi eksik — takvim güvenlik için kilitlendi. Tekrar deneyin.'
+      : `Son güncelleme: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    el.style.color = kritikHata ? 'var(--red)' : 'var(--muted)';
+  }
 }
+window.takvimVerisiYukle = takvimVerisiYukle;
 
 function baslatPortal() {
   // İlk yükleme + 60sn periyodik yenileme
@@ -610,6 +650,11 @@ function baslatPortal() {
         .sort((a,b) => (b.kayitTarih||'').localeCompare(a.kayitTarih||''));
       renderTalepler(_beniimTalepler);
       renderTakvim();
+    },
+    err => {
+      console.warn('Talep listesi dinlenemedi:', err);
+      renderTalepler(_beniimTalepler);
+      renderTakvim();
     }
   );
 
@@ -631,6 +676,10 @@ function baslatPortal() {
 }
 
 // ── TAKVİM ──
+function rKomisyoncuAnahtar(r) {
+  return String(r?.komisyoncu || r?.komisyoncuKey || '').trim().toLocaleLowerCase('tr-TR');
+}
+
 window.takvimAyDegistir = function(delta) {
   takvimAy += delta;
   if(takvimAy > 11) { takvimAy = 0; takvimYil++; }
@@ -706,12 +755,17 @@ function renderTakvim() {
         (t.cikis||'') > iso
       );
 
-      // Rezervasyon var mı?
+      // Rezervasyon var mı? Onaylanmış kayıt talep koleksiyonunda görünmese bile
+      // rezervasyon üzerindeki komisyoncu bilgisiyle kendi rezervasyonunu ayırt et.
       const rev = _R.find(r =>
         Number(r.odaNo) === odaNo &&
         (r.giris||'') <= iso &&
         (r.cikis||'') > iso &&
         r.durum !== 'iptal'
+      );
+      const benimRev = rev && aktifKom && (
+        rKomisyoncuAnahtar(rev) === aktifKom.key ||
+        String(rev.komisyoncuAd||rev.araciAd||'').trim().toLocaleLowerCase('tr-TR') === aktifKom.ad.toLocaleLowerCase('tr-TR')
       );
 
       // Gelir (check-in yapılmış konaklama) var mı?
@@ -727,7 +781,9 @@ function renderTakvim() {
       const bugunDolu = odaMeta.durum === 'dolu' && isToday;
 
       let cls, onclick = '';
-      if(beniimTalep) {
+      if(!_takvimGuvenli) {
+        cls = 't-veri-hata';
+      } else if(beniimTalep || benimRev) {
         cls = 't-benim';
       } else if(gelir || fiiliDolu || bugunDolu) {
         cls = 't-dolu';
@@ -757,7 +813,8 @@ function renderTakvim() {
         onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
       }
 
-      html += `<td class="${cls}" ${onclick} title="Oda ${odaNo} · ${iso}"></td>`;
+      const hucreBaslik = !_takvimGuvenli ? 'Veri bağlantısı eksik — rezervasyon kapalı' : `Oda ${odaNo} · ${iso}`;
+      html += `<td class="${cls}" ${onclick} title="${hucreBaslik}"></td>`;
     });
 
     html += '</tr>';
@@ -818,9 +875,23 @@ function formatTarih(iso) {
 
 window.odemeSecildi = function() {
   const val = document.getElementById('f_odeme_durum').value;
-  document.getElementById('kismi_wrap').style.display = val === 'kismi' ? 'block' : 'none';
+  const tutarGerekli = val === 'kismi' || val === 'depozito';
+  document.getElementById('kismi_wrap').style.display = tutarGerekli ? 'block' : 'none';
+  const lbl = document.getElementById('lbl_kismi_tutar');
+  if(lbl) lbl.textContent = val === 'depozito' ? 'Depozito Tutarı (₺)' : 'Alınan Tutar (₺)';
   hesaplaOzet();
 };
+
+function komisyonHesapla(sozlesmeFiyat) {
+  const fiyat = Math.max(0, Number(sozlesmeFiyat)||0);
+  const tip = aktifKomAyar?.tip || 'manuel';
+  const deger = Math.max(0, Number(aktifKomAyar?.deger)||0);
+  let komisyon = 0;
+  if(tip === 'oran' && deger > 0) komisyon = fiyat * Math.min(deger,100) / 100;
+  if(tip === 'sabit' && deger > 0) komisyon = Math.min(fiyat, deger);
+  komisyon = Math.round(komisyon * 100) / 100;
+  return { tip, deger, komisyon, otelFiyat: Math.max(0, Math.round((fiyat-komisyon)*100)/100) };
+}
 
 window.hesaplaOzet = function() {
   const odaNo = Number(document.getElementById('f_oda').value);
@@ -836,11 +907,19 @@ window.hesaplaOzet = function() {
   document.getElementById('oz_giris').textContent = formatTarih(giris);
   document.getElementById('oz_cikis').textContent = formatTarih(cikis);
   document.getElementById('oz_toplam').textContent = fiyat > 0 ? `${fmt(fiyat*gece)} ₺ (${gece} gece × ${fmt(fiyat)} ₺)` : '—';
+  const kom = komisyonHesapla(fiyat);
+  const otomatikKomisyon = fiyat > 0 && kom.tip !== 'manuel' && kom.komisyon > 0;
+  document.getElementById('oz_komisyon_satir').style.display = otomatikKomisyon ? 'flex' : 'none';
+  document.getElementById('oz_otel_satir').style.display = otomatikKomisyon ? 'flex' : 'none';
+  if(otomatikKomisyon) {
+    document.getElementById('oz_komisyon').textContent = `${fmt(kom.komisyon*gece)} ₺ (${kom.tip==='oran'?'%'+kom.deger:fmt(kom.deger)+' ₺/gece'})`;
+    document.getElementById('oz_otel').textContent = `${fmt(kom.otelFiyat*gece)} ₺`;
+  }
   ozetKutu.style.display = 'block';
 
-  // Kısmi ödeme kalan hesabı
+  // Kısmi ödeme / depozito kalan hesabı
   const odemeDurum = document.getElementById('f_odeme_durum').value;
-  if(odemeDurum === 'kismi' && fiyat > 0) {
+  if((odemeDurum === 'kismi' || odemeDurum === 'depozito') && fiyat > 0) {
     const kismiTutar = Number(document.getElementById('f_kismi_tutar').value)||0;
     const kalan = Math.max(0, fiyat*gece - kismiTutar);
     const m = M[dil];
@@ -867,6 +946,11 @@ window.talepGonder = async function() {
   const okEl = document.getElementById('formBasari');
   const m = M[dil];
   errEl.style.display = 'none'; okEl.style.display = 'none';
+  if(!_takvimGuvenli) {
+    errEl.textContent = 'Oda ve rezervasyon verisi tam yüklenmedi. Yanlış/çakışan kayıt oluşmaması için talep gönderimi geçici olarak kapatıldı.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   const odaNo = Number(document.getElementById('f_oda').value);
   const giris = document.getElementById('f_giris').value;
@@ -880,7 +964,8 @@ window.talepGonder = async function() {
   const not_ = document.getElementById('f_not').value.trim();
   const odemeDurum = document.getElementById('f_odeme_durum').value;
   const odemeTuru = document.getElementById('f_odeme_tur').value;
-  const kismiTutar = odemeDurum === 'kismi' ? (Number(document.getElementById('f_kismi_tutar').value)||0) : null;
+  const tutarliOdeme = odemeDurum === 'kismi' || odemeDurum === 'depozito';
+  const kismiTutar = tutarliOdeme ? (Number(document.getElementById('f_kismi_tutar').value)||0) : null;
 
   if(!odaNo || !giris || gece<1 || !misafir || fiyat<=0) {
     errEl.textContent = m.err_zorunlu;
@@ -888,6 +973,11 @@ window.talepGonder = async function() {
   }
 
   const cikis = addDays(giris, gece);
+  const toplamSozlesme = fiyat * gece;
+  if(tutarliOdeme && (kismiTutar <= 0 || kismiTutar > toplamSozlesme)) {
+    errEl.textContent = `Alınan tutar 0'dan büyük ve toplam tutardan (${fmt(toplamSozlesme)} ₺) fazla olmamalıdır.`;
+    errEl.style.display = 'block'; return;
+  }
 
   // Çakışma kontrolü
   const cakısma = _R.find(r =>
@@ -903,11 +993,15 @@ window.talepGonder = async function() {
   btn.disabled = true; btn.textContent = m.gonderiliyor;
 
   try {
+    const kom = komisyonHesapla(fiyat);
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
-      fiyat: null,           // gerçek oda fiyatı resepsiyonist tarafından belirlenecek
+      fiyat: kom.tip === 'manuel' ? null : kom.otelFiyat,
       sozlesmeFiyat: fiyat,  // komisyoncunun girdiği = sözleşme/komisyon dahil fiyat
+      komisyonTip: kom.tip, komisyonDeger: kom.deger,
+      komisyonTutarGecelik: kom.komisyon,
+      komisyonToplam: Math.round(kom.komisyon * gece * 100) / 100,
       yetiskin, cocuk,
       odemeDurum, odemeTuru,
       kismiTutar: kismiTutar,
