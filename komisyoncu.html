@@ -62,8 +62,8 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-rezerve{background:#ede8f8;}
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#f5ece0;}
-.takvim-table td.t-veri-hata{background:repeating-linear-gradient(135deg,#f3f4f6,#f3f4f6 5px,#e5e7eb 5px,#e5e7eb 10px);cursor:not-allowed;}
-.takvim-table td.t-veri-hata::after{content:'!';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-weight:800;}
+.takvim-table td.t-kontrol{background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 6px,#f7efd9 6px,#f7efd9 12px);cursor:pointer;}
+.takvim-table td.t-kontrol:hover{background:#fff3cd;}
 .takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
 .takvim-table td.t-benim{
   background:linear-gradient(135deg,#5b21b6 0%,#2563eb 100%);
@@ -184,6 +184,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       </div>
       <div class="legenda">
         <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div><span id="legenda_bos">Boş (tıklayarak rezervasyon ekle)</span></div>
+        <div class="legenda-item" id="legenda_kontrol_item" style="display:none"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 5px,#f7efd9 5px,#f7efd9 10px)"></div><span>Müsaitlik Onayda Kontrol Edilecek</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div><span id="legenda_dolu">Dolu</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div><span id="legenda_rezerve">Rezerveli</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:linear-gradient(135deg,#5b21b6,#2563eb);border:2px solid #22d3ee;box-shadow:0 0 5px rgba(37,99,235,.4)"></div><span id="legenda_benim">Benim Rezervasyonum ✓</span></div>
@@ -548,7 +549,7 @@ let aktifKomAyar = { tip:'manuel', deger:0 };
 let _R = [];   // rezervasyonlar
 let _O = {};   // oda durumları
 let _G = [];   // gelirler (check-in yapılmış konaklamalar)
-let _takvimGuvenli = false; // oda + rezervasyon verisi birlikte yüklenmeden satışa açma
+let _veriDurumu = { oda:false, rezervasyon:false, gelir:false, ayar:false };
 let _beniimTalepler = [];
 let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
@@ -578,49 +579,81 @@ window.girisYap = function() {
 // ── PORTAL BAŞLATMA ──
 let _yenilemeInterval = null;
 
+async function koleksiyonOku(koleksiyonAdi, siralamaAlani) {
+  // Önce sıralı sorguyu dene; index/rule kısıtı varsa basit okumaya geri dön.
+  try {
+    return await getDocs(query(collection(db, koleksiyonAdi), orderBy(siralamaAlani, 'desc')));
+  } catch (ilkHata) {
+    console.warn(`${koleksiyonAdi} sıralı okunamadı, basit okuma deneniyor:`, ilkHata);
+    return await getDocs(collection(db, koleksiyonAdi));
+  }
+}
+
 async function takvimVerisiYukle() {
-  // Bir koleksiyonun yetkisi/bağlantısı hata verse bile portalın tamamı boş kalmasın.
+  // Bir veri kaynağı hata verse bile portal ve talep gönderimi çalışmaya devam eder.
   const sonuc = await Promise.allSettled([
     getDoc(doc(db,'meta','odalar')),
-    getDocs(query(collection(db,'rezervasyonlar'), orderBy('giris','desc'))),
-    getDocs(query(collection(db,'gelirler'), orderBy('tarih','desc'))),
+    koleksiyonOku('rezervasyonlar','giris'),
+    koleksiyonOku('gelirler','tarih'),
     getDoc(doc(db,'meta','komisyoncuAyarlar'))
   ]);
 
   const [odaRes, revRes, gelirRes, ayarRes] = sonuc;
-  if(odaRes.status === 'fulfilled') {
+  _veriDurumu = {
+    oda: odaRes.status === 'fulfilled',
+    rezervasyon: revRes.status === 'fulfilled',
+    gelir: gelirRes.status === 'fulfilled',
+    ayar: ayarRes.status === 'fulfilled'
+  };
+
+  // Geçici bağlantı hatasında daha önce yüklenen doğru veriyi silme.
+  if(_veriDurumu.oda) {
     _O = odaRes.value.exists() ? odaRes.value.data() : {};
   } else {
     console.warn('Oda verisi yüklenemedi:', odaRes.reason);
   }
-  if(revRes.status === 'fulfilled') {
-    _R = revRes.value.docs.map(d => ({id:d.id,...d.data()}));
+
+  if(_veriDurumu.rezervasyon) {
+    _R = revRes.value.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => String(b.giris||'').localeCompare(String(a.giris||'')));
   } else {
     console.warn('Rezervasyon verisi yüklenemedi:', revRes.reason);
   }
-  // Gelirler komisyoncu portalı için yardımcı veridir; erişim yoksa takvimi durdurmaz.
-  if(gelirRes.status === 'fulfilled') {
-    _G = gelirRes.value.docs.map(d => ({id:d.id,...d.data()}));
+
+  if(_veriDurumu.gelir) {
+    _G = gelirRes.value.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .sort((a,b) => String(b.tarih||'').localeCompare(String(a.tarih||'')));
   } else {
-    _G = [];
-    console.warn('Konaklama verisi okunamadı, oda durumu üzerinden devam ediliyor:', gelirRes.reason);
+    console.warn('Konaklama verisi okunamadı; oda durumu üzerinden devam ediliyor:', gelirRes.reason);
   }
-  if(ayarRes.status === 'fulfilled' && ayarRes.value.exists() && aktifKom) {
+
+  if(_veriDurumu.ayar && ayarRes.value.exists() && aktifKom) {
     const ayar = ayarRes.value.data()?.[aktifKom.key];
     if(ayar) aktifKomAyar = { tip: ayar.tip || 'manuel', deger: Number(ayar.deger)||0 };
   }
 
-  _takvimGuvenli = odaRes.status === 'fulfilled' && revRes.status === 'fulfilled';
   renderTakvim();
   hesaplaOzet();
+
   const el = document.getElementById('sonGuncelleme');
+  const kontrolLegenda = document.getElementById('legenda_kontrol_item');
+  if(kontrolLegenda) kontrolLegenda.style.display = _veriDurumu.rezervasyon ? 'none' : 'flex';
+
   if(el) {
     const now = new Date();
-    const kritikHata = !_takvimGuvenli;
-    el.textContent = kritikHata
-      ? 'Oda/rezervasyon verisi eksik — takvim güvenlik için kilitlendi. Tekrar deneyin.'
-      : `Son güncelleme: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-    el.style.color = kritikHata ? 'var(--red)' : 'var(--muted)';
+    const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    if(_veriDurumu.oda && _veriDurumu.rezervasyon) {
+      el.textContent = `Son güncelleme: ${saat}`;
+      el.style.color = 'var(--muted)';
+    } else if(_veriDurumu.oda || _veriDurumu.rezervasyon) {
+      el.textContent = `Bazı takvim verileri okunamadı. Talepler açık; kesin müsaitlik yönetici onayında kontrol edilir. (${saat})`;
+      el.style.color = '#a16207';
+    } else {
+      el.textContent = 'Canlı müsaitlik verisi alınamadı. Talep gönderebilirsiniz; oda uygunluğu yönetici onayında kontrol edilir.';
+      el.style.color = 'var(--red)';
+    }
   }
 }
 window.takvimVerisiYukle = takvimVerisiYukle;
@@ -781,9 +814,7 @@ function renderTakvim() {
       const bugunDolu = odaMeta.durum === 'dolu' && isToday;
 
       let cls, onclick = '';
-      if(!_takvimGuvenli) {
-        cls = 't-veri-hata';
-      } else if(beniimTalep || benimRev) {
+      if(beniimTalep || benimRev) {
         cls = 't-benim';
       } else if(gelir || fiiliDolu || bugunDolu) {
         cls = 't-dolu';
@@ -809,11 +840,16 @@ function renderTakvim() {
         cls = 't-bugun';
         onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
       } else {
-        cls = 't-bos';
+        cls = _veriDurumu.rezervasyon ? 't-bos' : 't-kontrol';
         onclick = `onclick="modalAc(${odaNo},'${iso}')"`;
       }
 
-      const hucreBaslik = !_takvimGuvenli ? 'Veri bağlantısı eksik — rezervasyon kapalı' : `Oda ${odaNo} · ${iso}`;
+      if(!_veriDurumu.rezervasyon && (cls === 't-bos' || cls === 't-bugun')) {
+        cls = 't-kontrol';
+      }
+      const hucreBaslik = _veriDurumu.rezervasyon
+        ? `Oda ${odaNo} · ${iso}`
+        : `Oda ${odaNo} · ${iso} · Müsaitlik yönetici onayında kesinleşir`;
       html += `<td class="${cls}" ${onclick} title="${hucreBaslik}"></td>`;
     });
 
@@ -946,11 +982,6 @@ window.talepGonder = async function() {
   const okEl = document.getElementById('formBasari');
   const m = M[dil];
   errEl.style.display = 'none'; okEl.style.display = 'none';
-  if(!_takvimGuvenli) {
-    errEl.textContent = 'Oda ve rezervasyon verisi tam yüklenmedi. Yanlış/çakışan kayıt oluşmaması için talep gönderimi geçici olarak kapatıldı.';
-    errEl.style.display = 'block';
-    return;
-  }
 
   const odaNo = Number(document.getElementById('f_oda').value);
   const giris = document.getElementById('f_giris').value;
@@ -1002,6 +1033,7 @@ window.talepGonder = async function() {
       komisyonTip: kom.tip, komisyonDeger: kom.deger,
       komisyonTutarGecelik: kom.komisyon,
       komisyonToplam: Math.round(kom.komisyon * gece * 100) / 100,
+      musaitlikKontrolGerekli: !_veriDurumu.rezervasyon,
       yetiskin, cocuk,
       odemeDurum, odemeTuru,
       kismiTutar: kismiTutar,
