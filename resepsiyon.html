@@ -1788,12 +1788,89 @@ input[type="number"], input[type="date"], input[type="password"] {
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gerçek</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Sözleşme</th>
             <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyon</th>
-            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir Oda Ödemesi</th>
           </tr>
         </thead>
         <tbody id="rapor-komisyon-body"></tbody>
       </table>
       <div class="total-row" id="rapor-komisyon-toplam"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic">Not: Bu sütun misafirin OTELE oda için yaptığı ödemeyi gösterir. Komisyoncuya yapılan ödemeler için aşağıdaki "Komisyoncu Cari Hesap" bölümüne bakınız.</div>
+    </div>
+  </div>
+
+  <!-- Komisyoncu Cari Hesap — hakedilen komisyon / ödenen / kalan bakiye -->
+  <div class="table-card" style="margin-top:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Cari Hesap</em>
+        <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Tüm zamanlar — hakedilen komisyon, yapılan ödeme ve kalan bakiye</span>
+      </div>
+      <button class="btn btn-primary" style="font-size:11px" onclick="komOdemeModalAc()">+ Ödeme Al</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyoncu</th>
+          <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Konaklama</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Toplam Komisyon</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödenen</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kalan Bakiye</th>
+          <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="komcari-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Komisyoncu Detay Modal -->
+  <div class="modal-overlay" id="komDetayModal">
+    <div class="modal" style="max-width:640px">
+      <div class="modal-title" id="komDetayBaslik">🤝 Komisyoncu Hesabı</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Borç (komisyon) ve ödeme hareketleri</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Açıklama</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Borç</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Bakiye</th>
+          </tr>
+        </thead>
+        <tbody id="komDetayBody"></tbody>
+      </table>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('komDetayModal')">Kapat</button>
+        <button class="btn btn-primary" id="komDetayOdemeAlBtn">+ Ödeme Al</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Komisyoncuya Ödeme Al Modal -->
+  <div class="modal-overlay" id="komOdemeModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-title">💵 Komisyoncuya Ödeme</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Bu kayıt sadece komisyoncu cari hesabını etkiler, misafir ödemesiyle ilgisi yoktur.</div>
+      <div class="form-group">
+        <label>Komisyoncu *</label>
+        <input type="text" id="komOdeme_araci" placeholder="Komisyoncu adı" list="komOdeme_araci_list">
+        <datalist id="komOdeme_araci_list"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Tutar (₺) *</label>
+        <input type="number" id="komOdeme_tutar" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Tarih</label>
+        <input type="date" id="komOdeme_tarih">
+      </div>
+      <div class="form-group">
+        <label>Not</label>
+        <input type="text" id="komOdeme_not" placeholder="İsteğe bağlı...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('komOdemeModal')">Vazgeç</button>
+        <button class="btn btn-primary" onclick="komOdemeKaydet()">Kaydet</button>
+      </div>
     </div>
   </div>
 
@@ -2238,6 +2315,15 @@ onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
 
 onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
   window._KOM = s.docs.map(d=>({id:d.id,...d.data()}));
+  if(document.getElementById('page-rapor')?.classList.contains('active')) renderKomisyonCari();
+});
+
+// Komisyoncuya yapılan ÖDEMELER — müşterinin oda ödemesinden tamamen bağımsız,
+// ayrı bir cari hesap (borç: komisyonlar koleksiyonu, ödeme: burası).
+window._KOMODEME = [];
+onSnapshot(query(collection(db,'komisyonOdemeleri'), orderBy('tarih','desc')), s => {
+  window._KOMODEME = s.docs.map(d=>({id:d.id,...d.data()}));
+  if(document.getElementById('page-rapor')?.classList.contains('active')) renderKomisyonCari();
 });
 
 // ── INSTAGRAM REZERVASYON TALEPLERİ ──
@@ -3281,7 +3367,6 @@ window.saveCheckin = async function() {
       gelirDocId, konaklamaKey, tarih:giris, odaNo:String(no), misafir:ad, tc, kaynak,
       gece, gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
       komisyonFark, toplamKomisyon:komisyonFark,
-      odemeDurum: document.getElementById('ci_odeme_durum')?.value||'odenmedi',
       araciAd: window._O['oda'+no]?.araciAd || null,
       kayitTarih:now,guncelleme:now
     },{merge:true});
@@ -4572,11 +4657,32 @@ window.renderRapor = function() {
   const ayGunSayisi = new Date(yil, mNo, 0).getDate();
   const toplamOdaGun = HOTEL_ODALAR.length * ayGunSayisi;
 
-  // Oda bazlı dolu gün sayısı
+  // Ayın ilk günü ve bir sonraki ayın ilk günü (yarı-açık aralık: [ayBas, ayBit))
+  const ayBas = ay + '-01';
+  const sonrakiYil = mNo === 12 ? yil + 1 : yil;
+  const sonrakiAy = mNo === 12 ? 1 : mNo + 1;
+  const ayBit = sonrakiYil + '-' + String(sonrakiAy).padStart(2,'0') + '-01';
+
+  // Bir konaklamanın SADECE seçilen ay içine düşen gece sayısını hesaplar.
+  // Ay sınırını aşan rezervasyonlarda (örn. 20 Haziran → 15 Temmuz) tüm geceleri
+  // her iki aya da tam olarak sayan eski mantık, dolulukta %100'ü aşan hatalı
+  // sonuçlara yol açıyordu (bkz. 106%, 126%, 139% gibi değerler). Bu yüzden
+  // tarih aralığı ay sınırlarına göre kırpılıyor.
+  function ayIciGeceSayisi(giris, cikis) {
+    if(!giris || !cikis) return 0;
+    const bas = giris > ayBas ? giris : ayBas;
+    const bit = cikis < ayBit ? cikis : ayBit;
+    if(bas >= bit) return 0;
+    const [by,bm,bd] = bas.split('-').map(Number);
+    const [ey,em,ed] = bit.split('-').map(Number);
+    return Math.round((new Date(ey,em-1,ed) - new Date(by,bm-1,bd)) / 864e5);
+  }
+
+  // Oda bazlı dolu gün sayısı (ay sınırlarına kırpılmış)
   const odaDolu = {};
   HOTEL_ODALAR.forEach(no => odaDolu[no] = 0);
   ayRezervler.forEach(r => {
-    const g = geceSayisi(r.giris, r.cikis);
+    const g = ayIciGeceSayisi(r.giris, r.cikis);
     if(odaDolu[r.odaNo] !== undefined) odaDolu[r.odaNo] += g;
   });
   const toplamDoluGun = Object.values(odaDolu).reduce((a,b)=>a+b, 0);
@@ -4664,6 +4770,119 @@ window.renderRapor = function() {
     }).join('');
     document.getElementById('rapor-komisyon-yaklasan-toplam').textContent =
       `${yaklasanKomisyonlar.length} kayıt · Beklenen Toplam: ${fmt2(toplamKomisyonYaklasan)}`;
+  }
+
+  renderKomisyonCari();
+};
+
+// ── KOMİSYONCU CARİ HESAP ──
+// window._KOM  : her konaklama için hakedilen komisyon ("borç") kayıtları — otomatik, check-in'de oluşur.
+// window._KOMODEME : otelin komisyoncuya fiilen ödediği tutarlar — manuel, burada girilir.
+// Bu ikisi TAMAMEN misafirin odaya yaptığı ödemeden bağımsızdır.
+window.renderKomisyonCari = function() {
+  const govde = document.getElementById('komcari-body');
+  if(!govde) return; // Rapor sayfası henüz açılmamış olabilir
+
+  const komList = window._KOM || [];
+  const odemeList = window._KOMODEME || [];
+
+  const araciler = new Map(); // araciAd -> {borc, odeme, sayi}
+  komList.forEach(k => {
+    const ad = (k.araciAd||'').trim();
+    if(!ad) return;
+    if(!araciler.has(ad)) araciler.set(ad, {borc:0, odeme:0, sayi:0});
+    const rec = araciler.get(ad);
+    rec.borc += Number(k.toplamKomisyon)||0;
+    rec.sayi += 1;
+  });
+  odemeList.forEach(p => {
+    const ad = (p.araciAd||'').trim();
+    if(!ad) return;
+    if(!araciler.has(ad)) araciler.set(ad, {borc:0, odeme:0, sayi:0});
+    araciler.get(ad).odeme += Number(p.tutar)||0;
+  });
+
+  // Datalist'i güncel komisyoncu isimleriyle doldur (ödeme formunda otomatik tamamlama için)
+  const dl = document.getElementById('komOdeme_araci_list');
+  if(dl) dl.innerHTML = [...araciler.keys()].sort().map(a=>`<option value="${a}">`).join('');
+
+  if(araciler.size === 0) {
+    govde.innerHTML = '<tr class="empty-row"><td colspan="6">Henüz komisyonlu rezervasyon yok</td></tr>';
+    return;
+  }
+
+  const satirlar = [...araciler.entries()].sort((a,b)=>b[1].borc-a[1].borc);
+  govde.innerHTML = satirlar.map(([ad, rec]) => {
+    const kalan = rec.borc - rec.odeme;
+    const kalanRenk = kalan > 0.5 ? 'var(--red)' : (kalan < -0.5 ? 'var(--gold2)' : 'var(--green)');
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${ad}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${rec.sayi}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${fmt(rec.borc)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green)">${fmt(rec.odeme)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:${kalanRenk}">${fmt(kalan)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">
+        <button class="btn btn-ghost btn-sm" onclick="komDetayAc('${ad.replace(/'/g,"\\'")}')">Detay</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+// Bir komisyoncunun tüm borç + ödeme hareketlerini kronolojik gösterir
+window.komDetayAc = function(araciAd) {
+  document.getElementById('komDetayBaslik').textContent = '🤝 ' + araciAd;
+  const borclar = (window._KOM||[]).filter(k => (k.araciAd||'').trim() === araciAd).map(k => ({
+    tarih: k.tarih || k.kayitTarih || '', tip:'borc',
+    aciklama: `Oda ${k.odaNo} · ${k.misafir||'—'} · ${k.gece||'—'} gece`,
+    tutar: Number(k.toplamKomisyon)||0
+  }));
+  const odemeler = (window._KOMODEME||[]).filter(p => (p.araciAd||'').trim() === araciAd).map(p => ({
+    tarih: p.tarih || p.kayitTarih || '', tip:'odeme',
+    aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı',
+    tutar: Number(p.tutar)||0
+  }));
+  const hareketler = [...borclar, ...odemeler].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
+
+  let bakiye = 0;
+  const satirlar = hareketler.map(h => {
+    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${h.tip==='borc'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${h.tip==='odeme'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('komDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Hareket yok</td></tr>';
+  document.getElementById('komDetayOdemeAlBtn').onclick = () => { closeModal('komDetayModal'); komOdemeModalAc(araciAd); };
+  openModal('komDetayModal');
+};
+
+// Ödeme formunu açar — komDetayAc'tan geliniyorsa komisyoncu adı önceden dolu gelir
+window.komOdemeModalAc = function(araciAd) {
+  document.getElementById('komOdeme_araci').value = araciAd || '';
+  document.getElementById('komOdeme_tutar').value = '';
+  document.getElementById('komOdeme_tarih').value = today();
+  document.getElementById('komOdeme_not').value = '';
+  openModal('komOdemeModal');
+};
+
+window.komOdemeKaydet = async function() {
+  const araciAd = document.getElementById('komOdeme_araci').value.trim();
+  const tutar = Number(document.getElementById('komOdeme_tutar').value) || 0;
+  const tarih = document.getElementById('komOdeme_tarih').value || today();
+  const not_ = document.getElementById('komOdeme_not').value.trim();
+  if(!araciAd || tutar <= 0) { toast('Komisyoncu adı ve tutar zorunlu','error'); return; }
+  try {
+    await addDoc(collection(db,'komisyonOdemeleri'), {
+      araciAd, tutar, tarih, not: not_,
+      kayitTarih: nowISO()
+    });
+    closeModal('komOdemeModal');
+    toast(`${araciAd} — ${fmt(tutar)} ödeme kaydedildi ✓`, 'success');
+  } catch(e) {
+    toast('Ödeme kaydedilemedi: '+(e?.message||'Bilinmeyen hata'), 'error');
   }
 };
 
