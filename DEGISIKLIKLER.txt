@@ -26,11 +26,3 @@ Tarih: 14.07.2026
 
 6. Komisyoncu sayfasındaki JavaScript tekrar tanımı temizlendi ve tüm HTML modülleri sözdizimi kontrolünden geçirildi.
 7. Service Worker önbelleği swisshouse-v3 olarak yenilendi.
-
-V3 — KOMİSYONCU / RESEPSİYON CANLI TAKVİM SENKRONU
-- Komisyoncu ekranı artık resepsiyonun oda ve rezervasyon takvimiyle aynı veriyi kullanır.
-- Resepsiyon, kişisel misafir bilgisi paylaşmadan her komisyoncu için güvenli takvim özeti yayımlar.
-- Komisyoncu Firebase oturumu ayrı ve RAM içindedir; resepsiyonun aynı tarayıcıdaki oturumu kapanmaz.
-- Yeşil: müsait ve talep gönderilebilir; turuncu: talep bekliyor; mavi: onaylı rezervasyon; mor: başka rezervasyon; kırmızı: dolu.
-- Canlı veri yoksa yanlış oda seçilmemesi için talep gönderimi kapatılır.
-- Talep ile kesin rezervasyon arasındaki fark hem takvim üstünde hem modal içinde açıkça anlatılır.
