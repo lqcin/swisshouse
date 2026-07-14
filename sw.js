@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v3';
+const CACHE_ADI = 'swisshouse-v4'; // sürüm artırıldı — cihazlardaki eski/yarım önbellek otomatik temizlenir
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',
@@ -52,15 +52,26 @@ self.addEventListener('fetch', e => {
         }
         return response;
       })
-      .catch(() => {
-        // İnternet yok — önbellekten sun
-        return caches.match(e.request).then(cached => {
-          if(cached) return cached;
-          // Önbellekte de yoksa resepsiyon.html'i sun (SPA fallback)
-          if(e.request.destination === 'document') {
-            return caches.match('/swisshouse/resepsiyon.html');
-          }
-        });
+      .catch(async () => {
+        // İnternet yok / şebeke kesintisi — önbellekten sun.
+        //
+        // ÖNEMLİ DÜZELTME: Eski sürümde, hangi sayfa istenmiş olursa olsun (komisyoncu.html,
+        // index.html vb.) önbellekte tam eşleşme yoksa doğrudan resepsiyon.html'e düşülüyordu.
+        // Bu, mobil cihazlarda geçici şebeke kesintisi anında komisyoncu.html açmaya çalışan
+        // bir kullanıcının yanlışlıkla resepsiyon.html'e (ve oradaki oturum kontrolü yüzünden
+        // index.html'e) yönlendirilmesine, dolayısıyla "beyaz ekran / iki kez yenileme gerekiyor"
+        // sorununa yol açıyordu. Artık önce istenen sayfayı (arama parametrelerini göz ardı
+        // ederek) önbellekte aramaya çalışıyoruz; sadece hiçbir eşleşme yoksa son çare olarak
+        // resepsiyon.html'e düşüyoruz.
+        const tamEslesme = await caches.match(e.request);
+        if(tamEslesme) return tamEslesme;
+
+        if(e.request.destination === 'document') {
+          const yol = new URL(e.request.url).pathname;
+          const ayniSayfa = await caches.match(yol, { ignoreSearch: true });
+          if(ayniSayfa) return ayniSayfa;
+          return caches.match('/swisshouse/resepsiyon.html');
+        }
       })
   );
 });
