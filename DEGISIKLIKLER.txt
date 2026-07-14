@@ -1,0 +1,36 @@
+SWISS HOUSE - KOMİSYONCU PORTALI DÜZELTMESİ
+Tarih: 14.07.2026
+
+1. Ekrandaki ünlemli takvim kilidi kaldırıldı.
+   - Oda veya rezervasyon koleksiyonlarından biri okunamazsa portal kapanmaz.
+   - Takvim ve rezervasyon talebi gönderimi çalışmaya devam eder.
+   - Kesin müsaitlik verisi alınamayan günler sarı çizgili olarak gösterilir ve yönetici onayında kontrol edilir.
+
+2. Veri yükleme daha dayanıklı hale getirildi.
+   - Sıralı Firestore sorgusu başarısız olursa basit koleksiyon okuması otomatik denenir.
+   - Geçici bağlantı hatasında daha önce yüklenen doğru veriler silinmez.
+   - Oda, rezervasyon, gelir ve komisyon ayarları birbirinden bağımsız yüklenir.
+
+3. Komisyoncu rezervasyonları belirgin görünmeye devam eder.
+   - Mor-mavi geçişli zemin, turkuaz çerçeve ve beyaz onay işareti kullanılır.
+   - Kendi onaylanan talebi hem talep hem rezervasyon kaydından tanınır.
+
+4. Talep güvenliği korundu.
+   - Rezervasyon listesi okunamadığında talep engellenmez; kayıt “müsaitlik kontrolü gerekli” bilgisiyle gönderilir.
+   - Yönetici onayından önce mevcut çakışma verileri kontrol edilir.
+
+5. Önceki ödeme ve çift kayıt düzeltmeleri korunmuştur.
+   - Check-in/check-out aynı konaklama kaydını günceller.
+   - Çift tıklama kaynaklı mükerrer işlemler engellenir.
+   - Depozito ve kısmi ödeme kalan hesabı doğru çalışır.
+
+6. Komisyoncu sayfasındaki JavaScript tekrar tanımı temizlendi ve tüm HTML modülleri sözdizimi kontrolünden geçirildi.
+7. Service Worker önbelleği swisshouse-v3 olarak yenilendi.
+
+V3 — KOMİSYONCU / RESEPSİYON CANLI TAKVİM SENKRONU
+- Komisyoncu ekranı artık resepsiyonun oda ve rezervasyon takvimiyle aynı veriyi kullanır.
+- Resepsiyon, kişisel misafir bilgisi paylaşmadan her komisyoncu için güvenli takvim özeti yayımlar.
+- Komisyoncu Firebase oturumu ayrı ve RAM içindedir; resepsiyonun aynı tarayıcıdaki oturumu kapanmaz.
+- Yeşil: müsait ve talep gönderilebilir; turuncu: talep bekliyor; mavi: onaylı rezervasyon; mor: başka rezervasyon; kırmızı: dolu.
+- Canlı veri yoksa yanlış oda seçilmemesi için talep gönderimi kapatılır.
+- Talep ile kesin rezervasyon arasındaki fark hem takvim üstünde hem modal içinde açıkça anlatılır.

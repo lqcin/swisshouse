@@ -2028,6 +2028,7 @@ window.komisyonAyarKaydet = async function() {
     const durum = document.getElementById('kom_ayar_durum');
     if(durum) { durum.textContent = '✓ Ayar kaydedildi'; durum.style.color='var(--green)'; }
     komisyonAyarTipDegisti();
+    komisyoncuTakvimSenkronPlanla();
     toast('Komisyoncu ayarı kaydedildi ✓','success');
   } catch(e) {
     toast('Komisyon ayarı kaydedilemedi: '+e.message,'error');
@@ -2152,10 +2153,13 @@ async function initOdalar() {
     window._O = o;
   } else window._O = snap.data();
 
+  _komTakvimHazir.oda = true;
+
   // ── Otomatik çıkış tarihi geçmiş odaları temizle ──
   await otomatikBosal();
 
   renderOdalar();
+  komisyoncuTakvimSenkronPlanla();
 }
 
 // Çıkış tarihi bugünden önce olan dolu odaları otomatik temizliğe al
@@ -2222,9 +2226,72 @@ function gunlukKontrolKur() {
   }, kalan);
 }
 
+// ── KOMİSYONCU TAKVİM SENKRONU ──
+// Komisyoncu ekranına misafir adı/telefonu gibi kişisel veriler gönderilmez.
+// Yalnızca oda durumu ve tarih aralıkları paylaşılır. Aynı koleksiyondaki sabit
+// senkron belgeleri, mevcut Firestore erişim yapısını bozmadan canlı bağlantı sağlar.
+let _komTakvimSenkronTimer = null;
+const _komTakvimHazir = {oda:false, rezervasyon:false};
+function komisyoncuTakvimSenkronPlanla() {
+  clearTimeout(_komTakvimSenkronTimer);
+  _komTakvimSenkronTimer = setTimeout(komisyoncuTakvimSenkronYayinla, 450);
+}
+
+async function komisyoncuTakvimSenkronYayinla() {
+  if(!_komTakvimHazir.oda || !_komTakvimHazir.rezervasyon) return;
+  if(!window._O || !window._R) return;
+  const simdi = nowISO();
+  const bugun = today();
+  const odalar = {};
+  for(const no of HOTEL_ODALAR) {
+    const o = window._O['oda'+no] || {durum:'bos'};
+    odalar['oda'+no] = {
+      durum: o.durum || 'bos',
+      giris: o.giris || '',
+      cikis: o.cikis || '',
+      guncelleme: o.guncelleme || ''
+    };
+  }
+  const rezervasyonlar = (window._R||[])
+    .filter(x => x.durum !== 'iptal' && x.durum !== 'noshow' && (x.cikis||'9999-12-31') >= bugun)
+    .map(x => ({
+      odaNo: Number(x.odaNo)||0,
+      giris: x.giris || '',
+      cikis: x.cikis || '',
+      durum: x.durum || 'rezerve'
+    }))
+    .filter(x => x.odaNo && x.giris && x.cikis);
+
+  const islemler = Object.entries(window.KOMISYONCULAR||{}).map(([key,kom]) => {
+    const ayar = window._KOM_AYAR?.[key] || {tip:kom.komisyonTip||'manuel',deger:Number(kom.komisyonDeger)||0};
+    return setDoc(doc(db,'rezervasyon_talepleri',`__takvim_${key}`), {
+      tip:'takvim_senkron', kaynak:'sistem', durum:'sistem',
+      komisyoncu:key, komisyoncuAd:kom.ad || key,
+      odalar, rezervasyonlar,
+      komisyonAyar:{tip:ayar.tip||'manuel',deger:Number(ayar.deger)||0},
+      guncellemeTarih:simdi, kayitTarih:simdi, surum:3
+    }, {merge:false});
+  });
+  const sonuc = await Promise.allSettled(islemler);
+  const hata = sonuc.find(x => x.status === 'rejected');
+  if(hata) console.warn('Komisyoncu takvim senkronu kısmen yazılamadı:', hata.reason);
+}
+
+// Oda belgesindeki her değişikliği canlı izler; başka sekme/ekrandan yapılan
+// oda taşıma, silme, check-in ve check-out da komisyoncu takvimine yansır.
+onSnapshot(doc(db,'meta','odalar'), snap => {
+  if(!snap.exists()) return;
+  window._O = snap.data();
+  _komTakvimHazir.oda = true;
+  renderOdalar();
+  renderHatirlatma();
+  komisyoncuTakvimSenkronPlanla();
+}, err => console.warn('Oda canlı dinleme hatası:', err));
+
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
-  renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true);
+  _komTakvimHazir.rezervasyon = true;
+  renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true); komisyoncuTakvimSenkronPlanla();
 }, () => syncStatus(false));
 
 onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), s => {
@@ -2245,7 +2312,7 @@ window._TALEP = [];
 let _talepIlkYukleme = true;
 onSnapshot(query(collection(db,'rezervasyon_talepleri'), orderBy('kayitTarih','desc')), s => {
   const oncekiBekleyenSayisi = (window._TALEP||[]).filter(t => t.durum==='bekliyor').length;
-  window._TALEP = s.docs.map(d=>({id:d.id,...d.data()}));
+  window._TALEP = s.docs.map(d=>({id:d.id,...d.data()})).filter(t => t.tip !== 'takvim_senkron');
   const yeniBekleyenSayisi = window._TALEP.filter(t => t.durum==='bekliyor').length;
   renderInstagramTalepleri();
   // Sayfa ilk açıldığında ses çalma — sadece sonradan yeni talep gelirse çal
@@ -5748,6 +5815,8 @@ await loadFiyatlar();
 await loadKomisyonAyarlar();
 await loadOdaOzel();
 await initOdalar();
+await komisyoncuTakvimSenkronYayinla();
+setInterval(komisyoncuTakvimSenkronYayinla, 2 * 60 * 1000);
 gunlukKontrolKur();
 </script>
 </body>
