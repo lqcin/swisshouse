@@ -353,6 +353,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -363,6 +364,29 @@ const app = initializeApp({
   appId:"1:1051421740248:web:1aba5dbdda28f1b35d1bad"
 });
 const db = getFirestore(app);
+
+// ── ANONİM GİRİŞ ──
+// Firestore güvenlik kuralları "request.auth != null" bekliyorsa,
+// komisyoncu portalı kimlik doğrulaması yapmadan okuma/yazma yapamaz.
+// Diğer sayfalar (resepsiyon/veri/yonetici) Firebase Auth ile giriş yapıyor;
+// komisyoncu portalı da anonim olarak giriş yapar (kendi kullanıcı/şifre sistemi ayrı çalışmaya devam eder).
+let _authHazir = null;
+function authHazirBekle() {
+  if (!_authHazir) {
+    const auth = getAuth(app);
+    _authHazir = new Promise((resolve) => {
+      onAuthStateChanged(auth, user => {
+        if (user) { resolve(); return; }
+        signInAnonymously(auth).catch(err => {
+          console.error('Anonim giriş başarısız:', err);
+          resolve(); // giriş başarısız olsa bile portal kilitlenmesin
+        });
+      });
+    });
+  }
+  return _authHazir;
+}
+authHazirBekle(); // sayfa açılır açılmaz girişi başlat, portal beklemeden hazırlansın
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
 
@@ -658,7 +682,10 @@ async function takvimVerisiYukle() {
 }
 window.takvimVerisiYukle = takvimVerisiYukle;
 
-function baslatPortal() {
+async function baslatPortal() {
+  // Firestore isteklerinden önce anonim girişin tamamlanmasını bekle
+  await authHazirBekle();
+
   // İlk yükleme + 60sn periyodik yenileme
   takvimVerisiYukle();
   _yenilemeInterval = setInterval(takvimVerisiYukle, 60000);
@@ -1024,6 +1051,7 @@ window.talepGonder = async function() {
   btn.disabled = true; btn.textContent = m.gonderiliyor;
 
   try {
+    await authHazirBekle();
     const kom = komisyonHesapla(fiyat);
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
