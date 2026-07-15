@@ -1781,8 +1781,10 @@ input[type="number"], input[type="date"], input[type="password"] {
     <!-- Komisyon tablosu — gerçekleşmiş (check-in/gelir) -->
     <div class="table-card">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--green)">— Gerçekleşen (Check-in Yapılmış)</span></div>
+      <!-- Kayıt sayısı arttıkça sayfa değil, sadece bu kutu uzasın diye sabit yükseklik + iç kaydırma -->
+      <div style="max-height:420px;overflow-y:auto;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead>
+        <thead style="position:sticky;top:0;background:var(--white);z-index:1">
           <tr>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Aracı</th>
@@ -1796,6 +1798,7 @@ input[type="number"], input[type="date"], input[type="password"] {
         </thead>
         <tbody id="rapor-komisyon-body"></tbody>
       </table>
+      </div>
       <div class="total-row" id="rapor-komisyon-toplam"></div>
       <div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic">Not: Bu sütun misafirin OTELE oda için yaptığı ödemeyi gösterir. Komisyoncuya yapılan ödemeler için aşağıdaki "Komisyoncu Cari Hesap" bölümüne bakınız.</div>
     </div>
@@ -1881,8 +1884,9 @@ input[type="number"], input[type="date"], input[type="password"] {
   <!-- Komisyon tablosu — yaklaşan rezervasyonlar (henüz check-in yapılmamış) -->
   <div class="table-card" style="margin-bottom:20px">
     <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold2)">— Yaklaşan Rezervasyonlar (Henüz Check-in Yapılmadı)</span></div>
+    <div style="max-height:420px;overflow-y:auto;overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead>
+      <thead style="position:sticky;top:0;background:var(--white);z-index:1">
         <tr>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Aracı</th>
@@ -1896,6 +1900,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       </thead>
       <tbody id="rapor-komisyon-yaklasan-body"></tbody>
     </table>
+    </div>
     <div class="total-row" id="rapor-komisyon-yaklasan-toplam"></div>
   </div>
 </div>
