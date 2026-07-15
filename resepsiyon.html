@@ -1811,7 +1811,10 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Cari Hesap</em>
         <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Tüm zamanlar — komisyoncunun hakettiği komisyon, otel olarak yaptığımız ödemeler ve komisyoncuya kalan borcumuz</span>
       </div>
-      <button class="btn btn-primary" style="font-size:11px" onclick="komOdemeModalAc()">+ Ödeme Yap</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="font-size:11px" onclick="gecmisKomisyonTara()">🔧 Geçmiş Kayıtları Tara</button>
+        <button class="btn btn-primary" style="font-size:11px" onclick="komOdemeModalAc()">+ Ödeme Yap</button>
+      </div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead>
@@ -1880,6 +1883,62 @@ input[type="number"], input[type="date"], input[type="password"] {
         <button class="btn btn-primary" onclick="komOdemeKaydet()">Kaydet</button>
       </div>
     </div>
+  </div>
+
+  <!-- Geçmiş Komisyon Tarama/Düzeltme Modal -->
+  <div class="modal-overlay" id="gecmisKomisyonModal">
+    <div class="modal" style="max-width:720px">
+      <div class="modal-title">🔧 Geçmiş Komisyon Kayıtları</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">
+        Sözleşme fiyatı girilmediği için komisyonu 0 hesaplanmış, ama komisyoncunun sistemde tanımlı sabit/oranlı bir ayarı olan check-in kayıtları. Onaylarsan komisyonları o ayara göre yeniden hesaplanır ve komisyoncunun cari hesabına eklenir.
+      </div>
+      <div id="gecmisKomisyonOzet" style="margin-bottom:12px;font-size:12px"></div>
+      <div style="max-height:360px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead style="position:sticky;top:0;background:var(--white)">
+            <tr>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyoncu</th>
+              <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Oda</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
+              <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Gece</th>
+              <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Eklenecek Komisyon</th>
+            </tr>
+          </thead>
+          <tbody id="gecmisKomisyonBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('gecmisKomisyonModal')">Kapat</button>
+        <button class="btn btn-primary" id="gecmisKomisyonUygulaBtn" onclick="gecmisKomisyonDuzeltUygula()">Tümünü Düzelt ve Hesaplara Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tüm Komisyoncu Ödemeleri — kronolojik, en yeniden en eskiye, "kime ne zaman ne kadar ödedik" -->
+  <div class="table-card" style="margin-top:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Tüm Komisyoncu <em style="color:var(--gold2);font-style:normal">Ödeme Geçmişi</em>
+        <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Hangi komisyoncuya, ne zaman, ne kadar ödeme yapıldığı — en yeniden en eskiye</span>
+      </div>
+      <select id="odemeGecmisiFiltre" onchange="renderOdemeGecmisi()" style="border:1px solid var(--border);padding:6px 10px;font-family:'Jost',sans-serif;font-size:11px;background:var(--cream);color:var(--dark)">
+        <option value="">Tüm Komisyoncular</option>
+      </select>
+    </div>
+    <div style="max-height:360px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="position:sticky;top:0;background:var(--white)">
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyoncu</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödenen Tutar</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Not</th>
+          </tr>
+        </thead>
+        <tbody id="odemeGecmisiBody"></tbody>
+      </table>
+    </div>
+    <div class="total-row" id="odemeGecmisiToplam"></div>
   </div>
 
   <!-- Komisyon tablosu — yaklaşan rezervasyonlar (henüz check-in yapılmamış) -->
@@ -1955,7 +2014,7 @@ if('serviceWorker' in navigator) { navigator.serviceWorker.register('/swisshouse
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, setDoc, getDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, setDoc, getDoc, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -2348,7 +2407,7 @@ onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s 
 window._KOMODEME = [];
 onSnapshot(query(collection(db,'komisyonOdemeleri'), orderBy('tarih','desc')), s => {
   window._KOMODEME = s.docs.map(d=>({id:d.id,...d.data()}));
-  if(document.getElementById('page-rapor')?.classList.contains('active')) renderKomisyonCari();
+  if(document.getElementById('page-rapor')?.classList.contains('active')) { renderKomisyonCari(); renderOdemeGecmisi(); }
 });
 
 // ── INSTAGRAM REZERVASYON TALEPLERİ ──
@@ -4819,6 +4878,7 @@ window.renderRapor = function() {
   }
 
   renderKomisyonCari();
+  renderOdemeGecmisi();
 };
 
 // ── KOMİSYONCU CARİ HESAP ──
@@ -4836,6 +4896,148 @@ function araciGosterAdi(adSayaci) {
   for(const [ad, sayi] of adSayaci) { if(sayi > enSayi) { en = ad; enSayi = sayi; } }
   return en;
 }
+
+// ── GEÇMİŞ KOMİSYON TARAMA/DÜZELTME ──
+// Sözleşme fiyatı unutulduğu için komisyonu 0 hesaplanmış ama komisyoncunun tanımlı
+// bir ayarı olan geçmiş check-in kayıtlarını bulur, önizleme gösterir, onaylanırsa
+// hem gelirler hem komisyonlar koleksiyonunu günceller (Cari Hesap'a otomatik yansır).
+let _gecmisKomisyonBulunanlar = [];
+
+// ── TÜM KOMİSYONCU ÖDEME GEÇMİŞİ ──
+// "Kime, ne zaman, ne kadar ödedik" sorusuna tek bakışta cevap — tüm komisyoncular
+// karışık, en yeni ödeme en üstte. Cari Hesap'taki "Detay" tek komisyoncuya odaklıyken,
+// bu liste zaman eksenli, tüm ödemeleri bir arada gösterir.
+window.renderOdemeGecmisi = function() {
+  const govde = document.getElementById('odemeGecmisiBody');
+  if(!govde) return; // Rapor sayfası henüz açılmamış olabilir
+
+  const odemeler = window._KOMODEME || [];
+
+  // Filtre dropdown'ını güncel komisyoncu isimleriyle doldur (seçim korunur)
+  const filtreEl = document.getElementById('odemeGecmisiFiltre');
+  if(filtreEl) {
+    const oncekiSecim = filtreEl.value;
+    const isimler = [...new Set(odemeler.map(p => (p.araciAd||'').trim()).filter(Boolean))].sort();
+    filtreEl.innerHTML = '<option value="">Tüm Komisyoncular</option>' +
+      isimler.map(ad => `<option value="${ad}">${ad}</option>`).join('');
+    if(isimler.includes(oncekiSecim)) filtreEl.value = oncekiSecim;
+  }
+  const seciliFiltre = filtreEl?.value || '';
+
+  // "En yeniden en eskiye" — zaten sorgu tarih desc geliyor, ama tarih string'i eşitse
+  // kayıt sırasını da (kayitTarih) ikincil kritere alalım.
+  let liste = seciliFiltre ? odemeler.filter(p => (p.araciAd||'').trim() === seciliFiltre) : odemeler;
+  liste = [...liste].sort((a,b) => {
+    const t = String(b.tarih||'').localeCompare(String(a.tarih||''));
+    if(t !== 0) return t;
+    return String(b.kayitTarih||'').localeCompare(String(a.kayitTarih||''));
+  });
+
+  if(liste.length === 0) {
+    govde.innerHTML = '<tr class="empty-row"><td colspan="4">Henüz komisyoncuya yapılmış bir ödeme yok</td></tr>';
+    document.getElementById('odemeGecmisiToplam').textContent = '';
+    return;
+  }
+
+  govde.innerHTML = liste.map(p => `<tr>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${p.tarih||'—'}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${p.araciAd||'—'}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--green)">${fmt(Number(p.tutar)||0)} ₺</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${p.not||'—'}</td>
+  </tr>`).join('');
+
+  const toplam = liste.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
+  document.getElementById('odemeGecmisiToplam').textContent =
+    `${liste.length} ödeme kaydı · Toplam: ${fmt(toplam)} ₺`;
+};
+
+window.gecmisKomisyonTara = function() {
+  const bulunanlar = [];
+  (window._G || []).forEach(g => {
+    if(g.kaynak === 'oda-masrafi') return; // oda masrafı geliri, konaklama değil
+    if(!g.araciAd) return; // komisyoncusuz kayıt, düzeltilecek bir şey yok
+    const mevcutKomisyon = Number(g.komisyonFark) || 0;
+    if(mevcutKomisyon > 0) return; // zaten doğru hesaplanmış
+
+    const ayar = komisyonAyariBul(g.araciAd);
+    if(!ayar || !(ayar.tip === 'sabit' || ayar.tip === 'oran') || !(Number(ayar.deger) > 0)) return; // tanımlı ayar yok
+
+    const fiyat = Number(g.fiyat) || 0;
+    const gece = Number(g.gece) || 0;
+    if(!fiyat || !gece) return;
+
+    const hesap = komisyonKuraliHesapla(fiyat, ayar);
+    const yeniKomisyon = Math.round(hesap.komisyon * gece * 100) / 100;
+    if(yeniKomisyon <= 0) return;
+
+    bulunanlar.push({
+      gelirDocId: g.id, misafir: g.misafir||'—', araciAd: g.araciAd,
+      odaNo: g.odaNo, tarih: g.tarih, gece, yeniKomisyon
+    });
+  });
+
+  _gecmisKomisyonBulunanlar = bulunanlar;
+
+  const gövde = document.getElementById('gecmisKomisyonBody');
+  const ozet = document.getElementById('gecmisKomisyonOzet');
+  const btn = document.getElementById('gecmisKomisyonUygulaBtn');
+
+  if(bulunanlar.length === 0) {
+    gövde.innerHTML = '<tr class="empty-row"><td colspan="6">Düzeltilecek kayıt bulunamadı — hepsi zaten doğru hesaplanmış ✓</td></tr>';
+    ozet.innerHTML = '';
+    if(btn) btn.style.display = 'none';
+  } else {
+    const toplam = bulunanlar.reduce((a,b)=>a+b.yeniKomisyon, 0);
+    ozet.innerHTML = `<b>${bulunanlar.length} kayıt</b> bulundu · Toplam eklenecek: <b style="color:var(--red)">${fmt(toplam)} ₺</b>`;
+    gövde.innerHTML = bulunanlar.map(b => `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${b.misafir}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--gold2)">🤝 ${b.araciAd}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${b.odaNo}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${b.tarih}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">${b.gece}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--red)">${fmt(b.yeniKomisyon)}</td>
+    </tr>`).join('');
+    if(btn) btn.style.display = '';
+  }
+  openModal('gecmisKomisyonModal');
+};
+
+window.gecmisKomisyonDuzeltUygula = async function() {
+  const bulunanlar = _gecmisKomisyonBulunanlar;
+  if(!bulunanlar.length) return;
+  const btn = document.getElementById('gecmisKomisyonUygulaBtn');
+  if(btn) { btn.disabled = true; btn.textContent = 'Uygulanıyor...'; }
+
+  try {
+    // Firestore batch write 500 işlemle sınırlı; her kayıt 2 yazma (gelirler + komisyonlar)
+    // yaptığı için güvenli olsun diye 200'erli gruplar halinde işliyoruz.
+    const GRUP = 200;
+    for(let i = 0; i < bulunanlar.length; i += GRUP) {
+      const parca = bulunanlar.slice(i, i + GRUP);
+      const batch = writeBatch(db);
+      const now = nowISO();
+      parca.forEach(b => {
+        batch.update(doc(db, 'gelirler', b.gelirDocId), { komisyonFark: b.yeniKomisyon, guncelleme: now });
+        batch.set(doc(db, 'komisyonlar', 'komisyon_' + b.gelirDocId), {
+          gelirDocId: b.gelirDocId, tarih: b.tarih, odaNo: String(b.odaNo),
+          misafir: b.misafir, gece: b.gece,
+          toplamKomisyon: b.yeniKomisyon, araciAd: b.araciAd,
+          kayitTarih: now, guncelleme: now, gecmisDuzeltmesi: true
+        }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    const toplam = bulunanlar.reduce((a,b)=>a+b.yeniKomisyon, 0);
+    closeModal('gecmisKomisyonModal');
+    toast(`${bulunanlar.length} kayıt düzeltildi, toplam ${fmt(toplam)} ₺ komisyoncu hesaplarına eklendi ✓`, 'success');
+    _gecmisKomisyonBulunanlar = [];
+  } catch(e) {
+    toast('Düzeltme uygulanamadı: ' + (e?.message || 'Bilinmeyen hata'), 'error');
+  } finally {
+    if(btn) { btn.disabled = false; btn.textContent = 'Tümünü Düzelt ve Hesaplara Ekle'; }
+  }
+};
 
 window.renderKomisyonCari = function() {
   const govde = document.getElementById('komcari-body');
