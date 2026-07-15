@@ -864,15 +864,24 @@ function araciAnahtar(ad) {
   return String(ad||'').trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
 }
 
+// Kayıttaki serbest yazılan ismin, bu komisyoncunun kendi adıyla eşleşip eşleşmediğini
+// kontrol eder — sadece tam eşleşme değil, "PUNE" gibi kısaltılmış yazımları da
+// ("pune iran" ile) yakalar (biri diğerinin en az 3 harflik baş kısmıysa eşleşir).
+function araciBenimMi(kayitliAd) {
+  const a = araciAnahtar(kayitliAd);
+  const b = araciAnahtar(aktifKom?.ad);
+  if(!a || !b) return false;
+  return a === b || (a.length >= 3 && b.startsWith(a)) || (b.length >= 3 && a.startsWith(b));
+}
+
 // Kazancım panelini ve detay dökümünü günceller — bu komisyoncunun kendi adına
 // (ve giriş yaptığı kullanıcı adının KOMISYONCULAR'daki görünen adına) eşleşen
 // komisyon (hakediş) ve ödeme kayıtlarını toplar.
 function renderKazancim() {
   if(!aktifKom) return;
-  const kendiAnahtar = araciAnahtar(aktifKom.ad);
 
-  const borclar = _komTumu.filter(k => araciAnahtar(k.araciAd) === kendiAnahtar);
-  const odemeler = _komOdemeTumu.filter(p => araciAnahtar(p.araciAd) === kendiAnahtar);
+  const borclar = _komTumu.filter(k => araciBenimMi(k.araciAd));
+  const odemeler = _komOdemeTumu.filter(p => araciBenimMi(p.araciAd));
 
   const toplamHakedis = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
   const toplamOdenen = odemeler.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
