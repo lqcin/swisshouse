@@ -1577,8 +1577,10 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px">
       📋 Rezervasyon Talepleri <span id="talep-sayac" style="background:var(--primary);color:#fff;border-radius:50%;font-size:10px;padding:1px 7px"></span>
     </div>
+    <!-- Talepler arttıkça sayfanın kendisi değil, sadece bu kutu uzasın diye sabit yükseklik + iç kaydırma -->
+    <div style="max-height:420px;overflow-y:auto;overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead>
+      <thead style="position:sticky;top:0;background:var(--white);z-index:1">
         <tr>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kaynak</th>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Misafir</th>
@@ -1593,6 +1595,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       </thead>
       <tbody id="instagramTalepBody"></tbody>
     </table>
+    </div>
   </div>
 
   <div class="section-head">
@@ -1798,22 +1801,22 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
   </div>
 
-  <!-- Komisyoncu Cari Hesap — hakedilen komisyon / ödenen / kalan bakiye -->
+  <!-- Komisyoncu Cari Hesap — komisyoncunun hakettiği komisyon / tarafımızdan yapılan ödeme / bize kalan borç -->
   <div class="table-card" style="margin-top:24px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Cari Hesap</em>
-        <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Tüm zamanlar — hakedilen komisyon, yapılan ödeme ve kalan bakiye</span>
+        <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Tüm zamanlar — komisyoncunun hakettiği komisyon, otel olarak yaptığımız ödemeler ve komisyoncuya kalan borcumuz</span>
       </div>
-      <button class="btn btn-primary" style="font-size:11px" onclick="komOdemeModalAc()">+ Ödeme Al</button>
+      <button class="btn btn-primary" style="font-size:11px" onclick="komOdemeModalAc()">+ Ödeme Yap</button>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead>
         <tr>
           <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyoncu</th>
           <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Konaklama</th>
-          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Toplam Komisyon</th>
-          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödenen</th>
-          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kalan Bakiye</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Toplam Hakediş</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarafımızca Ödenen</th>
+          <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ona Kalan Borcumuz</th>
           <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">İşlem</th>
         </tr>
       </thead>
@@ -1825,15 +1828,15 @@ input[type="number"], input[type="date"], input[type="password"] {
   <div class="modal-overlay" id="komDetayModal">
     <div class="modal" style="max-width:640px">
       <div class="modal-title" id="komDetayBaslik">🤝 Komisyoncu Hesabı</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Borç (komisyon) ve ödeme hareketleri</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Komisyoncunun hakettiği komisyon (borç) ve tarafımızca yapılan ödeme hareketleri</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
           <tr>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Açıklama</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Borç</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödeme</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Bakiye</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Borcumuz</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödediğimiz</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Kalan Borç</th>
           </tr>
         </thead>
         <tbody id="komDetayBody"></tbody>
@@ -1841,23 +1844,23 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal('komDetayModal')">Kapat</button>
         <button class="btn btn-ghost" onclick="komEkstreYazdir()">🖨 Ekstre Yazdır</button>
-        <button class="btn btn-primary" id="komDetayOdemeAlBtn">+ Ödeme Al</button>
+        <button class="btn btn-primary" id="komDetayOdemeAlBtn">+ Ödeme Yap</button>
       </div>
     </div>
   </div>
 
-  <!-- Komisyoncuya Ödeme Al Modal -->
+  <!-- Komisyoncuya Ödeme Yap Modal -->
   <div class="modal-overlay" id="komOdemeModal">
     <div class="modal" style="max-width:420px">
-      <div class="modal-title">💵 Komisyoncuya Ödeme</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Bu kayıt sadece komisyoncu cari hesabını etkiler, misafir ödemesiyle ilgisi yoktur.</div>
+      <div class="modal-title">💵 Komisyoncuya Ödeme Yap</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Komisyoncuya nakit/havale ile yaptığın ödemeyi buraya kaydet. Bu kayıt sadece komisyoncu cari hesabını etkiler, misafirin otele yaptığı ödemeyle ilgisi yoktur.</div>
       <div class="form-group">
         <label>Komisyoncu *</label>
         <input type="text" id="komOdeme_araci" placeholder="Komisyoncu adı" list="komOdeme_araci_list">
         <datalist id="komOdeme_araci_list"></datalist>
       </div>
       <div class="form-group">
-        <label>Tutar (₺) *</label>
+        <label>Ödediğim Tutar (₺) *</label>
         <input type="number" id="komOdeme_tutar" min="0" step="0.01" placeholder="0">
       </div>
       <div class="form-group">
@@ -4955,7 +4958,7 @@ window.komOdemeKaydet = async function() {
       kayitTarih: nowISO()
     });
     closeModal('komOdemeModal');
-    toast(`${araciAd} — ${fmt(tutar)} ödeme kaydedildi ✓`, 'success');
+    toast(`${araciAd} adlı komisyoncuya ${fmt(tutar)} ₺ ödeme kaydedildi ✓`, 'success');
   } catch(e) {
     toast('Ödeme kaydedilemedi: '+(e?.message||'Bilinmeyen hata'), 'error');
   }
