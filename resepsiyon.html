@@ -609,7 +609,8 @@ input[type="number"], input[type="date"], input[type="password"] {
             </div>
             <div class="mxl-ucret-col">
               <div class="mxl-ucret-col-label">Komisyoncu / Acente</div>
-              <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı..." style="margin-bottom:0">
+              <input type="text" id="ci_komisyoncu" placeholder="Aracı / komisyoncu adı..." style="margin-bottom:0" list="ci_komisyoncu_list">
+              <datalist id="ci_komisyoncu_list"></datalist>
             </div>
             <div class="mxl-ucret-col toplam">
               <div class="mxl-ucret-col-label">Komisyon Tutarı</div>
@@ -1271,7 +1272,7 @@ input[type="number"], input[type="date"], input[type="password"] {
           <div class="form-row" style="margin-top:12px;margin-bottom:0">
             <div class="form-group" style="margin-bottom:0">
               <label>Komisyoncu / Acente <span style="font-weight:400;text-transform:none;font-size:9px">(Varsa)</span></label>
-              <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı...">
+              <input type="text" id="rev_komisyoncu" placeholder="Aracı / komisyoncu adı..." list="ci_komisyoncu_list">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Not</label>
@@ -4788,6 +4789,18 @@ window.renderRapor = function() {
 // window._KOM  : her konaklama için hakedilen komisyon ("borç") kayıtları — otomatik, check-in'de oluşur.
 // window._KOMODEME : otelin komisyoncuya fiilen ödediği tutarlar — manuel, burada girilir.
 // Bu ikisi TAMAMEN misafirin odaya yaptığı ödemeden bağımsızdır.
+// "Pune", "PUNE", "pune", "pune iran" gibi yazım farklarını TEK komisyoncu olarak
+// birleştirmek için normalize edilmiş anahtar (küçük harf + kırpılmış + tek boşluk).
+function araciAnahtar(ad) {
+  return String(ad||'').trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
+}
+// Bir grup içindeki en sık kullanılan orijinal yazımı ekranda göstermek için seçer.
+function araciGosterAdi(adSayaci) {
+  let en = '', enSayi = -1;
+  for(const [ad, sayi] of adSayaci) { if(sayi > enSayi) { en = ad; enSayi = sayi; } }
+  return en;
+}
+
 window.renderKomisyonCari = function() {
   const govde = document.getElementById('komcari-body');
   if(!govde) return; // Rapor sayfası henüz açılmamış olabilir
@@ -4795,25 +4808,26 @@ window.renderKomisyonCari = function() {
   const komList = window._KOM || [];
   const odemeList = window._KOMODEME || [];
 
-  const araciler = new Map(); // araciAd -> {borc, odeme, sayi}
-  komList.forEach(k => {
-    const ad = (k.araciAd||'').trim();
+  // key = normalize edilmiş isim -> {borc, odeme, sayi, adSayaci: Map<orijinalYazım, kaç kez görüldü>}
+  const araciler = new Map();
+  const ekle = (adRaw, alan, tutar) => {
+    const ad = (adRaw||'').trim();
     if(!ad) return;
-    if(!araciler.has(ad)) araciler.set(ad, {borc:0, odeme:0, sayi:0});
-    const rec = araciler.get(ad);
-    rec.borc += Number(k.toplamKomisyon)||0;
-    rec.sayi += 1;
-  });
-  odemeList.forEach(p => {
-    const ad = (p.araciAd||'').trim();
-    if(!ad) return;
-    if(!araciler.has(ad)) araciler.set(ad, {borc:0, odeme:0, sayi:0});
-    araciler.get(ad).odeme += Number(p.tutar)||0;
-  });
+    const key = araciAnahtar(ad);
+    if(!araciler.has(key)) araciler.set(key, {borc:0, odeme:0, sayi:0, adSayaci:new Map()});
+    const rec = araciler.get(key);
+    rec[alan] += tutar;
+    rec.adSayaci.set(ad, (rec.adSayaci.get(ad)||0) + 1);
+  };
+  komList.forEach(k => { ekle(k.araciAd, 'borc', Number(k.toplamKomisyon)||0); if((k.araciAd||'').trim()) araciler.get(araciAnahtar(k.araciAd)).sayi += 1; });
+  odemeList.forEach(p => ekle(p.araciAd, 'odeme', Number(p.tutar)||0));
 
-  // Datalist'i güncel komisyoncu isimleriyle doldur (ödeme formunda otomatik tamamlama için)
+  // Datalist'i güncel komisyoncu isimleriyle doldur (her gruptan en sık kullanılan yazım) —
+  // böylece ödeme/check-in formunda otomatik tamamlama yeni yazım farkları oluşmasını azaltır.
   const dl = document.getElementById('komOdeme_araci_list');
-  if(dl) dl.innerHTML = [...araciler.keys()].sort().map(a=>`<option value="${a}">`).join('');
+  if(dl) dl.innerHTML = [...araciler.values()].map(r => araciGosterAdi(r.adSayaci)).sort().map(a=>`<option value="${a}">`).join('');
+  const dl2 = document.getElementById('ci_komisyoncu_list');
+  if(dl2) dl2.innerHTML = [...araciler.values()].map(r => araciGosterAdi(r.adSayaci)).sort().map(a=>`<option value="${a}">`).join('');
 
   if(araciler.size === 0) {
     govde.innerHTML = '<tr class="empty-row"><td colspan="6">Henüz komisyonlu rezervasyon yok</td></tr>';
@@ -4821,31 +4835,33 @@ window.renderKomisyonCari = function() {
   }
 
   const satirlar = [...araciler.entries()].sort((a,b)=>b[1].borc-a[1].borc);
-  govde.innerHTML = satirlar.map(([ad, rec]) => {
+  govde.innerHTML = satirlar.map(([key, rec]) => {
+    const adGoster = araciGosterAdi(rec.adSayaci);
     const kalan = rec.borc - rec.odeme;
     const kalanRenk = kalan > 0.5 ? 'var(--red)' : (kalan < -0.5 ? 'var(--gold2)' : 'var(--green)');
+    const farkliYazimSayisi = rec.adSayaci.size;
     return `<tr>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${ad}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${adGoster}${farkliYazimSayisi>1 ? ` <span title="${[...rec.adSayaci.keys()].join(', ')}" style="font-size:9px;color:var(--muted);font-weight:400;cursor:help">(${farkliYazimSayisi} yazım birleştirildi)</span>` : ''}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${rec.sayi}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${fmt(rec.borc)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green)">${fmt(rec.odeme)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:${kalanRenk}">${fmt(kalan)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">
-        <button class="btn btn-ghost btn-sm" onclick="komDetayAc('${ad.replace(/'/g,"\\'")}')">Detay</button>
+        <button class="btn btn-ghost btn-sm" onclick="komDetayAc('${key.replace(/'/g,"\\'")}', '${adGoster.replace(/'/g,"\\'")}')">Detay</button>
       </td>
     </tr>`;
   }).join('');
 };
 
-// Bir komisyoncunun tüm borç + ödeme hareketlerini kronolojik gösterir
-window.komDetayAc = function(araciAd) {
-  document.getElementById('komDetayBaslik').textContent = '🤝 ' + araciAd;
-  const borclar = (window._KOM||[]).filter(k => (k.araciAd||'').trim() === araciAd).map(k => ({
+// Bir komisyoncunun (tüm yazım varyantları dahil) borç + ödeme hareketlerini kronolojik gösterir
+window.komDetayAc = function(araciKey, adGoster) {
+  document.getElementById('komDetayBaslik').textContent = '🤝 ' + (adGoster || araciKey);
+  const borclar = (window._KOM||[]).filter(k => araciAnahtar(k.araciAd) === araciKey).map(k => ({
     tarih: k.tarih || k.kayitTarih || '', tip:'borc',
     aciklama: `Oda ${k.odaNo} · ${k.misafir||'—'} · ${k.gece||'—'} gece`,
     tutar: Number(k.toplamKomisyon)||0
   }));
-  const odemeler = (window._KOMODEME||[]).filter(p => (p.araciAd||'').trim() === araciAd).map(p => ({
+  const odemeler = (window._KOMODEME||[]).filter(p => araciAnahtar(p.araciAd) === araciKey).map(p => ({
     tarih: p.tarih || p.kayitTarih || '', tip:'odeme',
     aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı',
     tutar: Number(p.tutar)||0
@@ -4864,10 +4880,11 @@ window.komDetayAc = function(araciAd) {
     </tr>`;
   }).join('');
   document.getElementById('komDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Hareket yok</td></tr>';
-  document.getElementById('komDetayOdemeAlBtn').onclick = () => { closeModal('komDetayModal'); komOdemeModalAc(araciAd); };
+  const adKullan = adGoster || araciKey;
+  document.getElementById('komDetayOdemeAlBtn').onclick = () => { closeModal('komDetayModal'); komOdemeModalAc(adKullan); };
 
   // Yazdır butonu için mevcut ekstre verisini sakla
-  window._komEkstreAktif = { araciAd, hareketler, bakiyeToplam: bakiye };
+  window._komEkstreAktif = { araciAd: adKullan, hareketler, bakiyeToplam: bakiye };
 
   openModal('komDetayModal');
 };
