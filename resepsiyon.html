@@ -2059,6 +2059,21 @@ function komisyonKuraliHesapla(sozlesmeFiyat, ayar) {
   return { tip, deger, komisyon, otelFiyat: Math.max(0, Math.round((fiyat-komisyon)*100)/100) };
 }
 
+// Serbest yazılan "Aracı" adını (check-in'de girilen) önceden tanımlı komisyoncu
+// ayarlarıyla (Rapor > Komisyoncu Ayarları) eşleştirir — yazım farkına duyarsız.
+// Böylece resepsiyonist "sözleşme fiyatı" alanını doldurmayı unutsa bile, komisyoncunun
+// sabit/oranlı ayarı varsa komisyon YİNE DE otomatik hesaplanır (unutkanlık, hak kaybı değildir).
+function komisyonAyariBul(araciAd) {
+  if(!araciAd) return null;
+  const anahtar = araciAnahtar(araciAd);
+  for(const k in (window._KOM_AYAR||{})) {
+    const ayar = window._KOM_AYAR[k];
+    const kayitliAd = ayar?.ad || window.KOMISYONCULAR?.[k]?.ad || k;
+    if(araciAnahtar(kayitliAd) === anahtar) return ayar;
+  }
+  return null;
+}
+
 async function loadKomisyonAyarlar() {
   try {
     const snap = await getDoc(doc(db,'meta','komisyoncuAyarlar'));
@@ -3345,7 +3360,19 @@ window.saveCheckin = async function() {
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   const sozlesmeFiyatVal = window._O['oda'+no]?.sozlesmeFiyat || null;
-  const komisyonFark = (sozlesmeFiyatVal && sozlesmeFiyatVal > fiyat) ? (sozlesmeFiyatVal - fiyat) * gece : 0;
+  let komisyonFark = (sozlesmeFiyatVal && sozlesmeFiyatVal > fiyat) ? (sozlesmeFiyatVal - fiyat) * gece : 0;
+
+  // Sözleşme fiyatı girilmemiş/fark oluşmamış olsa bile, bu komisyoncu için önceden
+  // tanımlı sabit/oranlı bir ayar varsa komisyon YİNE DE hesaplanır — bu bir veri
+  // girişi unutkanlığıdır, komisyoncunun hak ettiği komisyonu ortadan kaldırmaz.
+  const araciAdVal = window._O['oda'+no]?.araciAd || null;
+  if(komisyonFark === 0 && araciAdVal) {
+    const ayar = komisyonAyariBul(araciAdVal);
+    if(ayar && (ayar.tip === 'sabit' || ayar.tip === 'oran') && Number(ayar.deger) > 0) {
+      const hesap = komisyonKuraliHesapla(fiyat, ayar);
+      komisyonFark = Math.round(hesap.komisyon * gece * 100) / 100;
+    }
+  }
 
   // Gelir kaydı
   if(toplam > 0) {
@@ -4655,7 +4682,16 @@ window.renderRapor = function() {
       const fiyat = Number(r.fiyat) || 0;
       const sozlesme = Number(r.sozlesmeFiyat) || 0;
       const gece = geceSayisi(r.giris, r.cikis);
-      const fark = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+      let fark = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+      // Aynı unutkanlık düzeltmesi: sözleşme farkı hesaplanamadıysa, komisyoncunun
+      // önceden tanımlı sabit/oranlı ayarı varsa beklenen komisyon ondan hesaplanır.
+      if(fark === 0 && r.araciAd && gece) {
+        const ayar = komisyonAyariBul(r.araciAd);
+        if(ayar && (ayar.tip === 'sabit' || ayar.tip === 'oran') && Number(ayar.deger) > 0) {
+          const hesap = komisyonKuraliHesapla(fiyat, ayar);
+          fark = Math.round(hesap.komisyon * gece * 100) / 100;
+        }
+      }
       return {...r, _gece:gece, _komisyonTutar: fark};
     });
 
