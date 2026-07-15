@@ -5065,7 +5065,7 @@ window.renderKomisyonCari = function() {
   const komList = window._KOM || [];
   const odemeList = window._KOMODEME || [];
 
-  // key = normalize edilmiş KANONİK isim -> {borc, odeme, sayi, adSayaci: Map<orijinalYazım, kaç kez görüldü>}
+  // key = normalize edilmiş KANONİK isim -> {borc, odeme, sayi, beklenen, adSayaci: Map<orijinalYazım, kaç kez görüldü>}
   // "PUNE" / "Pune" / "pune iran" gibi kısaltılmış yazımlar da artık aynı hesapta birleşiyor.
   const araciler = new Map();
   const ekle = (adRaw, alan, tutar) => {
@@ -5073,7 +5073,7 @@ window.renderKomisyonCari = function() {
     if(!adOrijinal) return null;
     const adKanonik = araciKanonikAd(adOrijinal);
     const key = araciAnahtar(adKanonik);
-    if(!araciler.has(key)) araciler.set(key, {borc:0, odeme:0, sayi:0, adSayaci:new Map()});
+    if(!araciler.has(key)) araciler.set(key, {borc:0, odeme:0, sayi:0, beklenen:0, beklenenSayi:0, adSayaci:new Map()});
     const rec = araciler.get(key);
     rec[alan] += tutar;
     rec.adSayaci.set(adOrijinal, (rec.adSayaci.get(adOrijinal)||0) + 1);
@@ -5081,6 +5081,37 @@ window.renderKomisyonCari = function() {
   };
   komList.forEach(k => { const key = ekle(k.araciAd, 'borc', Number(k.toplamKomisyon)||0); if(key) araciler.get(key).sayi += 1; });
   odemeList.forEach(p => ekle(p.araciAd, 'odeme', Number(p.tutar)||0));
+
+  // Henüz check-in yapılmamış ama onaylı rezervasyonu olan komisyoncular da (sözleşme farkından
+  // veya kayıtlı komisyon ayarından hesaplanabiliyorsa) hesaba "Beklenen" olarak ekleniyor —
+  // artık komisyoncu, misafiri konaklamaya başlamadan da hesapta görünüyor.
+  (window._R || []).forEach(r => {
+    if(r.durum === 'iptal' || !r.araciAd) return;
+    const odaMeta = window._O?.['oda'+r.odaNo];
+    const checkinOlmus = odaMeta && odaMeta.durum === 'dolu' && odaMeta.giris === r.giris;
+    if(checkinOlmus) return; // bu zaten "borc" (gerçekleşen) tarafında sayıldı
+
+    const fiyat = Number(r.fiyat) || 0;
+    const sozlesme = Number(r.sozlesmeFiyat) || 0;
+    const gece = geceSayisi(r.giris, r.cikis);
+    let tutar = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+    if(tutar === 0 && gece) {
+      const ayar = komisyonAyariBul(r.araciAd);
+      if(ayar && (ayar.tip==='sabit'||ayar.tip==='oran') && Number(ayar.deger)>0) {
+        const hesap = komisyonKuraliHesapla(fiyat, ayar);
+        tutar = Math.round(hesap.komisyon * gece * 100) / 100;
+      }
+    }
+    if(tutar <= 0) return;
+
+    const adOrijinal = (r.araciAd||'').trim();
+    const key = araciAnahtar(araciKanonikAd(adOrijinal));
+    if(!araciler.has(key)) araciler.set(key, {borc:0, odeme:0, sayi:0, beklenen:0, beklenenSayi:0, adSayaci:new Map()});
+    const rec = araciler.get(key);
+    rec.beklenen += tutar;
+    rec.beklenenSayi += 1;
+    rec.adSayaci.set(adOrijinal, (rec.adSayaci.get(adOrijinal)||0) + 1);
+  });
 
   // Datalist'i güncel komisyoncu isimleriyle doldur (her gruptan en sık kullanılan yazım) —
   // böylece ödeme/check-in formunda otomatik tamamlama yeni yazım farkları oluşmasını azaltır.
@@ -5094,16 +5125,20 @@ window.renderKomisyonCari = function() {
     return;
   }
 
-  const satirlar = [...araciler.entries()].sort((a,b)=>b[1].borc-a[1].borc);
+  const satirlar = [...araciler.entries()].sort((a,b)=>(b[1].borc+b[1].beklenen)-(a[1].borc+a[1].beklenen));
   govde.innerHTML = satirlar.map(([key, rec]) => {
     const adGoster = araciGosterAdi(rec.adSayaci);
-    const kalan = rec.borc - rec.odeme;
+    const toplamHakedis = rec.borc + rec.beklenen;
+    const kalan = toplamHakedis - rec.odeme;
     const kalanRenk = kalan > 0.5 ? 'var(--red)' : (kalan < -0.5 ? 'var(--gold2)' : 'var(--green)');
     const farkliYazimSayisi = rec.adSayaci.size;
+    const hakedisDetay = rec.beklenen > 0
+      ? `${fmt(toplamHakedis)}<br><span style="font-size:9px;color:var(--muted);font-weight:400">(${fmt(rec.borc)} kesin + ${fmt(rec.beklenen)} beklenen)</span>`
+      : fmt(toplamHakedis);
     return `<tr>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${adGoster}${farkliYazimSayisi>1 ? ` <span title="${[...rec.adSayaci.keys()].join(', ')}" style="font-size:9px;color:var(--muted);font-weight:400;cursor:help">(${farkliYazimSayisi} yazım birleştirildi)</span>` : ''}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${rec.sayi}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${fmt(rec.borc)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${rec.sayi}${rec.beklenenSayi>0 ? ` <span style="color:var(--gold2)" title="Henüz check-in yapılmamış onaylı rezervasyon">+${rec.beklenenSayi} beklenen</span>` : ''}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${hakedisDetay}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--green)">${fmt(rec.odeme)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:${kalanRenk}">${fmt(kalan)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center">
@@ -5121,20 +5156,44 @@ window.komDetayAc = function(araciKey, adGoster) {
     aciklama: `Oda ${k.odaNo} · ${k.misafir||'—'} · ${k.gece||'—'} gece`,
     tutar: Number(k.toplamKomisyon)||0
   }));
+  // Henüz check-in olmamış ama onaylı rezervasyonlardan beklenen komisyon — aynı mantık renderKomisyonCari ile
+  const beklenenler = (window._R||[]).filter(r => {
+    if(r.durum === 'iptal' || !r.araciAd) return false;
+    if(araciAnahtar(araciKanonikAd(r.araciAd)) !== araciKey) return false;
+    const odaMeta = window._O?.['oda'+r.odaNo];
+    const checkinOlmus = odaMeta && odaMeta.durum === 'dolu' && odaMeta.giris === r.giris;
+    return !checkinOlmus;
+  }).map(r => {
+    const fiyat = Number(r.fiyat) || 0;
+    const sozlesme = Number(r.sozlesmeFiyat) || 0;
+    const gece = geceSayisi(r.giris, r.cikis);
+    let tutar = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+    if(tutar === 0 && gece) {
+      const ayar = komisyonAyariBul(r.araciAd);
+      if(ayar && (ayar.tip==='sabit'||ayar.tip==='oran') && Number(ayar.deger)>0) {
+        const hesap = komisyonKuraliHesapla(fiyat, ayar);
+        tutar = Math.round(hesap.komisyon * gece * 100) / 100;
+      }
+    }
+    return { tarih: r.giris||'', tip:'beklenen',
+      aciklama: `⏳ Oda ${r.odaNo} · ${r.misafir||'—'} · ${gece} gece · henüz check-in yapılmadı`,
+      tutar };
+  }).filter(b => b.tutar > 0);
   const odemeler = (window._KOMODEME||[]).filter(p => araciAnahtar(araciKanonikAd(p.araciAd)) === araciKey).map(p => ({
     tarih: p.tarih || p.kayitTarih || '', tip:'odeme',
     aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı',
     tutar: Number(p.tutar)||0
   }));
-  const hareketler = [...borclar, ...odemeler].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
+  const hareketler = [...borclar, ...beklenenler, ...odemeler].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
 
   let bakiye = 0;
   const satirlar = hareketler.map(h => {
-    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    bakiye += (h.tip==='borc' || h.tip==='beklenen') ? h.tutar : -h.tutar;
+    const borcRengi = h.tip==='beklenen' ? 'color:var(--gold2);font-style:italic' : '';
     return `<tr>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${h.tip==='borc'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;${borcRengi}">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar):'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${h.tip==='odeme'?fmt(h.tutar):'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td>
     </tr>`;
