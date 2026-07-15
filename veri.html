@@ -600,12 +600,33 @@ async function silinenKayitIcinOdaTemizle(kayit) {
   }
 }
 
+// Bir "rezervasyonlar" kaydı silindiğinde, onu doğuran orijinal komisyoncu talebi
+// (rezervasyon_talepleri) hâlâ "Onaylandı" görünmeye devam ediyordu — komisyoncunun
+// takviminden kayıt gitmiş olsa da "Taleplerim" listesinde/notlarda kalıyordu.
+// Artık kaynak talep de otomatik "İptal" olarak işaretlenip senkronize ediliyor.
+async function silinenKayitIcinTalepIptalEt(kayit) {
+  if(!kayit || aktifSekme !== 'rezervasyonlar') return;
+  const talepId = kayit.kaynakTalepId;
+  if(!talepId) return;
+  try {
+    await updateDoc(doc(db, 'rezervasyon_talepleri', talepId), {
+      durum: 'iptal',
+      iptalNot: 'Rezervasyon kaydı veri panelinden silindi',
+      islemTarih: new Date().toISOString()
+    });
+    toast('Bağlı komisyoncu talebi de iptal edildi ✓', 'success');
+  } catch(e) {
+    console.warn('Kaynak talep iptal edilemedi:', e);
+  }
+}
+
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
     const kayit = tumVeri.find(x => x._id === duzenleId);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
     await silinenKayitIcinOdaTemizle(kayit);
+    await silinenKayitIcinTalepIptalEt(kayit);
     toast('Kayıt silindi', 'success');
     modalKapat();
     await sekmeYukle(aktifSekme);
@@ -618,6 +639,7 @@ window.hizliSil = async function(id) {
     const kayit = tumVeri.find(x => x._id === id);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
     await silinenKayitIcinOdaTemizle(kayit);
+    await silinenKayitIcinTalepIptalEt(kayit);
     toast('Silindi', 'success');
     await sekmeYukle(aktifSekme);
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
