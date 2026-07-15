@@ -73,6 +73,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#c9b8a3;}
 .takvim-table td.t-kontrol{background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 6px,#f7efd9 6px,#f7efd9 12px);cursor:pointer;}
+.takvim-table td.t-gecmis{background:repeating-linear-gradient(135deg,#f5f5f5,#f5f5f5 6px,#e8e8e8 6px,#e8e8e8 12px);cursor:not-allowed;}
 .takvim-table td.t-kontrol:hover{background:#fff3cd;}
 .takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
 /* "Benim rezervasyonum" — yeni bir renk DEĞİL; aynı komisyoncu (turkuaz) rengi üstüne
@@ -1105,6 +1106,15 @@ function takvimTablosuCiz(gunList, today) {
       if(!_veriDurumu.rezervasyon && (cls === 't-bos' || cls === 't-bugun')) {
         cls = 't-kontrol';
       }
+
+      // GÜVENLİK: bugünden önceki hiçbir gün tıklanabilir/talep girilebilir olmamalı —
+      // yukarıdaki dallardan hangisi tetiklenirse tetiklensin (t-bos, t-bugun, t-temizlik,
+      // t-kontrol), geçmiş bir tarihse burada zorla devre dışı bırakılır.
+      if(iso < today && onclick) {
+        onclick = '';
+        cls = 't-gecmis';
+      }
+
       const hucreBaslik = _veriDurumu.rezervasyon
         ? `Oda ${odaNo} · ${iso}`
         : `Oda ${odaNo} · ${iso} · Müsaitlik yönetici onayında kesinleşir`;
@@ -1259,6 +1269,15 @@ window.talepGonder = async function() {
 
   if(!odaNo || !giris || gece<1 || !misafir || fiyat<=0) {
     errEl.textContent = m.err_zorunlu;
+    errEl.style.display = 'block'; return;
+  }
+
+  // GÜVENLİK: giriş tarihi bugünden önce olamaz — takvimdeki tıklama engeli aşılsa
+  // (devtools, tarih alanına elle yazma, mobil tarayıcı tuhaflıkları vb.) bile burada
+  // bağımsız olarak tekrar kontrol edilir.
+  const _bugunKontrol = (() => { const n=new Date(),p=x=>String(x).padStart(2,'0'); return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`; })();
+  if(giris < _bugunKontrol) {
+    errEl.textContent = dil==='fa' ? 'تاریخ ورود نمی‌تواند در گذشته باشد.' : dil==='en' ? 'Check-in date cannot be in the past.' : 'Giriş tarihi geçmiş bir tarih olamaz.';
     errEl.style.display = 'block'; return;
   }
 
