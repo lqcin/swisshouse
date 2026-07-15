@@ -253,7 +253,7 @@ let duzenleId = null;
 const KOLEKSIYON = {
   rezervasyonlar: { col: 'rezervasyonlar', order: 'kayitTarih' },
   gelirler:       { col: 'gelirler',        order: 'tarih' },
-  masraflar:      { col: 'masraflar',       order: 'tarih' },
+  masraflar:      { col: 'odaMasraflari',   order: 'kayitTarih' },
   talepler:       { col: 'rezervasyon_talepleri', order: 'kayitTarih' }
 };
 
@@ -318,7 +318,7 @@ window.filtreTemizle = function(yenile = true) {
 const BASLIKLAR = {
   rezervasyonlar: ['Oda','Misafir','TC/Pasaport','Giriş','Çıkış','Gece','Fiyat','Sözleşme','Durum','Ödeme','Kaynak','Kayıt Tarihi',''],
   gelirler:       ['Tarih','Oda','Misafir','Tutar','Ödeme Türü','Kaynak','Açıklama','Kayıt Tarihi',''],
-  masraflar:      ['Tarih','Tutar','Kategori','Açıklama','Kayıt Tarihi',''],
+  masraflar:      ['Tarih','Tutar','Kategori','Oda','Ödeme Durumu','Açıklama',''],
   talepler:       ['Misafir','TC','Telefon','Oda','Giriş','Çıkış','Gece','Fiyat/Gece','Ödeme Durumu','Kısmi Tutar','Kaynak','Durum','Kayıt Tarihi',''],
 };
 
@@ -376,11 +376,12 @@ function renderTablo() {
         <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
     } else if(aktifSekme === 'masraflar') {
       satirlar = `
-        <td>${fmtTarih(r.tarih)}</td>
+        <td>${fmtTarih(r.kayitTarih)}</td>
         <td><b style="color:var(--red)">${fmt(r.tutar)}</b></td>
         <td>${r.kategori||'—'}</td>
-        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.aciklama||'—'}</td>
-        <td style="font-size:11px;color:var(--muted)">${fmtTarih(r.kayitTarih)}</td>`;
+        <td style="font-size:11px">${r.odaNo?('Oda '+r.odaNo):'—'}</td>
+        <td style="font-size:11px">${{odaya_yansitildi:'Odaya Yansıtıldı',ayri_odendi:'Ayrı Ödendi'}[r.odemeDurumu]||r.odemeDurumu||'—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.aciklama||'—'}</td>`;
     } else if(aktifSekme === 'talepler') {
       satirlar = `
         <td><b>${r.misafir||'—'}</b></td>
