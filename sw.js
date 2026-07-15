@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v4'; // sürüm artırıldı — cihazlardaki eski/yarım önbellek otomatik temizlenir
+const CACHE_ADI = 'swisshouse-v5'; // sürüm artırıldı — cihazlardaki eski/yarım önbellek otomatik temizlenir
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',
@@ -35,8 +35,17 @@ self.addEventListener('activate', e => {
 
 // Fetch: önce ağdan dene, başarısız olursa önbellekten sun
 self.addEventListener('fetch', e => {
-  // Firebase ve harici API isteklerini SW'ye dahil etme
+  // ÖNEMLİ DÜZELTME: Cache API sadece GET isteklerini destekler. Firestore'un arka planda
+  // attığı POST/streaming istekleri (firestore.googleapis.com, identitytoolkit.googleapis.com vb.)
+  // buraya kadar geliyordu ve cache.put() bunlarla çağrılınca "Request method 'POST' is
+  // unsupported" hatası fırlatıyordu. Artık GET olmayan hiçbir istek işlenmiyor.
+  if(e.request.method !== 'GET') return;
+
+  // Firebase/Google API isteklerini SW'ye hiç dahil etme (ne önbellekle ne yedekle).
+  // 'firebase' substring kontrolü firestore.googleapis.com gibi adresleri YAKALAMIYORDU —
+  // bu yüzden googleapis.com genel kontrolü eklendi.
   if(e.request.url.includes('firebase') ||
+     e.request.url.includes('googleapis.com') ||
      e.request.url.includes('google.com/recaptcha') ||
      e.request.url.includes('gstatic.com/firebasejs')) {
     return;
@@ -54,15 +63,8 @@ self.addEventListener('fetch', e => {
       })
       .catch(async () => {
         // İnternet yok / şebeke kesintisi — önbellekten sun.
-        //
-        // ÖNEMLİ DÜZELTME: Eski sürümde, hangi sayfa istenmiş olursa olsun (komisyoncu.html,
-        // index.html vb.) önbellekte tam eşleşme yoksa doğrudan resepsiyon.html'e düşülüyordu.
-        // Bu, mobil cihazlarda geçici şebeke kesintisi anında komisyoncu.html açmaya çalışan
-        // bir kullanıcının yanlışlıkla resepsiyon.html'e (ve oradaki oturum kontrolü yüzünden
-        // index.html'e) yönlendirilmesine, dolayısıyla "beyaz ekran / iki kez yenileme gerekiyor"
-        // sorununa yol açıyordu. Artık önce istenen sayfayı (arama parametrelerini göz ardı
-        // ederek) önbellekte aramaya çalışıyoruz; sadece hiçbir eşleşme yoksa son çare olarak
-        // resepsiyon.html'e düşüyoruz.
+        // Önce istenen sayfayı (arama parametrelerini göz ardı ederek) önbellekte aramaya
+        // çalışıyoruz; sadece hiçbir eşleşme yoksa son çare olarak resepsiyon.html'e düşüyoruz.
         const tamEslesme = await caches.match(e.request);
         if(tamEslesme) return tamEslesme;
 
