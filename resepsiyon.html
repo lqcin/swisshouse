@@ -2405,6 +2405,7 @@ function gunlukKontrolKur() {
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
   renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true);
+  if(document.getElementById('page-rapor')?.classList.contains('active')) renderKomisyonCari();
 }, () => syncStatus(false));
 
 onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), s => {
