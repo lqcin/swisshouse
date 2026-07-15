@@ -566,10 +566,46 @@ window.kaydKaydet = async function() {
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
 };
 
+// Rezervasyonlar veya gelirler sekmesinden bir kayıt silindiğinde, o kayıt odanın
+// GÜNCEL durumuyla (meta/odalar) eşleşiyorsa (aynı oda + aynı giriş tarihi), oda da
+// boşa alınır. Aksi halde kayıt Firestore'dan silinir ama takvim/oda durumu hâlâ
+// "dolu" görünmeye devam eder — silinen rezervasyona yeni bir talep girilemez.
+async function silinenKayitIcinOdaTemizle(kayit) {
+  if(!kayit || !['rezervasyonlar','gelirler'].includes(aktifSekme)) return;
+  const odaNo = kayit.odaNo;
+  const giris = kayit.giris || kayit.tarih;
+  if(!odaNo || !giris) return;
+  try {
+    const metaSnap = await getDoc(doc(db, 'meta', 'odalar'));
+    if(!metaSnap.exists()) return;
+    const meta = metaSnap.data();
+    const odaKey = 'oda' + odaNo;
+    const mevcut = meta[odaKey];
+    if(!mevcut) return;
+    // Sadece odanın güncel kaydı SİLİNEN bu kayıtla aynı konaklamaysa temizle —
+    // farklı/daha yeni bir konaklamayı yanlışlıkla boşaltmamak için.
+    const ayniKonaklama = mevcut.giris === giris && (String(mevcut.gelirDocId||'') === String(kayit._id||'') || String(mevcut.rezervasyonId||'') === String(kayit._id||'') || mevcut.durum === 'dolu');
+    if(!ayniKonaklama) return;
+    meta[odaKey] = {
+      durum:'bos', misafir:'', tc:'', tel:'', email:'', plaka:'',
+      kaynak:'', fiyatTip:1, fiyat:0, odemeTuru:'nakit',
+      giris:'', cikis:'', girisSaati:'', yetiskin:1, cocuk:0, not:'',
+      guncelleme: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'meta', 'odalar'), meta);
+    toast('Oda ' + odaNo + ' da boşa alındı ✓', 'success');
+  } catch(e) {
+    console.warn('Oda temizleme hatası:', e);
+    toast('Kayıt silindi ama oda durumu güncellenemedi — Odalar sekmesinden elle kontrol et', 'error');
+  }
+}
+
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
+    const kayit = tumVeri.find(x => x._id === duzenleId);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
+    await silinenKayitIcinOdaTemizle(kayit);
     toast('Kayıt silindi', 'success');
     modalKapat();
     await sekmeYukle(aktifSekme);
@@ -579,7 +615,9 @@ window.kaydSil = async function() {
 window.hizliSil = async function(id) {
   if(!confirm('Bu kayıt silinsin mi?')) return;
   try {
+    const kayit = tumVeri.find(x => x._id === id);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
+    await silinenKayitIcinOdaTemizle(kayit);
     toast('Silindi', 'success');
     await sekmeYukle(aktifSekme);
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
