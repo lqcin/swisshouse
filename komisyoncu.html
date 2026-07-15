@@ -67,8 +67,12 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td{padding:3px 2px;text-align:center;border:1px solid #f0f0f0;height:32px;position:relative;white-space:nowrap;font-size:10px;}
 .takvim-table td.t-bos{background:#fff;cursor:pointer;}
 .takvim-table td.t-bos:hover{background:#e8f5e9;}
-.takvim-table td.t-dolu{background:#fde8e8;}
-.takvim-table td.t-rezerve{background:#ede8f8;}
+/* RESEPSİYON kaynaklı (kırmızı aile) — otel doğrudan/walk-in rezervasyon */
+.takvim-table td.t-dolu-resepsiyon{background:#fbc7c7;}
+.takvim-table td.t-rezerve-resepsiyon{background:repeating-linear-gradient(135deg,#fdeaea,#fdeaea 6px,#f9d4d4 6px,#f9d4d4 12px);border:1px dashed #dc2626;cursor:default;}
+/* KOMİSYONCU kaynaklı (mavi aile) — herhangi bir komisyoncunun rezervasyonu */
+.takvim-table td.t-dolu-komisyoncu{background:#b8d4f7;}
+.takvim-table td.t-rezerve-komisyoncu{background:repeating-linear-gradient(135deg,#eaf2fd,#eaf2fd 6px,#d3e5fa 6px,#d3e5fa 12px);border:1px dashed #1d4ed8;cursor:default;}
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#f5ece0;}
 .takvim-table td.t-kontrol{background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 6px,#f7efd9 6px,#f7efd9 12px);cursor:pointer;}
@@ -140,6 +144,31 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .bos-mesaj{text-align:center;padding:32px;color:var(--muted);font-style:italic;}
 
 @media(max-width:640px){.form-row,.form-row-3{grid-template-columns:1fr;} .portal-body{padding:16px;}}
+
+/* ── MOBİL/TABLET — masaüstünden belirgin şekilde farklı düzen ── */
+@media(max-width:768px){
+  .portal-header{height:auto;padding:10px 14px;flex-direction:column;align-items:flex-start;gap:4px;}
+  .portal-brand{font-size:15px;}
+  .portal-brand span{display:block;font-size:10px;margin-top:1px;}
+  .portal-user{font-size:11px;}
+  .portal-body{padding:10px;}
+  .takvim-header{flex-direction:column;align-items:stretch;gap:10px;padding:12px 14px;}
+  .takvim-header>div{justify-content:space-between;}
+  .takvim-baslik{font-size:15px;}
+  .takvim-nav button{padding:8px 16px;font-size:13px;}
+  #takvimAyLabel{font-size:12px;min-width:auto !important;flex:1;}
+  .takvim-table th{min-width:44px;font-size:10px;padding:8px 3px;}
+  .takvim-table td{height:40px;}
+  .takvim-table .oda-col{font-size:12px;padding:8px 10px;}
+  .legenda{gap:10px;padding:10px 14px;}
+  .legenda-item{font-size:9px;}
+  .modal{max-width:100% !important;margin:0;max-height:100vh;height:100%;}
+  .modal-overlay{padding:0;}
+  .talepler-table{font-size:11px;}
+  .talepler-table th,.talepler-table td{padding:7px 6px;}
+  .login-card{padding:28px 22px;}
+}
+
 </style>
 </head>
 <body>
@@ -194,8 +223,10 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       <div class="legenda">
         <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div><span id="legenda_bos">Boş (tıklayarak rezervasyon ekle)</span></div>
         <div class="legenda-item" id="legenda_kontrol_item" style="display:none"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 5px,#f7efd9 5px,#f7efd9 10px)"></div><span>Müsaitlik Onayda Kontrol Edilecek</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fde8e8"></div><span id="legenda_dolu">Dolu</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#ede8f8"></div><span id="legenda_rezerve">Rezerveli</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#fbc7c7"></div><span id="legenda_dolu_resepsiyon">Dolu — Resepsiyon</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#fdeaea,#fdeaea 5px,#f9d4d4 5px,#f9d4d4 10px);border:1px dashed #dc2626"></div><span id="legenda_rezerve_resepsiyon">Rezerveli — Resepsiyon</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#b8d4f7"></div><span id="legenda_dolu_komisyoncu">Dolu — Komisyoncu</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#eaf2fd,#eaf2fd 5px,#d3e5fa 5px,#d3e5fa 10px);border:1px dashed #1d4ed8"></div><span id="legenda_rezerve_komisyoncu">Rezerveli — Komisyoncu</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:linear-gradient(135deg,#5b21b6,#2563eb);border:2px solid #22d3ee;box-shadow:0 0 5px rgba(37,99,235,.4)"></div><span id="legenda_benim">Benim Rezervasyonum ✓</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div><span id="legenda_temizlik">Temizlik</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div><span id="legenda_arizali">Arızalı</span></div>
@@ -204,8 +235,14 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
     <!-- GEÇMİŞ TALEPLERİM -->
     <div class="talepler-wrap">
-      <div class="talepler-header">
+      <div class="talepler-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div class="talepler-baslik">Taleplerim</div>
+        <select id="taleplerDurumFiltre" onchange="taleplerFiltreDegisti()" style="border:1px solid var(--border);padding:6px 10px;font-family:'Jost',sans-serif;font-size:11px;background:var(--cream);color:var(--dark)">
+          <option value="hepsi">Tüm Durumlar</option>
+          <option value="bekliyor">Bekliyor</option>
+          <option value="onaylandi">Onaylandı</option>
+          <option value="reddedildi">Reddedildi / İptal</option>
+        </select>
       </div>
       <table class="talepler-table">
         <thead>
@@ -223,6 +260,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         </thead>
         <tbody id="taleplerBody"></tbody>
       </table>
+      <div id="taleplerAltBilgi" style="padding:12px 20px;text-align:center;border-top:1px solid var(--border)"></div>
     </div>
 
   </div>
@@ -424,8 +462,10 @@ const M = {
     gonderildi_ok:'Gönderildi ✓', bos_mesaj:'Henüz rezervasyon talebi göndermediniz.',
     durum_bekliyor:'Bekliyor', durum_onaylandi:'Onaylandı', durum_reddedildi:'Reddedildi',
     kalan:'Kalan:', islem:'İşlem', sozlesme:'📄 Sözleşme',
-    legenda_bos:'Boş (tıklayarak rezervasyon ekle)', legenda_dolu:'Dolu',
-    legenda_rezerve:'Rezerveli', legenda_benim:'Benim Rezervasyonum',
+    legenda_bos:'Boş (tıklayarak rezervasyon ekle)',
+    legenda_dolu_resepsiyon:'Dolu — Resepsiyon', legenda_rezerve_resepsiyon:'Rezerveli — Resepsiyon',
+    legenda_dolu_komisyoncu:'Dolu — Komisyoncu', legenda_rezerve_komisyoncu:'Rezerveli — Komisyoncu',
+    legenda_benim:'Benim Rezervasyonum',
     legenda_temizlik:'Temizlik', legenda_arizali:'Arızalı',
     ph_misafir:'Ad Soyad', ph_tel:'05XX XXX XX XX', ph_tc:'TC veya Pasaport',
   },
@@ -452,8 +492,10 @@ const M = {
     gonderildi_ok:'Sent ✓', bos_mesaj:'No reservation requests yet.',
     durum_bekliyor:'Pending', durum_onaylandi:'Approved', durum_reddedildi:'Rejected',
     kalan:'Remaining:', islem:'Action', sozlesme:'📄 Contract',
-    legenda_bos:'Available (click to reserve)', legenda_dolu:'Occupied',
-    legenda_rezerve:'Reserved', legenda_benim:'My Reservation',
+    legenda_bos:'Available (click to reserve)',
+    legenda_dolu_resepsiyon:'Occupied — Reception', legenda_rezerve_resepsiyon:'Reserved — Reception',
+    legenda_dolu_komisyoncu:'Occupied — Agent', legenda_rezerve_komisyoncu:'Reserved — Agent',
+    legenda_benim:'My Reservation',
     legenda_temizlik:'Cleaning', legenda_arizali:'Out of Service',
     ph_misafir:'Full Name', ph_tel:'+90 5XX XXX XX XX', ph_tc:'ID or Passport Number',
   },
@@ -480,8 +522,10 @@ const M = {
     gonderildi_ok:'ارسال شد ✓', bos_mesaj:'هنوز هیچ درخواست رزروی ارسال نشده است.',
     durum_bekliyor:'در انتظار', durum_onaylandi:'تأیید شده', durum_reddedildi:'رد شده',
     kalan:'مانده:', islem:'عملیات', sozlesme:'📄 قرارداد',
-    legenda_bos:'خالی (برای رزرو کلیک کنید)', legenda_dolu:'اشغال',
-    legenda_rezerve:'رزرو شده', legenda_benim:'رزرو من',
+    legenda_bos:'خالی (برای رزرو کلیک کنید)',
+    legenda_dolu_resepsiyon:'اشغال — پذیرش', legenda_rezerve_resepsiyon:'رزرو شده — پذیرش',
+    legenda_dolu_komisyoncu:'اشغال — کمیسیون‌کار', legenda_rezerve_komisyoncu:'رزرو شده — کمیسیون‌کار',
+    legenda_benim:'رزرو من',
     legenda_temizlik:'در حال نظافت', legenda_arizali:'خارج از سرویس',
     ph_misafir:'نام و نام خانوادگی', ph_tel:'+98 9XX XXX XXXX', ph_tc:'کد ملی یا شماره پاسپورت',
   }
@@ -560,8 +604,10 @@ window.setLang = function(d) {
   document.querySelector('.login-card') && (document.querySelector('.login-card').style.direction = dir);
   // Legenda
   const legIds = {
-    'legenda_bos':m.legenda_bos, 'legenda_dolu':m.legenda_dolu,
-    'legenda_rezerve':m.legenda_rezerve, 'legenda_benim':m.legenda_benim,
+    'legenda_bos':m.legenda_bos,
+    'legenda_dolu_resepsiyon':m.legenda_dolu_resepsiyon, 'legenda_rezerve_resepsiyon':m.legenda_rezerve_resepsiyon,
+    'legenda_dolu_komisyoncu':m.legenda_dolu_komisyoncu, 'legenda_rezerve_komisyoncu':m.legenda_rezerve_komisyoncu,
+    'legenda_benim':m.legenda_benim,
     'legenda_temizlik':m.legenda_temizlik, 'legenda_arizali':m.legenda_arizali,
   };
   Object.entries(legIds).forEach(([id,txt]) => { const el=document.getElementById(id); if(el) el.textContent=txt; });
@@ -584,10 +630,11 @@ let _O = {};   // oda durumları
 let _G = [];   // gelirler (check-in yapılmış konaklamalar)
 let _veriDurumu = { oda:false, rezervasyon:false, gelir:false, ayar:false };
 let _beniimTalepler = [];
-// Takvim artık her zaman "bugünden itibaren 2 aylık" bir pencere gösterir.
-// takvimOffsetAy=0 → bugünün ayı + bir sonraki ay (varsayılan, gerçek zamana göre otomatik ilerler).
-// › ile ileri aylara bakılabilir, ‹ ile bugüne (offset 0'a) dönülür.
+// Masaüstünde: içinde bulunulan ay tamamen gösterilir, ay bitince otomatik ilerler (takvimOffsetAy).
+// Mobil/tablette: aylık tablo ekrana sığmadığı için haftalık görünüme geçilir (takvimOffsetHafta).
 let takvimOffsetAy = 0;
+let takvimOffsetHafta = 0;
+function takvimMobilMi() { return window.innerWidth < 768; }
 
 // ── GİRİŞ ──
 // URL'den komisyoncu id'sini al (opsiyonel, yoksa kullanıcı kendisi girer)
@@ -752,60 +799,80 @@ function rKomisyoncuAnahtar(r) {
 }
 
 window.takvimAyDegistir = function(delta) {
-  takvimOffsetAy += delta;
-  if(takvimOffsetAy < 0) takvimOffsetAy = 0; // bugünden geriye gidilemez
+  if(takvimMobilMi()) {
+    takvimOffsetHafta += delta;
+    if(takvimOffsetHafta < 0) takvimOffsetHafta = 0; // bugünden geriye gidilemez
+  } else {
+    takvimOffsetAy += delta;
+    if(takvimOffsetAy < 0) takvimOffsetAy = 0;
+  }
   renderTakvim();
 };
 
-function renderTakvim() {
-  const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  const gunler = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+// Görünüm mobil/masaüstü arasında değiştiğinde (pencere yeniden boyutlandırma,
+// tablet döndürme) takvimi otomatik yeniden çiz.
+let _sonMobilDurum = takvimMobilMi();
+window.addEventListener('resize', () => {
+  const simdiMobil = takvimMobilMi();
+  if(simdiMobil !== _sonMobilDurum) {
+    _sonMobilDurum = simdiMobil;
+    renderTakvim();
+  }
+});
 
+const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const GUNLER = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+
+function renderTakvim() {
   const pad = n => String(n).padStart(2,'0');
   const now = new Date();
   const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
 
-  // Pencerenin ilk ayı = bugünün ayı + offset (gerçek "bugün"e göre hesaplanır,
-  // bu yüzden ay değiştiğinde bir sonraki render'da otomatik ilerler — manuel işlem gerekmez).
-  let baseAyIdx = now.getMonth() + takvimOffsetAy;
-  let baseYil = now.getFullYear() + Math.floor(baseAyIdx/12);
-  baseAyIdx = ((baseAyIdx % 12) + 12) % 12;
+  if(takvimMobilMi()) {
+    // ── MOBİL/TABLET: haftalık görünüm — aylık tablo dar ekrana sığmadığı için ──
+    const gununIndeksi = (now.getDay()+6)%7; // 0=Pzt
+    const haftaBas = new Date(now.getFullYear(), now.getMonth(), now.getDate() - gununIndeksi + takvimOffsetHafta*7);
 
-  let sonrakiAyIdx = baseAyIdx + 1, sonrakiYil = baseYil;
-  if(sonrakiAyIdx > 11) { sonrakiAyIdx = 0; sonrakiYil++; }
+    const gunList = [];
+    for(let i=0; i<7; i++) {
+      const dt = new Date(haftaBas.getFullYear(), haftaBas.getMonth(), haftaBas.getDate()+i);
+      const iso = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+      gunList.push({ iso, gun: dt.getDate(), gunAdi: GUNLER[i], ayIdx: dt.getMonth() });
+    }
+    const ilk = gunList[0], son = gunList[6];
+    document.getElementById('takvimAyLabel').textContent = ilk.ayIdx === son.ayIdx
+      ? `${ilk.gun}–${son.gun} ${AYLAR[ilk.ayIdx]}`
+      : `${ilk.gun} ${AYLAR[ilk.ayIdx].slice(0,3)} – ${son.gun} ${AYLAR[son.ayIdx].slice(0,3)}`;
 
-  document.getElementById('takvimAyLabel').textContent = baseYil === sonrakiYil
-    ? `${aylar[baseAyIdx]} – ${aylar[sonrakiAyIdx]} ${sonrakiYil}`
-    : `${aylar[baseAyIdx]} ${baseYil} – ${aylar[sonrakiAyIdx]} ${sonrakiYil}`;
+    takvimTablosuCiz(gunList, today);
+  } else {
+    // ── MASAÜSTÜ: içinde bulunulan ayın tamamı — ay bitince otomatik ilerler ──
+    let ayIdx = now.getMonth() + takvimOffsetAy;
+    let yil = now.getFullYear() + Math.floor(ayIdx/12);
+    ayIdx = ((ayIdx % 12) + 12) % 12;
 
-  // Gün listesi: 2 aylık pencerenin tamamı.
-  // offset=0 ise ilk aydan sadece bugün ve sonrası (geçmiş günler gösterilmez),
-  // offset>0 ise (ileri ay görünümü) ayın 1'inden itibaren tamamı.
-  const gunList = [];
-  const baslangicGun = (takvimOffsetAy === 0) ? now.getDate() : 1;
-  const baseSonGun = new Date(baseYil, baseAyIdx+1, 0).getDate();
-  for(let d = baslangicGun; d <= baseSonGun; d++) {
-    const dt = new Date(baseYil, baseAyIdx, d);
-    const iso = `${baseYil}-${pad(baseAyIdx+1)}-${pad(d)}`;
-    gunList.push({ iso, gun: d, gunAdi: gunler[(dt.getDay()+6)%7] });
+    document.getElementById('takvimAyLabel').textContent = `${AYLAR[ayIdx]} ${yil}`;
+
+    const sonGun = new Date(yil, ayIdx+1, 0).getDate();
+    const gunList = [];
+    for(let d = 1; d <= sonGun; d++) {
+      const dt = new Date(yil, ayIdx, d);
+      const iso = `${yil}-${pad(ayIdx+1)}-${pad(d)}`;
+      gunList.push({ iso, gun: d, gunAdi: GUNLER[(dt.getDay()+6)%7] });
+    }
+    takvimTablosuCiz(gunList, today);
   }
-  const sonrakiSonGun = new Date(sonrakiYil, sonrakiAyIdx+1, 0).getDate();
-  for(let d = 1; d <= sonrakiSonGun; d++) {
-    const dt = new Date(sonrakiYil, sonrakiAyIdx, d);
-    const iso = `${sonrakiYil}-${pad(sonrakiAyIdx+1)}-${pad(d)}`;
-    gunList.push({ iso, gun: d, gunAdi: gunler[(dt.getDay()+6)%7], sonrakiAy: true });
-  }
+}
 
+function takvimTablosuCiz(gunList, today) {
   let html = `<thead><tr><th style="text-align:left;padding:6px 10px">${dil === 'fa' ? 'اتاق' : 'ODA'}</th>`;
   gunList.forEach(g => {
     const isToday = g.iso === today;
-    const ayKisa = g.sonrakiAy ? `<span style="font-size:8px;color:var(--gold2)">${aylar[parseInt(g.iso.slice(5,7))-1].slice(0,3)}</span><br>` : '';
-    html += `<th class="${isToday?'bugun-col':''}" ${g.sonrakiAy?'style="opacity:.7"':''}>${ayKisa}${g.gunAdi}<br>${g.gun}</th>`;
+    html += `<th class="${isToday?'bugun-col':''}">${g.gunAdi}<br>${g.gun}</th>`;
   });
   html += '</tr></thead><tbody>';
 
   HOTEL_ODALAR.forEach(odaNo => {
-    const oda = _O['oda'+odaNo] || {durum:'bos'};
     const odaLabel = dil === 'fa' ? `اتاق ${odaNo}` : `Oda ${odaNo}`;
     html += `<tr><td class="oda-col">${odaLabel}</td>`;
 
@@ -833,6 +900,8 @@ function renderTakvim() {
         rKomisyoncuAnahtar(rev) === aktifKom.key ||
         String(rev.komisyoncuAd||rev.araciAd||'').trim().toLocaleLowerCase('tr-TR') === aktifKom.ad.toLocaleLowerCase('tr-TR')
       );
+      // Bu rezervasyon (henüz check-in olmamış) herhangi bir komisyoncu tarafından mı yapıldı?
+      const revKomisyoncuKaynakli = !!(rev && (rev.komisyoncu || rev.araciAd));
 
       // Gelir (check-in yapılmış konaklama) var mı?
       const gelir = _G.find(g =>
@@ -845,14 +914,17 @@ function renderTakvim() {
       const odaMeta = _O['oda'+odaNo] || {durum:'bos'};
       const fiiliDolu = odaMeta.durum === 'dolu' && odaMeta.giris && odaMeta.giris <= iso && odaMeta.cikis > iso;
       const bugunDolu = odaMeta.durum === 'dolu' && isToday;
+      // Check-in yapılmış bu konaklama herhangi bir komisyoncu tarafından mı getirildi?
+      // (gelir kaydındaki araciAd önceliklidir; check-in anında oda meta'sına da aynı değer yazılır)
+      const doluKomisyoncuKaynakli = !!((gelir?.araciAd) || (odaMeta.araciAd && String(odaMeta.araciAd).trim()));
 
       let cls, onclick = '';
       if(beniimTalep || benimRev) {
         cls = 't-benim';
       } else if(gelir || fiiliDolu || bugunDolu) {
-        cls = 't-dolu';
+        cls = doluKomisyoncuKaynakli ? 't-dolu-komisyoncu' : 't-dolu-resepsiyon';
       } else if(rev) {
-        cls = 't-rezerve';
+        cls = revKomisyoncuKaynakli ? 't-rezerve-komisyoncu' : 't-rezerve-resepsiyon';
       } else if(odaMeta.durum === 'temizlik') {
         // Temizlik: sadece bugün saat 12:00'a kadar engeller
         // Bugünden sonraki günler ve bugün 12:00 sonrası tıklanabilir
@@ -892,6 +964,7 @@ function renderTakvim() {
   html += '</tbody>';
   document.getElementById('takvimTable').innerHTML = html;
 }
+
 
 // ── MODAL ──
 let secilenOda = null;
@@ -1091,6 +1164,26 @@ window.talepGonder = async function() {
 };
 
 // ── TALEPLERİ RENDER ET ──
+let _taleplerGosterSayisi = 10;
+let _taleplerDurumFiltre = 'hepsi';
+
+window.taleplerFiltreDegisti = function() {
+  _taleplerDurumFiltre = document.getElementById('taleplerDurumFiltre').value;
+  _taleplerGosterSayisi = 10; // filtre değişince baştan başla
+  renderTalepler(_beniimTalepler);
+};
+
+window.taleplerDahaFazlaGoster = function() {
+  _taleplerGosterSayisi += 10;
+  renderTalepler(_beniimTalepler);
+};
+
+window.taleplerAzalt = function() {
+  _taleplerGosterSayisi = 10;
+  renderTalepler(_beniimTalepler);
+  document.getElementById('taleplerDurumFiltre')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+};
+
 function renderTalepler(talepler) {
   const m = M[dil];
   const durumMap = {
@@ -1108,11 +1201,21 @@ function renderTalepler(talepler) {
     noshow:'durum-reddedildi'
   };
   const tbody = document.getElementById('taleplerBody');
-  if(!talepler.length) {
+  const altBilgi = document.getElementById('taleplerAltBilgi');
+
+  // Talepler listesi zamanla sonsuza uzamasın diye: durum filtresi + sayfalama uygulanır.
+  const filtreli = _taleplerDurumFiltre === 'hepsi' ? talepler
+    : _taleplerDurumFiltre === 'reddedildi' ? talepler.filter(t => ['reddedildi','iptal','noshow'].includes(t.durum))
+    : talepler.filter(t => t.durum === _taleplerDurumFiltre);
+
+  if(!filtreli.length) {
     tbody.innerHTML = `<tr><td colspan="9" class="bos-mesaj">${m.bos_mesaj}</td></tr>`;
+    if(altBilgi) altBilgi.innerHTML = '';
     return;
   }
-  tbody.innerHTML = talepler.map(t => `
+
+  const gosterilecek = filtreli.slice(0, _taleplerGosterSayisi);
+  tbody.innerHTML = gosterilecek.map(t => `
     <tr>
       <td style="font-weight:600">${t.misafir||'—'}</td>
       <td>Oda ${t.odaNo||'?'}</td>
@@ -1131,6 +1234,20 @@ function renderTalepler(talepler) {
       <td>${t.durum==='onaylandi' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="sozlesmeGoster('${t.id}')">${m.sozlesme}</button>` : '—'}</td>
     </tr>
   `).join('');
+
+  if(altBilgi) {
+    if(filtreli.length > _taleplerGosterSayisi) {
+      const kalan = filtreli.length - _taleplerGosterSayisi;
+      const etiket = dil==='fa' ? 'نمایش بیشتر' : dil==='en' ? 'Show more' : 'Daha Fazla Göster';
+      const kalanEtiket = dil==='fa' ? 'باقیمانده' : dil==='en' ? 'remaining' : 'kalan';
+      altBilgi.innerHTML = `<button class="btn btn-ghost" style="font-size:11px;padding:7px 16px" onclick="taleplerDahaFazlaGoster()">${etiket} (${kalanEtiket}: ${kalan})</button>`;
+    } else if(_taleplerGosterSayisi > 10) {
+      const etiket = dil==='fa' ? 'نمایش کمتر' : dil==='en' ? 'Show less' : 'Daha Az Göster';
+      altBilgi.innerHTML = `<button class="btn btn-ghost" style="font-size:11px;padding:7px 16px" onclick="taleplerAzalt()">${etiket}</button>`;
+    } else {
+      altBilgi.innerHTML = `<span style="font-size:10px;color:var(--muted)">${filtreli.length} kayıt</span>`;
+    }
+  }
 }
 
 // ── SÖZLEŞME ──

@@ -1840,6 +1840,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       </table>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal('komDetayModal')">Kapat</button>
+        <button class="btn btn-ghost" onclick="komEkstreYazdir()">🖨 Ekstre Yazdır</button>
         <button class="btn btn-primary" id="komDetayOdemeAlBtn">+ Ödeme Al</button>
       </div>
     </div>
@@ -4856,8 +4857,82 @@ window.komDetayAc = function(araciAd) {
   }).join('');
   document.getElementById('komDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Hareket yok</td></tr>';
   document.getElementById('komDetayOdemeAlBtn').onclick = () => { closeModal('komDetayModal'); komOdemeModalAc(araciAd); };
+
+  // Yazdır butonu için mevcut ekstre verisini sakla
+  window._komEkstreAktif = { araciAd, hareketler, bakiyeToplam: bakiye };
+
   openModal('komDetayModal');
 };
+
+// Komisyoncu ekstresini ayrı bir pencerede yazdırılabilir olarak açar —
+// ay sonu görüşmesinde ekrandaki tabloyu göstermek yerine tek tık yazdırmak için.
+window.komEkstreYazdir = function() {
+  const veri = window._komEkstreAktif;
+  if(!veri) return;
+  const bugun = (() => { const n=new Date(),p=x=>String(x).padStart(2,'0'); return `${p(n.getDate())}.${p(n.getMonth()+1)}.${n.getFullYear()}`; })();
+
+  let bakiye = 0;
+  const satirlar = veri.hareketler.map(h => {
+    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    return `<tr>
+      <td>${h.tarih||'—'}</td>
+      <td>${h.aciklama}</td>
+      <td style="text-align:right">${h.tip==='borc'?fmt(h.tutar)+' ₺':'—'}</td>
+      <td style="text-align:right">${h.tip==='odeme'?fmt(h.tutar)+' ₺':'—'}</td>
+      <td style="text-align:right;font-weight:700">${fmt(bakiye)} ₺</td>
+    </tr>`;
+  }).join('');
+
+  const kalanRenk = bakiye > 0.5 ? '#dc2626' : (bakiye < -0.5 ? '#c4a55a' : '#16a34a');
+  const kalanEtiket = bakiye > 0.5 ? 'Ödenecek Bakiye' : (bakiye < -0.5 ? 'Fazla Ödeme' : 'Bakiye Kapandı');
+
+  const html = `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"><title>Komisyoncu Ekstresi — ${veri.araciAd}</title>
+<style>
+@page{size:A4;margin:12mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#111;font-size:12px}
+.page{max-width:190mm;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #C8102E;padding-bottom:10px;margin-bottom:16px}
+.logo{font-size:20px;font-weight:800}
+.logo span{color:#C8102E}
+.baslik{font-size:16px;font-weight:700;margin-top:4px}
+.tarih{font-size:11px;color:#666}
+table{width:100%;border-collapse:collapse;margin-bottom:16px}
+th,td{border:1px solid #ccc;padding:7px 8px;font-size:11px}
+th{background:#f2f3f5;text-align:left;letter-spacing:.5px;text-transform:uppercase;font-size:9px}
+.sonuc{border:2px solid ${kalanRenk};background:${kalanRenk}15;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.sonuc .etiket{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#555}
+.sonuc .tutar{font-size:22px;font-weight:800;color:${kalanRenk}}
+.footer{margin-top:30px;font-size:10px;color:#888;border-top:1px solid #ccc;padding-top:8px}
+.aksiyon-bar{position:fixed;bottom:0;left:0;right:0;background:#1a1d23;padding:12px;display:flex;justify-content:center;gap:10px}
+.aksiyon-bar button{padding:10px 22px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;background:#C8102E;color:#fff}
+@media print{.aksiyon-bar{display:none}}
+</style></head>
+<body>
+<div class="page">
+  <div class="header">
+    <div><div class="logo"><span>SWISS</span> HOUSE</div><div class="baslik">Komisyoncu Cari Hesap Ekstresi</div></div>
+    <div class="tarih">Düzenleme Tarihi: ${bugun}</div>
+  </div>
+  <p style="font-size:13px;margin-bottom:14px"><b>Komisyoncu:</b> ${veri.araciAd}</p>
+  <table>
+    <thead><tr><th>Tarih</th><th>Açıklama</th><th style="text-align:right">Borç (Komisyon)</th><th style="text-align:right">Ödeme</th><th style="text-align:right">Bakiye</th></tr></thead>
+    <tbody>${satirlar || '<tr><td colspan="5" style="text-align:center;color:#999">Hareket yok</td></tr>'}</tbody>
+  </table>
+  <div class="sonuc">
+    <span class="etiket">${kalanEtiket}</span>
+    <span class="tutar">${fmt(Math.abs(bakiye))} ₺</span>
+  </div>
+  <div class="footer">Bu ekstre Swiss House Yönetim Sistemi tarafından otomatik oluşturulmuştur.</div>
+</div>
+<div class="aksiyon-bar"><button onclick="window.print()">🖨 Yazdır</button></div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if(w) { w.document.write(html); w.document.close(); }
+};
+
 
 // Ödeme formunu açar — komDetayAc'tan geliniyorsa komisyoncu adı önceden dolu gelir
 window.komOdemeModalAc = function(araciAd) {
