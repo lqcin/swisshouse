@@ -68,11 +68,11 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-bos{background:#fff;cursor:pointer;}
 .takvim-table td.t-bos:hover{background:#e8f5e9;}
 /* RESEPSİYON kaynaklı (kırmızı aile) — otel doğrudan/walk-in rezervasyon */
-.takvim-table td.t-dolu-resepsiyon{background:#fbc7c7;}
-.takvim-table td.t-rezerve-resepsiyon{background:repeating-linear-gradient(135deg,#fdeaea,#fdeaea 6px,#f9d4d4 6px,#f9d4d4 12px);border:1px dashed #dc2626;cursor:default;}
-/* KOMİSYONCU kaynaklı (mavi aile) — herhangi bir komisyoncunun rezervasyonu */
-.takvim-table td.t-dolu-komisyoncu{background:#b8d4f7;}
-.takvim-table td.t-rezerve-komisyoncu{background:repeating-linear-gradient(135deg,#eaf2fd,#eaf2fd 6px,#d3e5fa 6px,#d3e5fa 12px);border:1px dashed #1d4ed8;cursor:default;}
+.takvim-table td.t-dolu-resepsiyon{background:#ef5350;}
+.takvim-table td.t-rezerve-resepsiyon{background:repeating-linear-gradient(135deg,#ffcdd2,#ffcdd2 6px,#ef9a9a 6px,#ef9a9a 12px);border:1px dashed #b71c1c;cursor:default;}
+/* KOMİSYONCU kaynaklı — turkuaz aile (maviden bilinçli olarak uzaklaştırıldı; hem resepsiyonun kırmızısından hem "benim rezervasyonum" mor-mavisinden net ayrışsın) */
+.takvim-table td.t-dolu-komisyoncu{background:#26a69a;}
+.takvim-table td.t-rezerve-komisyoncu{background:repeating-linear-gradient(135deg,#b2dfdb,#b2dfdb 6px,#80cbc4 6px,#80cbc4 12px);border:1px dashed #00695c;cursor:default;}
 .takvim-table td.t-temizlik{background:#fdf8ee;}
 .takvim-table td.t-arizali{background:#f5ece0;}
 .takvim-table td.t-kontrol{background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 6px,#f7efd9 6px,#f7efd9 12px);cursor:pointer;}
@@ -223,10 +223,10 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       <div class="legenda">
         <div class="legenda-item"><div class="legenda-renk" style="background:#fff;border-color:#d1fae5"></div><span id="legenda_bos">Boş (tıklayarak rezervasyon ekle)</span></div>
         <div class="legenda-item" id="legenda_kontrol_item" style="display:none"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 5px,#f7efd9 5px,#f7efd9 10px)"></div><span>Müsaitlik Onayda Kontrol Edilecek</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#fbc7c7"></div><span id="legenda_dolu_resepsiyon">Dolu — Resepsiyon</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#fdeaea,#fdeaea 5px,#f9d4d4 5px,#f9d4d4 10px);border:1px dashed #dc2626"></div><span id="legenda_rezerve_resepsiyon">Rezerveli — Resepsiyon</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:#b8d4f7"></div><span id="legenda_dolu_komisyoncu">Dolu — Komisyoncu</span></div>
-        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#eaf2fd,#eaf2fd 5px,#d3e5fa 5px,#d3e5fa 10px);border:1px dashed #1d4ed8"></div><span id="legenda_rezerve_komisyoncu">Rezerveli — Komisyoncu</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#ef5350"></div><span id="legenda_dolu_resepsiyon">Dolu — Resepsiyon</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#ffcdd2,#ffcdd2 5px,#ef9a9a 5px,#ef9a9a 10px);border:1px dashed #b71c1c"></div><span id="legenda_rezerve_resepsiyon">Rezerveli — Resepsiyon</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:#26a69a"></div><span id="legenda_dolu_komisyoncu">Dolu — Komisyoncu</span></div>
+        <div class="legenda-item"><div class="legenda-renk" style="background:repeating-linear-gradient(135deg,#b2dfdb,#b2dfdb 5px,#80cbc4 5px,#80cbc4 10px);border:1px dashed #00695c"></div><span id="legenda_rezerve_komisyoncu">Rezerveli — Komisyoncu</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:linear-gradient(135deg,#5b21b6,#2563eb);border:2px solid #22d3ee;box-shadow:0 0 5px rgba(37,99,235,.4)"></div><span id="legenda_benim">Benim Rezervasyonum ✓</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#fdf8ee"></div><span id="legenda_temizlik">Temizlik</span></div>
         <div class="legenda-item"><div class="legenda-renk" style="background:#f5ece0"></div><span id="legenda_arizali">Arızalı</span></div>
