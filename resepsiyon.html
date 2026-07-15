@@ -2118,13 +2118,32 @@ function komisyonKuraliHesapla(sozlesmeFiyat, ayar) {
   return { tip, deger, komisyon, otelFiyat: Math.max(0, Math.round((fiyat-komisyon)*100)/100) };
 }
 
+// Serbest yazılan "Aracı" adını sistemde KAYITLI komisyoncu adına çevirir.
+// Sadece büyük/küçük harf farkını değil, "PUNE" / "Pune" gibi KISALTILMIŞ yazımları da
+// tam kayıtlı isme ("pune iran") eşler — biri diğerinin baş kısmıysa (en az 3 harf) eşleşir.
+// Sistemde kayıtlı hiçbir isimle eşleşmezse, yazılan ad olduğu gibi (ad-hoc komisyoncu) döner.
+function araciKanonikAd(araciAd) {
+  const yazilan = (araciAd||'').trim();
+  if(!yazilan) return yazilan;
+  const yAnahtar = araciAnahtar(yazilan);
+  for(const k in (window.KOMISYONCULAR||{})) {
+    const kayitliAd = window.KOMISYONCULAR[k]?.ad || k;
+    const kAnahtar = araciAnahtar(kayitliAd);
+    const eslesir = kAnahtar === yAnahtar
+      || (yAnahtar.length >= 3 && kAnahtar.startsWith(yAnahtar))
+      || (kAnahtar.length >= 3 && yAnahtar.startsWith(kAnahtar));
+    if(eslesir) return kayitliAd;
+  }
+  return yazilan;
+}
+
 // Serbest yazılan "Aracı" adını (check-in'de girilen) önceden tanımlı komisyoncu
-// ayarlarıyla (Rapor > Komisyoncu Ayarları) eşleştirir — yazım farkına duyarsız.
+// ayarlarıyla (Rapor > Komisyoncu Ayarları) eşleştirir — yazım farkına ve kısaltmaya duyarsız.
 // Böylece resepsiyonist "sözleşme fiyatı" alanını doldurmayı unutsa bile, komisyoncunun
 // sabit/oranlı ayarı varsa komisyon YİNE DE otomatik hesaplanır (unutkanlık, hak kaybı değildir).
 function komisyonAyariBul(araciAd) {
   if(!araciAd) return null;
-  const anahtar = araciAnahtar(araciAd);
+  const anahtar = araciAnahtar(araciKanonikAd(araciAd));
   for(const k in (window._KOM_AYAR||{})) {
     const ayar = window._KOM_AYAR[k];
     const kayitliAd = ayar?.ad || window.KOMISYONCULAR?.[k]?.ad || k;
@@ -3463,7 +3482,7 @@ window.saveCheckin = async function() {
       gelirDocId, konaklamaKey, tarih:giris, odaNo:String(no), misafir:ad, tc, kaynak,
       gece, gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
       komisyonFark, toplamKomisyon:komisyonFark,
-      araciAd: window._O['oda'+no]?.araciAd || null,
+      araciAd: araciKanonikAd(window._O['oda'+no]?.araciAd || '') || null,
       kayitTarih:now,guncelleme:now
     },{merge:true});
   }
@@ -4917,7 +4936,7 @@ window.renderOdemeGecmisi = function() {
   const filtreEl = document.getElementById('odemeGecmisiFiltre');
   if(filtreEl) {
     const oncekiSecim = filtreEl.value;
-    const isimler = [...new Set(odemeler.map(p => (p.araciAd||'').trim()).filter(Boolean))].sort();
+    const isimler = [...new Set(odemeler.map(p => araciKanonikAd(p.araciAd)).filter(Boolean))].sort();
     filtreEl.innerHTML = '<option value="">Tüm Komisyoncular</option>' +
       isimler.map(ad => `<option value="${ad}">${ad}</option>`).join('');
     if(isimler.includes(oncekiSecim)) filtreEl.value = oncekiSecim;
@@ -4926,7 +4945,7 @@ window.renderOdemeGecmisi = function() {
 
   // "En yeniden en eskiye" — zaten sorgu tarih desc geliyor, ama tarih string'i eşitse
   // kayıt sırasını da (kayitTarih) ikincil kritere alalım.
-  let liste = seciliFiltre ? odemeler.filter(p => (p.araciAd||'').trim() === seciliFiltre) : odemeler;
+  let liste = seciliFiltre ? odemeler.filter(p => araciKanonikAd(p.araciAd) === seciliFiltre) : odemeler;
   liste = [...liste].sort((a,b) => {
     const t = String(b.tarih||'').localeCompare(String(a.tarih||''));
     if(t !== 0) return t;
@@ -4941,7 +4960,7 @@ window.renderOdemeGecmisi = function() {
 
   govde.innerHTML = liste.map(p => `<tr>
     <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${p.tarih||'—'}</td>
-    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${p.araciAd||'—'}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold2)">🤝 ${araciKanonikAd(p.araciAd)||'—'}</td>
     <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:var(--green)">${fmt(Number(p.tutar)||0)} ₺</td>
     <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${p.not||'—'}</td>
   </tr>`).join('');
@@ -4971,7 +4990,7 @@ window.gecmisKomisyonTara = function() {
     if(yeniKomisyon <= 0) return;
 
     bulunanlar.push({
-      gelirDocId: g.id, misafir: g.misafir||'—', araciAd: g.araciAd,
+      gelirDocId: g.id, misafir: g.misafir||'—', araciAd: araciKanonikAd(g.araciAd),
       odaNo: g.odaNo, tarih: g.tarih, gece, yeniKomisyon
     });
   });
@@ -5046,18 +5065,21 @@ window.renderKomisyonCari = function() {
   const komList = window._KOM || [];
   const odemeList = window._KOMODEME || [];
 
-  // key = normalize edilmiş isim -> {borc, odeme, sayi, adSayaci: Map<orijinalYazım, kaç kez görüldü>}
+  // key = normalize edilmiş KANONİK isim -> {borc, odeme, sayi, adSayaci: Map<orijinalYazım, kaç kez görüldü>}
+  // "PUNE" / "Pune" / "pune iran" gibi kısaltılmış yazımlar da artık aynı hesapta birleşiyor.
   const araciler = new Map();
   const ekle = (adRaw, alan, tutar) => {
-    const ad = (adRaw||'').trim();
-    if(!ad) return;
-    const key = araciAnahtar(ad);
+    const adOrijinal = (adRaw||'').trim();
+    if(!adOrijinal) return null;
+    const adKanonik = araciKanonikAd(adOrijinal);
+    const key = araciAnahtar(adKanonik);
     if(!araciler.has(key)) araciler.set(key, {borc:0, odeme:0, sayi:0, adSayaci:new Map()});
     const rec = araciler.get(key);
     rec[alan] += tutar;
-    rec.adSayaci.set(ad, (rec.adSayaci.get(ad)||0) + 1);
+    rec.adSayaci.set(adOrijinal, (rec.adSayaci.get(adOrijinal)||0) + 1);
+    return key;
   };
-  komList.forEach(k => { ekle(k.araciAd, 'borc', Number(k.toplamKomisyon)||0); if((k.araciAd||'').trim()) araciler.get(araciAnahtar(k.araciAd)).sayi += 1; });
+  komList.forEach(k => { const key = ekle(k.araciAd, 'borc', Number(k.toplamKomisyon)||0); if(key) araciler.get(key).sayi += 1; });
   odemeList.forEach(p => ekle(p.araciAd, 'odeme', Number(p.tutar)||0));
 
   // Datalist'i güncel komisyoncu isimleriyle doldur (her gruptan en sık kullanılan yazım) —
@@ -5094,12 +5116,12 @@ window.renderKomisyonCari = function() {
 // Bir komisyoncunun (tüm yazım varyantları dahil) borç + ödeme hareketlerini kronolojik gösterir
 window.komDetayAc = function(araciKey, adGoster) {
   document.getElementById('komDetayBaslik').textContent = '🤝 ' + (adGoster || araciKey);
-  const borclar = (window._KOM||[]).filter(k => araciAnahtar(k.araciAd) === araciKey).map(k => ({
+  const borclar = (window._KOM||[]).filter(k => araciAnahtar(araciKanonikAd(k.araciAd)) === araciKey).map(k => ({
     tarih: k.tarih || k.kayitTarih || '', tip:'borc',
     aciklama: `Oda ${k.odaNo} · ${k.misafir||'—'} · ${k.gece||'—'} gece`,
     tutar: Number(k.toplamKomisyon)||0
   }));
-  const odemeler = (window._KOMODEME||[]).filter(p => araciAnahtar(p.araciAd) === araciKey).map(p => ({
+  const odemeler = (window._KOMODEME||[]).filter(p => araciAnahtar(araciKanonikAd(p.araciAd)) === araciKey).map(p => ({
     tarih: p.tarih || p.kayitTarih || '', tip:'odeme',
     aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı',
     tutar: Number(p.tutar)||0
@@ -5207,7 +5229,8 @@ window.komOdemeModalAc = function(araciAd) {
 };
 
 window.komOdemeKaydet = async function() {
-  const araciAd = document.getElementById('komOdeme_araci').value.trim();
+  const araciAdYazilan = document.getElementById('komOdeme_araci').value.trim();
+  const araciAd = araciKanonikAd(araciAdYazilan);
   const tutar = Number(document.getElementById('komOdeme_tutar').value) || 0;
   const tarih = document.getElementById('komOdeme_tarih').value || today();
   const not_ = document.getElementById('komOdeme_not').value.trim();
