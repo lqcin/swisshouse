@@ -443,6 +443,7 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
     <div class="header-right">
       <div class="sync-indicator" id="syncEl"><span class="dot"></span><span id="syncLabel">Bağlanıyor</span></div>
       <div class="user-badge">★ Yönetici</div>
+      <a href="veri.html" style="background:none;border:1px solid var(--border);color:var(--muted);padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;text-decoration:none;transition:all .2s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗂 Veri</a>
       <button class="btn-logout" onclick="doLogout()">Çıkış</button>
     </div>
   </div>
@@ -1006,51 +1007,6 @@ document.addEventListener('DOMContentLoaded', function() {
   var title = document.getElementById('odaOzelModalTitle');
   if(title) _ozelTitleObs.observe(title, {childList:true, characterData:true, subtree:true});
 });
-</script>
-
-<!-- ── ÇİFT ÖDEME / MÜKERRER GELİR KORUMASI ──
-     "Gelir Ekle" formu hiçbir kontrol yapmadan doğrudan yeni bir gelir kaydı oluşturuyordu.
-     Bu yüzden resepsiyonun check-in/check-out sırasında zaten kaydettiği bir ödeme,
-     buradan elle bir kez daha girilirse gelir iki kez sayılıyordu (çift ödeme / hesap çiftlenmesi).
-     Bu blok, dosyanın geri kalanındaki (şifrelenmiş) koda DOKUNMADAN, orijinal fonksiyonun
-     önüne bir mükerrer-kayıt kontrolü ekler. -->
-<script type="module">
-(function() {
-  const asilSaveGelir = window.saveGelir;
-  if(typeof asilSaveGelir !== 'function') return; // orijinal fonksiyon bulunamazsa dokunma
-
-  window.saveGelir = async function() {
-    try {
-      const tarih = document.getElementById('g_tarih')?.value || '';
-      const tutar = Number(document.getElementById('g_tutar')?.value) || 0;
-      const odaNo = document.getElementById('g_oda')?.value || '';
-
-      if(tarih && tutar > 0) {
-        const olasiMukerrer = (window._G || []).filter(g =>
-          g.tarih === tarih &&
-          Math.abs((Number(g.tutar) || 0) - tutar) < 0.01 &&
-          (!odaNo || String(g.odaNo || '') === String(odaNo))
-        );
-        if(olasiMukerrer.length > 0) {
-          const ornek = olasiMukerrer[0];
-          const devam = confirm(
-            '⚠ UYARI — Olası çift kayıt!\n\n' +
-            tarih + ' tarihinde' + (odaNo ? (' Oda ' + odaNo + ' için') : '') +
-            ' zaten ' + tutar.toLocaleString('tr-TR') + ' ₺ tutarında bir gelir kaydı var' +
-            (ornek.misafir ? (' (' + ornek.misafir + ')') : '') +
-            ' — kaynak: ' + (ornek.kaynak || 'bilinmiyor') + '.\n\n' +
-            'Bu muhtemelen resepsiyonun check-in/check-out sırasında zaten kaydettiği bir ödeme.\n' +
-            'Yine de YENİ ve AYRI bir kayıt olarak eklemek istediğinize emin misiniz?'
-          );
-          if(!devam) return; // kullanıcı iptal etti — orijinal fonksiyon hiç çağrılmaz, kayıt eklenmez
-        }
-      }
-    } catch(e) {
-      console.warn('Mükerrer kayıt kontrolü yapılamadı, kayıt normal şekilde devam ediyor:', e);
-    }
-    return asilSaveGelir.apply(this, arguments);
-  };
-})();
 </script>
 </body>
 </html>
