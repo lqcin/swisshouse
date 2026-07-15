@@ -197,6 +197,58 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
   <div class="portal-body">
 
+    <!-- KAZANCIM — hakedilen komisyon / ödenen / kalan bakiye -->
+    <div class="takvim-wrap" style="padding:20px 24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div class="takvim-baslik">💰 <em style="color:var(--gold2);font-style:italic">Kazancım</em></div>
+        <button onclick="kazancimGoster()" style="padding:5px 12px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--cream);cursor:pointer;color:var(--dark)" id="kazancimDetayBtn">Hareket Dökümünü Gör</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Hakediş</div>
+          <div id="kazancim_toplam" style="font-size:20px;font-weight:700;color:var(--dark)">—</div>
+        </div>
+        <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Bana Ödenen</div>
+          <div id="kazancim_odenen" style="font-size:20px;font-weight:700;color:var(--green)">—</div>
+        </div>
+        <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Kalan Alacağım</div>
+          <div id="kazancim_kalan" style="font-size:20px;font-weight:700;color:var(--primary)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kazanç Detay Modal -->
+    <div class="modal-overlay" id="kazancimModal">
+      <div class="modal" style="max-width:640px">
+        <div class="modal-header">
+          <div class="modal-title">💰 Kazanç Hareket Dökümü</div>
+          <button class="modal-close" onclick="document.getElementById('kazancimModal').classList.remove('aktif')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:16px" id="kazancimAltBaslik"></div>
+          <div style="max-height:400px;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead style="position:sticky;top:0;background:var(--white)">
+              <tr>
+                <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Tarih</th>
+                <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Açıklama</th>
+                <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Hakediş</th>
+                <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Ödenen</th>
+                <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Bakiye</th>
+              </tr>
+            </thead>
+            <tbody id="kazancimDetayBody"></tbody>
+          </table>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="document.getElementById('kazancimModal').classList.remove('aktif')">Kapat</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TAKVİM -->
     <div class="takvim-wrap">
       <div class="takvim-header">
@@ -624,6 +676,8 @@ let _O = {};   // oda durumları
 let _G = [];   // gelirler (check-in yapılmış konaklamalar)
 let _veriDurumu = { oda:false, rezervasyon:false, gelir:false, ayar:false };
 let _beniimTalepler = [];
+let _komTumu = [];        // tüm komisyonlar (hakediş) kayıtları — istemci tarafında kendi adıma filtrelenir
+let _komOdemeTumu = [];   // tüm komisyoncu ödemeleri kayıtları — istemci tarafında kendi adıma filtrelenir
 // Hem mobil hem masaüstünde aynı aylık takvim gösterilir; ay bitince otomatik ilerler.
 // Mobilde sığmayan sütunlar yatay kaydırma (overflow-x:auto) ile gezilir.
 let takvimOffsetAy = 0;
@@ -768,6 +822,20 @@ async function baslatPortal() {
     }
   );
 
+  // Kazancım — kendi hakediş/ödeme kayıtlarımı CANLI dinle.
+  // Bu koleksiyonlar komisyoncu bazında ayrı tutulmadığı (araciAd serbest metin) için
+  // tamamı çekilip isim normalize edilerek istemci tarafında filtreleniyor — resepsiyon
+  // tarafındaki Cari Hesap ile aynı yöntem, aynı yazım-farkı toleransı.
+  onSnapshot(collection(db,'komisyonlar'), snap => {
+    _komTumu = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderKazancim();
+  }, err => console.warn('Komisyon verisi dinlenemedi:', err));
+
+  onSnapshot(collection(db,'komisyonOdemeleri'), snap => {
+    _komOdemeTumu = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderKazancim();
+  }, err => console.warn('Ödeme verisi dinlenemedi:', err));
+
   // Oda select'ini doldur
   const sel = document.getElementById('f_oda');
   const m0 = M[dil];
@@ -789,6 +857,72 @@ async function baslatPortal() {
 function rKomisyoncuAnahtar(r) {
   return String(r?.komisyoncu || r?.komisyoncuKey || '').trim().toLocaleLowerCase('tr-TR');
 }
+
+// "Pune", "PUNE", "pune iran" gibi yazım farklarını tek kişi olarak eşleştirmek için —
+// resepsiyon tarafındaki Cari Hesap'ın kullandığı normalizasyonla aynı yöntem.
+function araciAnahtar(ad) {
+  return String(ad||'').trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
+}
+
+// Kazancım panelini ve detay dökümünü günceller — bu komisyoncunun kendi adına
+// (ve giriş yaptığı kullanıcı adının KOMISYONCULAR'daki görünen adına) eşleşen
+// komisyon (hakediş) ve ödeme kayıtlarını toplar.
+function renderKazancim() {
+  if(!aktifKom) return;
+  const kendiAnahtar = araciAnahtar(aktifKom.ad);
+
+  const borclar = _komTumu.filter(k => araciAnahtar(k.araciAd) === kendiAnahtar);
+  const odemeler = _komOdemeTumu.filter(p => araciAnahtar(p.araciAd) === kendiAnahtar);
+
+  const toplamHakedis = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
+  const toplamOdenen = odemeler.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
+  const kalan = toplamHakedis - toplamOdenen;
+
+  const elToplam = document.getElementById('kazancim_toplam');
+  const elOdenen = document.getElementById('kazancim_odenen');
+  const elKalan = document.getElementById('kazancim_kalan');
+  if(elToplam) elToplam.textContent = fmt(toplamHakedis) + ' ₺';
+  if(elOdenen) elOdenen.textContent = fmt(toplamOdenen) + ' ₺';
+  if(elKalan) { elKalan.textContent = fmt(kalan) + ' ₺'; elKalan.style.color = kalan > 0.5 ? 'var(--primary)' : 'var(--green)'; }
+
+  // Detay modalı açıksa canlı güncellensin
+  if(document.getElementById('kazancimModal')?.classList.contains('aktif')) {
+    kazancimDetayDoldur(borclar, odemeler);
+  }
+}
+
+function kazancimDetayDoldur(borclar, odemeler) {
+  const hareketler = [
+    ...borclar.map(k => ({ tarih: k.tarih||k.kayitTarih||'', tip:'borc',
+      aciklama: `Oda ${k.odaNo||'—'} · ${k.misafir||'—'} · ${k.gece||'—'} gece`, tutar: Number(k.toplamKomisyon)||0 })),
+    ...odemeler.map(p => ({ tarih: p.tarih||p.kayitTarih||'', tip:'odeme',
+      aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı', tutar: Number(p.tutar)||0 }))
+  ].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
+
+  let bakiye = 0;
+  const satirlar = hareketler.map(h => {
+    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${h.tip==='borc'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${h.tip==='odeme'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('kazancimDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Henüz hareket yok</td></tr>';
+}
+
+window.kazancimGoster = function() {
+  if(!aktifKom) return;
+  const kendiAnahtar = araciAnahtar(aktifKom.ad);
+  const borclar = _komTumu.filter(k => araciAnahtar(k.araciAd) === kendiAnahtar);
+  const odemeler = _komOdemeTumu.filter(p => araciAnahtar(p.araciAd) === kendiAnahtar);
+  document.getElementById('kazancimAltBaslik').textContent =
+    `${aktifKom.ad} — tüm zamanlar, en eskiden en yeniye doğru hareket dökümü`;
+  kazancimDetayDoldur(borclar, odemeler);
+  document.getElementById('kazancimModal').classList.add('aktif');
+};
 
 window.takvimAyDegistir = function(delta) {
   takvimOffsetAy += delta;
