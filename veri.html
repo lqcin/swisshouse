@@ -221,9 +221,24 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Auth kontrolü
+// Auth kontrolü — artık sadece yönetici hesabı girebiliyor.
+// (PIN ekranı ayrı bir koruma katmanıydı ama Firestore silme izinleri hesaba göre
+// çalışıyor; resepsiyon hesabıyla girilirse bazı kayıtlar silinemiyordu. Artık
+// resepsiyon hesabıyla giriş denenirse PIN ekranına bile gelmeden net bir uyarı görülüyor.)
 onAuthStateChanged(auth, user => {
-  if(!user) window.location.href = 'index.html';
+  if(!user) { window.location.href = 'index.html'; return; }
+  if(user.email !== 'yonetici@swisshouse.com') {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;font-family:'Jost',sans-serif;text-align:center">
+        <div>
+          <div style="font-size:40px;margin-bottom:12px">🔒</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:8px">Bu sayfa sadece yönetici hesabına açık</div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:20px">Giriş yaptığın hesap: ${user.email}</div>
+          <a href="resepsiyon.html" style="display:inline-block;padding:10px 22px;background:#C8102E;color:#fff;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Resepsiyona Dön</a>
+        </div>
+      </div>`;
+    return;
+  }
 });
 
 // ── PIN ──
