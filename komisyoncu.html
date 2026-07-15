@@ -764,6 +764,7 @@ async function takvimVerisiYukle() {
 
   renderTakvim();
   hesaplaOzet();
+  renderKazancim();
 
   const el = document.getElementById('sonGuncelleme');
   const kontrolLegenda = document.getElementById('legenda_kontrol_item');
@@ -876,45 +877,75 @@ function araciBenimMi(kayitliAd) {
 
 // Kazancım panelini ve detay dökümünü günceller — bu komisyoncunun kendi adına
 // (ve giriş yaptığı kullanıcı adının KOMISYONCULAR'daki görünen adına) eşleşen
-// komisyon (hakediş) ve ödeme kayıtlarını toplar.
+// komisyon (hakediş) ve ödeme kayıtlarını toplar. Resepsiyon tarafındaki Cari Hesap'la
+// tutarlı olsun diye, henüz check-in yapılmamış ama onaylı rezervasyonlardan beklenen
+// komisyon da (varsa) hesaba katılır — ikisi de aynı toplamı göstermeli.
 function renderKazancim() {
   if(!aktifKom) return;
 
   const borclar = _komTumu.filter(k => araciBenimMi(k.araciAd));
   const odemeler = _komOdemeTumu.filter(p => araciBenimMi(p.araciAd));
 
-  const toplamHakedis = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
+  const beklenenler = (_R||[]).filter(r => {
+    if(r.durum === 'iptal') return false;
+    const benimMi = araciBenimMi(r.araciAd) || rKomisyoncuAnahtar(r) === aktifKom.key;
+    if(!benimMi) return false;
+    const odaMeta = _O?.['oda'+r.odaNo];
+    const checkinOlmus = odaMeta && odaMeta.durum === 'dolu' && odaMeta.giris === r.giris;
+    return !checkinOlmus;
+  }).map(r => {
+    const fiyat = Number(r.fiyat) || 0;
+    const sozlesme = Number(r.sozlesmeFiyat) || 0;
+    const gece = r.giris && r.cikis ? Math.max(1, Math.round((new Date(r.cikis) - new Date(r.giris)) / 864e5)) : 0;
+    let tutar = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+    if(tutar === 0 && gece && aktifKomAyar && (aktifKomAyar.tip==='sabit'||aktifKomAyar.tip==='oran') && Number(aktifKomAyar.deger)>0) {
+      const hesap = komisyonHesapla(fiyat);
+      tutar = Math.round(hesap.komisyon * gece * 100) / 100;
+    }
+    return { r, gece, tutar };
+  }).filter(x => x.tutar > 0);
+
+  const toplamBeklenen = beklenenler.reduce((a,b)=>a+b.tutar, 0);
+  const toplamKesin = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
+  const toplamHakedis = toplamKesin + toplamBeklenen;
   const toplamOdenen = odemeler.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
   const kalan = toplamHakedis - toplamOdenen;
 
   const elToplam = document.getElementById('kazancim_toplam');
   const elOdenen = document.getElementById('kazancim_odenen');
   const elKalan = document.getElementById('kazancim_kalan');
-  if(elToplam) elToplam.textContent = fmt(toplamHakedis) + ' ₺';
+  if(elToplam) {
+    elToplam.innerHTML = toplamBeklenen > 0
+      ? `${fmt(toplamHakedis)} ₺<br><span style="font-size:10px;color:var(--muted);font-weight:400">(${fmt(toplamKesin)} kesin + ${fmt(toplamBeklenen)} beklenen)</span>`
+      : fmt(toplamHakedis) + ' ₺';
+  }
   if(elOdenen) elOdenen.textContent = fmt(toplamOdenen) + ' ₺';
   if(elKalan) { elKalan.textContent = fmt(kalan) + ' ₺'; elKalan.style.color = kalan > 0.5 ? 'var(--primary)' : 'var(--green)'; }
 
   // Detay modalı açıksa canlı güncellensin
   if(document.getElementById('kazancimModal')?.classList.contains('aktif')) {
-    kazancimDetayDoldur(borclar, odemeler);
+    kazancimDetayDoldur(borclar, odemeler, beklenenler);
   }
 }
 
-function kazancimDetayDoldur(borclar, odemeler) {
+function kazancimDetayDoldur(borclar, odemeler, beklenenler) {
   const hareketler = [
     ...borclar.map(k => ({ tarih: k.tarih||k.kayitTarih||'', tip:'borc',
       aciklama: `Oda ${k.odaNo||'—'} · ${k.misafir||'—'} · ${k.gece||'—'} gece`, tutar: Number(k.toplamKomisyon)||0 })),
+    ...(beklenenler||[]).map(b => ({ tarih: b.r.giris||'', tip:'beklenen',
+      aciklama: `⏳ Oda ${b.r.odaNo||'—'} · ${b.r.misafir||'—'} · ${b.gece} gece · henüz check-in yapılmadı`, tutar: b.tutar })),
     ...odemeler.map(p => ({ tarih: p.tarih||p.kayitTarih||'', tip:'odeme',
       aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı', tutar: Number(p.tutar)||0 }))
   ].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
 
   let bakiye = 0;
   const satirlar = hareketler.map(h => {
-    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    bakiye += (h.tip==='borc' || h.tip==='beklenen') ? h.tutar : -h.tutar;
+    const borcRengi = h.tip==='beklenen' ? 'color:var(--gold2);font-style:italic' : '';
     return `<tr>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px">${h.tip==='borc'?fmt(h.tutar):'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;${borcRengi}">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar):'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${h.tip==='odeme'?fmt(h.tutar):'—'}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td>
     </tr>`;
@@ -924,12 +955,30 @@ function kazancimDetayDoldur(borclar, odemeler) {
 
 window.kazancimGoster = function() {
   if(!aktifKom) return;
-  const kendiAnahtar = araciAnahtar(aktifKom.ad);
-  const borclar = _komTumu.filter(k => araciAnahtar(k.araciAd) === kendiAnahtar);
-  const odemeler = _komOdemeTumu.filter(p => araciAnahtar(p.araciAd) === kendiAnahtar);
+  const borclar = _komTumu.filter(k => araciBenimMi(k.araciAd));
+  const odemeler = _komOdemeTumu.filter(p => araciBenimMi(p.araciAd));
+  const beklenenler = (_R||[]).filter(r => {
+    if(r.durum === 'iptal') return false;
+    const benimMi = araciBenimMi(r.araciAd) || rKomisyoncuAnahtar(r) === aktifKom.key;
+    if(!benimMi) return false;
+    const odaMeta = _O?.['oda'+r.odaNo];
+    const checkinOlmus = odaMeta && odaMeta.durum === 'dolu' && odaMeta.giris === r.giris;
+    return !checkinOlmus;
+  }).map(r => {
+    const fiyat = Number(r.fiyat) || 0;
+    const sozlesme = Number(r.sozlesmeFiyat) || 0;
+    const gece = r.giris && r.cikis ? Math.max(1, Math.round((new Date(r.cikis) - new Date(r.giris)) / 864e5)) : 0;
+    let tutar = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
+    if(tutar === 0 && gece && aktifKomAyar && (aktifKomAyar.tip==='sabit'||aktifKomAyar.tip==='oran') && Number(aktifKomAyar.deger)>0) {
+      const hesap = komisyonHesapla(fiyat);
+      tutar = Math.round(hesap.komisyon * gece * 100) / 100;
+    }
+    return { r, gece, tutar };
+  }).filter(x => x.tutar > 0);
+
   document.getElementById('kazancimAltBaslik').textContent =
     `${aktifKom.ad} — tüm zamanlar, en eskiden en yeniye doğru hareket dökümü`;
-  kazancimDetayDoldur(borclar, odemeler);
+  kazancimDetayDoldur(borclar, odemeler, beklenenler);
   document.getElementById('kazancimModal').classList.add('aktif');
 };
 
