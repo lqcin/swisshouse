@@ -349,6 +349,21 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       </div>
 
       <!-- Konaklama -->
+      <button type="button" class="btn btn-ghost" style="width:100%;margin-bottom:10px" onclick="komOdaBulAc()">🔍 Uygun Oda Bul</button>
+      <div id="komOdaBulPanel" style="display:none;margin-bottom:14px;border:1px solid var(--border);padding:12px;background:var(--cream)">
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Kaç Gece?</label>
+            <input type="number" id="kob_gece" min="1" value="1">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>En Erken Giriş</label>
+            <input type="date" id="kob_baslangic">
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="komOdaBulAra()">Ara</button>
+        <div id="komOdaBulSonuc" style="max-height:200px;overflow-y:auto"></div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Oda *</label>
@@ -483,6 +498,21 @@ function authHazirBekle() {
 authHazirBekle(); // sayfa açılır açılmaz girişi başlat, portal beklemeden hazırlansın
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
+
+// ── KOMİSYONCU LİSTESİ ──
+// Artık koddan değil Firestore'dan (meta/komisyoncular) okunuyor — resepsiyon tarafındaki
+// Rapor > Komisyoncu Yönetimi panelinden eklenip düzenleniyor. Anonim giriş tamamlanır
+// tamamlanmaz (parola kontrolünden ÖNCE) okunuyor, çünkü Firestore kuralı signedIn() istiyor.
+let KOMISYONCULAR = {};
+let _komisyoncularHazir = (async () => {
+  await authHazirBekle();
+  try {
+    const snap = await getDoc(doc(db,'meta','komisyoncular'));
+    if(snap.exists()) KOMISYONCULAR = snap.data() || {};
+  } catch(e) {
+    console.error('Komisyoncu listesi yüklenemedi:', e);
+  }
+})();
 
 // ── DİL SİSTEMİ ──
 const M = {
@@ -662,14 +692,6 @@ window.setLang = function(d) {
   renderTalepler(_beniimTalepler);
 };
 
-// ── KOMİSYONCU ŞİFRELERİ ──
-// Yeni komisyoncu eklemek için buraya satır ekle
-const KOMISYONCULAR = {
-  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024',  komisyonTip:'manuel', komisyonDeger:0 },
-  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024', komisyonTip:'manuel', komisyonDeger:0 },
-  'pune':   { ad: 'pune iran',     sifre: 'pune2026',   komisyonTip:'manuel', komisyonDeger:0 },
-};
-
 let aktifKom = null;
 let aktifKomAyar = { tip:'manuel', deger:0 };
 let _R = [];   // rezervasyonlar
@@ -689,12 +711,24 @@ const urlParams = new URLSearchParams(window.location.search);
 const urlKom = urlParams.get('k') || '';
 if(urlKom) document.getElementById('loginKullanici').value = urlKom;
 
-window.girisYap = function() {
+window.girisYap = async function() {
   const kullanici = document.getElementById('loginKullanici').value.trim().toLowerCase();
   const sifre = document.getElementById('loginSifre').value;
+  const girisBtn = document.getElementById('lbl_giris_btn');
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+
+  // Komisyoncu listesi Firestore'dan henüz gelmediyse (anonim giriş + okuma sürüyor) bekle
+  if(girisBtn) { girisBtn.disabled = true; girisBtn.textContent = 'Kontrol ediliyor...'; }
+  try {
+    await _komisyoncularHazir;
+  } finally {
+    if(girisBtn) { girisBtn.disabled = false; girisBtn.textContent = M[dil]?.giris_yap || 'Giriş Yap'; }
+  }
+
   const kom = KOMISYONCULAR[kullanici];
   if(!kom || kom.sifre !== sifre) {
-    document.getElementById('loginErr').textContent = 'Kullanıcı adı veya şifre hatalı.';
+    errEl.textContent = 'Kullanıcı adı veya şifre hatalı.';
     return;
   }
   aktifKom = { key: kullanici, ad: kom.ad };
@@ -1246,6 +1280,85 @@ window.hesaplaOzet = function() {
 };
 
 // ── TALEP GÖNDER ──
+// ── UYGUN ODA BULUCU (komisyoncu tarafı) ──
+// Resepsiyondaki ile aynı mantık: verilen gece sayısı için her odayı gün gün tarar,
+// en erken müsait olduğu tarihi bulur, sonuçları tarihe göre sıralar.
+function komOdaMusaitMi(odaNo, giris, cikis) {
+  const carpisanRev = (_R||[]).find(r =>
+    Number(r.odaNo) === Number(odaNo) &&
+    r.durum !== 'iptal' && r.durum !== 'noshow' && r.durum !== 'tamamlandi' &&
+    (r.giris||'') < cikis && (r.cikis||'') > giris
+  );
+  if(carpisanRev) return false;
+  const oda = _O['oda'+odaNo];
+  if(oda?.durum === 'dolu' && oda.giris && oda.cikis && oda.giris < cikis && oda.cikis > giris) return false;
+  return true;
+}
+
+function komOdaBulTara(gece, enErkenTarih) {
+  const LIMIT_GUN = 120;
+  const sonuclar = [];
+  for(const no of HOTEL_ODALAR) {
+    if(_O['oda'+no]?.durum === 'arizali') continue;
+    let aday = enErkenTarih;
+    let bulundu = null;
+    for(let i = 0; i < LIMIT_GUN; i++) {
+      const cikisAday = addDays(aday, gece);
+      if(komOdaMusaitMi(no, aday, cikisAday)) { bulundu = { giris: aday, cikis: cikisAday }; break; }
+      aday = addDays(aday, 1);
+    }
+    if(bulundu) sonuclar.push({ odaNo: no, giris: bulundu.giris, cikis: bulundu.cikis });
+  }
+  sonuclar.sort((a,b) => a.giris.localeCompare(b.giris) || a.odaNo - b.odaNo);
+  return sonuclar;
+}
+
+function komBugunStr() {
+  const n = new Date(), p = x => String(x).padStart(2,'0');
+  return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`;
+}
+
+window.komOdaBulAc = function() {
+  const panel = document.getElementById('komOdaBulPanel');
+  const acikMi = panel.style.display !== 'none';
+  panel.style.display = acikMi ? 'none' : 'block';
+  if(!acikMi) {
+    document.getElementById('kob_gece').value = 1;
+    document.getElementById('kob_baslangic').value = komBugunStr();
+    document.getElementById('komOdaBulSonuc').innerHTML = '';
+  }
+};
+
+window.komOdaBulAra = function() {
+  const gece = Math.max(1, parseInt(document.getElementById('kob_gece').value) || 1);
+  const baslangic = document.getElementById('kob_baslangic').value || komBugunStr();
+  const sonuclar = komOdaBulTara(gece, baslangic);
+  const govde = document.getElementById('komOdaBulSonuc');
+  if(sonuclar.length === 0) {
+    govde.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">4 ay içinde müsait oda bulunamadı</div>';
+    return;
+  }
+  const bugun = komBugunStr();
+  govde.innerHTML = sonuclar.map(s => {
+    const bugunMi = s.giris === bugun;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--white);border:1px solid var(--border);margin-bottom:5px;font-size:12px">
+      <div>
+        <b>Oda ${s.odaNo}</b>${bugunMi?' <span style="color:var(--green);font-size:10px;font-weight:700">BUGÜN</span>':''}
+        <div style="color:var(--muted);font-size:11px">${s.giris} → ${s.cikis} · ${gece} gece</div>
+      </div>
+      <button type="button" class="btn btn-primary" style="padding:5px 12px;font-size:10px" onclick="komOdaBulSec(${s.odaNo},'${s.giris}',${gece})">Seç</button>
+    </div>`;
+  }).join('');
+};
+
+window.komOdaBulSec = function(odaNo, giris, gece) {
+  document.getElementById('f_oda').value = odaNo;
+  document.getElementById('f_giris').value = giris;
+  document.getElementById('f_gece').value = gece;
+  document.getElementById('komOdaBulPanel').style.display = 'none';
+  hesaplaOzet();
+};
+
 window.talepGonder = async function() {
   const errEl = document.getElementById('formHata');
   const okEl = document.getElementById('formBasari');
