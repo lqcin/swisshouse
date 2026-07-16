@@ -1601,7 +1601,33 @@ input[type="number"], input[type="date"], input[type="password"] {
 
   <div class="section-head">
     <h2>Rezervasyon <em>Listesi</em></h2>
-    <button class="btn btn-primary" onclick="openRezervModalForOda(null)">+ Rezervasyon Ekle</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="odaBulAc()">🔍 Uygun Oda Bul</button>
+      <button class="btn btn-primary" onclick="openRezervModalForOda(null)">+ Rezervasyon Ekle</button>
+    </div>
+  </div>
+
+  <!-- Uygun Oda Bulucu Modal -->
+  <div class="modal-overlay" id="odaBulModal">
+    <div class="modal" style="max-width:640px">
+      <div class="modal-title">🔍 Uygun Oda Bul</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Kaç gece kalınacağını gir, sistem tüm odaları tarayıp her biri için en erken müsait tarihi bulsun — en yakın tarihten başlayarak sıralı listelesin.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kaç Gece? *</label>
+          <input type="number" id="ob_gece" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>En Erken Giriş Tarihi</label>
+          <input type="date" id="ob_baslangic">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="odaBulAra()" style="margin-bottom:16px">Ara</button>
+      <div id="odaBulSonuc" style="max-height:340px;overflow-y:auto"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('odaBulModal')">Kapat</button>
+      </div>
+    </div>
   </div>
 
   <div class="table-card">
@@ -1728,6 +1754,70 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--gold);padding:16px 20px;box-shadow:var(--shadow)">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Komisyon <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0">(gerçekleşen + yaklaşan)</span></div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold2)" id="rapor-komisyon">—</div>
+    </div>
+  </div>
+
+  <!-- Komisyoncu Yönetimi — giriş bilgisi tanımlama/düzenleme/silme, artık kod değiştirmeye gerek yok -->
+  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Yönetimi</em></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Komisyoncu portalına giriş yapabilecek kişileri buradan tanımla — yeni komisyoncu eklemek için artık kod değişikliği gerekmiyor.</div>
+      </div>
+      <button class="btn btn-primary" style="font-size:11px" onclick="komisyoncuEkleAc()">+ Komisyoncu Ekle</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Görünen Ad</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Giriş Adı</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Şifre</th>
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">Komisyon</th>
+          <th style="text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase">İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="komisyoncuYonetimBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Komisyoncu Ekle/Düzenle Modal -->
+  <div class="modal-overlay" id="komisyoncuYonetimModal">
+    <div class="modal" style="max-width:440px">
+      <div class="modal-title" id="kyModalBaslik">Yeni Komisyoncu Ekle</div>
+      <input type="hidden" id="ky_eski_key">
+      <div class="form-group">
+        <label>Giriş Adı <span style="font-size:10px;color:var(--muted);font-weight:400">(sadece harf/rakam, örn: ahmet)</span></label>
+        <input type="text" id="ky_key" placeholder="ahmet">
+      </div>
+      <div class="form-group">
+        <label>Görünen Ad *</label>
+        <input type="text" id="ky_ad" placeholder="Ahmet Aracı">
+      </div>
+      <div class="form-group">
+        <label>Şifre *</label>
+        <input type="text" id="ky_sifre" placeholder="şifre123">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Komisyon Tipi</label>
+          <select id="ky_tip" onchange="document.getElementById('ky_deger_wrap').style.display=this.value==='manuel'?'none':'block'">
+            <option value="manuel">Manuel — fiyatı bölme</option>
+            <option value="oran">Sabit Oran (%)</option>
+            <option value="sabit">Sabit Tutar (₺ / gece)</option>
+          </select>
+        </div>
+        <div class="form-group" id="ky_deger_wrap" style="display:none">
+          <label>Değer</label>
+          <input type="number" id="ky_deger" min="0" step="0.01" placeholder="0">
+        </div>
+      </div>
+      <div id="ky_link" style="display:none;background:var(--parchment);border:1px solid var(--border);padding:10px 12px;font-size:11px;color:var(--muted);margin-bottom:16px">
+        Portal linki: <span id="ky_link_url" style="font-family:monospace;color:var(--dark)"></span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('komisyoncuYonetimModal')">Vazgeç</button>
+        <button class="btn btn-primary" onclick="komisyoncuKaydet()">Kaydet</button>
+      </div>
     </div>
   </div>
 
@@ -1988,13 +2078,125 @@ function gunAdiGoster(iso) {
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
 
 // ── KOMİSYONCU LİSTESİ ──
-// Yeni komisyoncu eklemek için buraya satır ekle:
-// 'url_adi': { ad: 'Görünen Ad', sifre: 'sifre123' }
-// Link: https://lqcin.github.io/swisshouse/komisyoncu.html?k=url_adi
-window.KOMISYONCULAR = {
-  'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024',  komisyonTip:'manuel', komisyonDeger:0 },
-  'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024', komisyonTip:'manuel', komisyonDeger:0 },
-  'pune':   { ad: 'pune iran',     sifre: 'pune2026',   komisyonTip:'manuel', komisyonDeger:0 },
+// Artık koddan değil Firestore'dan (meta/komisyoncular) okunuyor — Rapor sekmesindeki
+// "Komisyoncu Yönetimi" panelinden ekle/düzenle/sil yapılabiliyor, kod değiştirmeye gerek yok.
+window.KOMISYONCULAR = {};
+
+async function loadKomisyoncular() {
+  try {
+    const snap = await getDoc(doc(db,'meta','komisyoncular'));
+    if(snap.exists() && Object.keys(snap.data()||{}).length > 0) {
+      window.KOMISYONCULAR = snap.data();
+    } else {
+      // İlk çalıştırma — eski koddaki 3 komisyoncuyu Firestore'a taşı (veri kaybı olmasın)
+      window.KOMISYONCULAR = {
+        'ahmet':  { ad: 'Ahmet Aracı',   sifre: 'ahmet2024',  komisyonTip:'manuel', komisyonDeger:0 },
+        'mehmet': { ad: 'Mehmet Turizm', sifre: 'mehmet2024', komisyonTip:'manuel', komisyonDeger:0 },
+        'pune':   { ad: 'pune iran',     sifre: 'pune2026',   komisyonTip:'manuel', komisyonDeger:0 },
+      };
+      await setDoc(doc(db,'meta','komisyoncular'), window.KOMISYONCULAR);
+    }
+  } catch(e) {
+    console.warn('Komisyoncu listesi yüklenemedi:', e);
+  }
+  renderKomisyoncuYonetimi();
+  // Komisyon Ayarları dropdown'ı da bu listeye bağlı, yeniden doldur
+  const kisiSel = document.getElementById('kom_ayar_kisi');
+  if(kisiSel) {
+    kisiSel.innerHTML = Object.entries(window.KOMISYONCULAR||{}).map(([key,k]) => `<option value="${key}">${k.ad}</option>`).join('');
+    komisyonAyarKisiDegisti();
+  }
+}
+window.loadKomisyoncular = loadKomisyoncular;
+
+// Komisyoncu Yönetimi panelini çizer — Rapor sekmesinde
+window.renderKomisyoncuYonetimi = function() {
+  const govde = document.getElementById('komisyoncuYonetimBody');
+  if(!govde) return;
+  const girdiler = Object.entries(window.KOMISYONCULAR||{});
+  if(girdiler.length === 0) {
+    govde.innerHTML = '<tr class="empty-row"><td colspan="5">Henüz komisyoncu tanımlanmamış</td></tr>';
+    return;
+  }
+  govde.innerHTML = girdiler.map(([key, k]) => `<tr>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600">${k.ad||key}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">${key}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;font-family:monospace">${k.sifre||'—'}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${k.komisyonTip==='sabit'?('Sabit '+fmt(k.komisyonDeger||0)+'/gece'):k.komisyonTip==='oran'?('%'+(k.komisyonDeger||0)):'Manuel'}</td>
+    <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="komisyoncuDuzenleAc('${key}')">✏ Düzenle</button>
+      <button class="btn btn-danger btn-sm" onclick="komisyoncuSil('${key}')">Sil</button>
+    </td>
+  </tr>`).join('');
+};
+
+window.komisyoncuEkleAc = function() {
+  document.getElementById('kyModalBaslik').textContent = 'Yeni Komisyoncu Ekle';
+  document.getElementById('ky_eski_key').value = '';
+  document.getElementById('ky_key').value = '';
+  document.getElementById('ky_key').disabled = false;
+  document.getElementById('ky_ad').value = '';
+  document.getElementById('ky_sifre').value = '';
+  document.getElementById('ky_tip').value = 'manuel';
+  document.getElementById('ky_deger').value = '';
+  document.getElementById('ky_deger_wrap').style.display = 'none';
+  document.getElementById('ky_link').style.display = 'none';
+  openModal('komisyoncuYonetimModal');
+};
+
+window.komisyoncuDuzenleAc = function(key) {
+  const k = window.KOMISYONCULAR[key];
+  if(!k) return;
+  document.getElementById('kyModalBaslik').textContent = 'Komisyoncu Düzenle';
+  document.getElementById('ky_eski_key').value = key;
+  document.getElementById('ky_key').value = key;
+  document.getElementById('ky_key').disabled = true; // link'i bozmamak için giriş adı sonradan değiştirilemez
+  document.getElementById('ky_ad').value = k.ad || '';
+  document.getElementById('ky_sifre').value = k.sifre || '';
+  document.getElementById('ky_tip').value = k.komisyonTip || 'manuel';
+  document.getElementById('ky_deger').value = k.komisyonDeger || '';
+  document.getElementById('ky_deger_wrap').style.display = (k.komisyonTip && k.komisyonTip !== 'manuel') ? 'block' : 'none';
+  document.getElementById('ky_link').style.display = 'block';
+  document.getElementById('ky_link_url').textContent = `komisyoncu.html?k=${key}`;
+  openModal('komisyoncuYonetimModal');
+};
+
+window.komisyoncuKaydet = async function() {
+  const eskiKey = document.getElementById('ky_eski_key').value;
+  const yeniKey = document.getElementById('ky_key').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const ad = document.getElementById('ky_ad').value.trim();
+  const sifre = document.getElementById('ky_sifre').value.trim();
+  const tip = document.getElementById('ky_tip').value;
+  const deger = tip === 'manuel' ? 0 : Math.max(0, Number(document.getElementById('ky_deger').value)||0);
+  if(!yeniKey || !ad || !sifre) { toast('Giriş adı, görünen ad ve şifre zorunlu','error'); return; }
+  if(!eskiKey && window.KOMISYONCULAR[yeniKey]) { toast('Bu giriş adı zaten kullanılıyor','error'); return; }
+  const guncel = {...(window.KOMISYONCULAR||{})};
+  guncel[yeniKey] = { ad, sifre, komisyonTip:tip, komisyonDeger:deger };
+  try {
+    await setDoc(doc(db,'meta','komisyoncular'), guncel);
+    window.KOMISYONCULAR = guncel;
+    renderKomisyoncuYonetimi();
+    closeModal('komisyoncuYonetimModal');
+    toast(`${ad} kaydedildi ✓ — link: komisyoncu.html?k=${yeniKey}`, 'success');
+  } catch(e) {
+    toast('Kaydedilemedi: '+(e?.message||'Bilinmeyen hata'), 'error');
+  }
+};
+
+window.komisyoncuSil = async function(key) {
+  const k = window.KOMISYONCULAR[key];
+  if(!k) return;
+  if(!confirm(`"${k.ad}" silinsin mi? Bu komisyoncunun giriş bilgileri kaldırılacak — geçmiş komisyon/ödeme kayıtları etkilenmez.`)) return;
+  const guncel = {...(window.KOMISYONCULAR||{})};
+  delete guncel[key];
+  try {
+    await setDoc(doc(db,'meta','komisyoncular'), guncel);
+    window.KOMISYONCULAR = guncel;
+    renderKomisyoncuYonetimi();
+    toast('Komisyoncu silindi', 'success');
+  } catch(e) {
+    toast('Silinemedi: '+(e?.message||'Bilinmeyen hata'), 'error');
+  }
 };
 
 // Takvimde ardışık farklı misafirlerin görsel olarak ayrışması için
@@ -3513,11 +3715,11 @@ window.saveCheckin = async function() {
     const mq = query(collection(db,'musteriler'), where('tc','==',tc));
     const msnap = await getDocs(mq);
     if(msnap.empty) {
-      await addDoc(collection(db,'musteriler'),{tc,ad,tel,email,plaka,konaklamaSayisi:1,sonKonaklama:giris,ilkKayit:now});
+      await addDoc(collection(db,'musteriler'),{tc,ad,tel,email,plaka,konaklamaSayisi:1,sonKonaklama:giris,ilkKayit:now,toplamHarcama:toplam});
     } else {
       const mref = msnap.docs[0].ref;
       const mdata = msnap.docs[0].data();
-      await updateDoc(mref,{ad,tel,email,plaka,konaklamaSayisi:(mdata.konaklamaSayisi||0)+1,sonKonaklama:giris});
+      await updateDoc(mref,{ad,tel,email,plaka,konaklamaSayisi:(mdata.konaklamaSayisi||0)+1,sonKonaklama:giris,toplamHarcama:(mdata.toplamHarcama||0)+toplam});
     }
   }
 
@@ -4132,6 +4334,72 @@ window.saveDurum = async function() {
 };
 
 // ── REZERVASYONLAR ──
+// ── UYGUN ODA BULUCU ──
+// Verilen gece sayısı için her odayı en erken giriş tarihini bulana kadar gün gün tarar,
+// sonuçları en yakın tarihten başlayarak sıralar. odaCakismaKontrol ile aynı çakışma
+// mantığını kullanır — rezervasyon.html'in geri kalanıyla tutarlı.
+function odaBulTara(gece, enErkenTarih) {
+  const LIMIT_GUN = 120; // 4 ay ileriye kadar bak, sonrasında "bulunamadı" say
+  const sonuclar = [];
+  for(const no of HOTEL_ODALAR) {
+    if(window._O['oda'+no]?.durum === 'arizali') continue; // arızalı odayı hiç önerme
+    let aday = enErkenTarih;
+    let bulundu = null;
+    for(let i = 0; i < LIMIT_GUN; i++) {
+      const cikisAday = addDays(aday, gece);
+      const kontrol = odaCakismaKontrol(no, aday, cikisAday);
+      if(!kontrol.cakisma) { bulundu = { giris: aday, cikis: cikisAday }; break; }
+      aday = addDays(aday, 1);
+    }
+    if(bulundu) {
+      sonuclar.push({ odaNo: no, giris: bulundu.giris, cikis: bulundu.cikis, fiyat: getOdaFiyat(no, 1) });
+    }
+  }
+  sonuclar.sort((a,b) => a.giris.localeCompare(b.giris) || a.odaNo - b.odaNo);
+  return sonuclar;
+}
+
+window.odaBulAc = function() {
+  document.getElementById('ob_gece').value = 1;
+  document.getElementById('ob_baslangic').value = today();
+  document.getElementById('odaBulSonuc').innerHTML = '';
+  openModal('odaBulModal');
+};
+
+window.odaBulAra = function() {
+  const gece = Math.max(1, parseInt(document.getElementById('ob_gece').value) || 1);
+  const baslangic = document.getElementById('ob_baslangic').value || today();
+  const sonuclar = odaBulTara(gece, baslangic);
+  const govde = document.getElementById('odaBulSonuc');
+  if(sonuclar.length === 0) {
+    govde.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-style:italic">4 ay içinde müsait oda bulunamadı</div>';
+    return;
+  }
+  govde.innerHTML = sonuclar.map(s => {
+    const bugunMi = s.giris === today();
+    const oz = window._OZ?.['oda'+s.odaNo] || {};
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--parchment);border:1px solid var(--border);border-left:3px solid ${bugunMi?'var(--green)':'var(--blue)'};margin-bottom:6px">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--dark)">Oda ${s.odaNo}${oz.ad?' — '+oz.ad:''} ${bugunMi?'<span class="badge badge-green" style="margin-left:4px">Bugün Müsait</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.giris} → ${s.cikis} · ${gece} gece · ${s.fiyat?fmt(s.fiyat*gece):'—'}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="closeModal('odaBulModal');odaBulSecVeRezervAc(${s.odaNo},'${s.giris}',${gece})">Rezervasyon Yap</button>
+    </div>`;
+  }).join('');
+};
+
+// Bulunan sonucu doğrudan rezervasyon formuna aktarır
+window.odaBulSecVeRezervAc = function(odaNo, giris, gece) {
+  openRezervModalForOda(odaNo);
+  setTimeout(() => {
+    document.getElementById('rev_giris').value = giris;
+    document.getElementById('rev_gece').value = gece;
+    const sel = document.getElementById('rev_oda');
+    if(sel) { [...sel.options].forEach(o => { o.selected = Number(o.value) === Number(odaNo); }); revOdaSecildi(); }
+    revHesapla();
+  }, 150);
+};
+
 window.openRezervModalForOda = function(odaNo, kaynakTalepId = null) {
   // Sadece doğrudan "Yeni Rezervasyon" butonundan açılınca sıfırla
   // talepOnayla'dan geliyorsa (kaynakTalepId var) sıfırlama
@@ -4899,6 +5167,7 @@ window.renderRapor = function() {
 
   renderKomisyonCari();
   renderOdemeGecmisi();
+  renderKomisyoncuYonetimi();
 };
 
 // ── KOMİSYONCU CARİ HESAP ──
@@ -6385,6 +6654,7 @@ window.musteriKartiAc = async function(tc) {
 
 // Başlat
 await loadFiyatlar();
+await loadKomisyoncular();
 await loadKomisyonAyarlar();
 await loadOdaOzel();
 await initOdalar();
