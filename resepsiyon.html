@@ -209,6 +209,11 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:var(--border);}
 .room-card.dolu{background:#ffeeed;border-color:rgba(200,16,46,.2);}
 .room-card.dolu::before{background:var(--red);}
+/* Dolu ODA + ödemesi eksik — turuncu/amber vurgu ile normal "dolu" kırmızısından
+   ayrıştırılır, resepsiyon oda kartlarına tek bakışta kimin ödeme yapmadığını gösterir. */
+.room-card.dolu.borclu{background:#fff4e0;border-color:rgba(217,119,6,.35);}
+.room-card.dolu.borclu::before{background:#d97706;}
+.room-borc-rozet{position:absolute;top:6px;right:6px;background:#d97706;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;letter-spacing:.3px;}
 .room-card.bos{background:#edfbf2;border-color:rgba(22,163,74,.2);}
 .room-card.bos::before{background:var(--green);}
 .room-card.temizlik{background:#fdf8ee;border-color:rgba(154,124,63,.2);}
@@ -2833,13 +2838,15 @@ window.renderOdalar = function() {
 
       const div = document.createElement('div');
       // Sadece bugün girişi varsa "rezerve" rengi göster, gelecek rezervasyonlar görünmez
-      div.className = `room-card ${durum}${bugunRev&&durum==='bos'?' rezerve':''}`;
+      const kalanBorc = durum === 'dolu' ? window.odaKalanBorc(o) : 0;
+      div.className = `room-card ${durum}${bugunRev&&durum==='bos'?' rezerve':''}${kalanBorc>0?' borclu':''}`;
 
       let icerik = `<div class="room-no">${i}${oz.ad?`<span style="display:block;font-size:10px;color:var(--gold);font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.5px;margin-top:-2px">${oz.ad}</span>`:''}</div>`;
       icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':durum==='arizali'?'Arızalı / Bakımda':bugunRev?'Bugün Giriş':'Boş'}</div>`;
       if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
       if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
+      if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">💰 ${kalanBorc.toLocaleString('tr-TR')}₺</div>`;
       if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Giriş bugün</div>`;
       icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
 
@@ -2862,10 +2869,12 @@ function buildPopup(no, o, oz, durum, aktifRev, bekleyenRev) {
   // Dolu ise misafir bilgisi
   if(durum==='dolu' && o.misafir) {
     const gece = o.giris&&o.cikis ? Math.max(1,Math.round((new Date(o.cikis)-new Date(o.giris))/864e5)) : '?';
+    const kalanBorc = window.odaKalanBorc(o);
     html += `<div class="popup-misafir-blok">
       <div class="popup-misafir-ad">${o.misafir}</div>
       <div style="font-size:11px;color:rgba(255,180,180,.7)">${o.giris||'?'} → ${o.cikis||'?'} · ${gece} gece</div>
       ${o.tc?`<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">TC: ${o.tc}</div>`:''}
+      ${kalanBorc>0?`<div style="font-size:11px;color:#ffb020;font-weight:700;margin-top:4px">💰 ${kalanBorc.toLocaleString('tr-TR')} ₺ ödenmedi</div>`:''}
     </div>`;
   }
 
@@ -6056,21 +6065,24 @@ window.saveHarcama = async function() {
 
 // ── HATIRLATMA SİSTEMİ ──
 // Rezervasyonlar değişince banner'ı güncelle
+// Bir odanın kalan (ödenmemiş) tutarını hesaplar — check-in anında zaten hesaplanmış
+// olan kismiKalan alanı varsa onu kullanır, yoksa (ödenmedi durumunda) sözleşme
+// fiyatı × gece üzerinden tam tutarı borç kabul eder. Hem oda kartlarında (renk) hem
+// de hatırlatma banner'ında (rozet) kullanılan ortak fonksiyon.
+window.odaKalanBorc = function(oda) {
+  if(!oda || oda.odemeDurum === 'odendi') return 0;
+  if(oda.kismiKalan != null) return Number(oda.kismiKalan) || 0;
+  const geceSayi = oda.gece || geceSayisi(oda.giris, oda.cikis) || 0;
+  return Math.max(0, (Number(oda.sozlesmeFiyat || oda.fiyat) || 0) * geceSayi);
+};
+
 window.renderHatirlatma = function renderHatirlatma() {
   const todayStr = today();
   const gun1 = addDays(todayStr, 1);
   const gun2 = addDays(todayStr, 2);
   const gun3 = addDays(todayStr, 3);
 
-  // Bir odanın kalan (ödenmemiş) tutarını hesaplar — check-in anında zaten
-  // hesaplanmış olan kismiKalan alanı varsa onu kullanır, yoksa (ödenmedi durumunda)
-  // sözleşme fiyatı × gece üzerinden tam tutarı borç kabul eder.
-  const odaKalanBorc = (oda) => {
-    if(!oda || oda.odemeDurum === 'odendi') return 0;
-    if(oda.kismiKalan != null) return Number(oda.kismiKalan) || 0;
-    const geceSayi = oda.gece || geceSayisi(oda.giris, oda.cikis) || 0;
-    return Math.max(0, (Number(oda.sozlesmeFiyat || oda.fiyat) || 0) * geceSayi);
-  };
+  const odaKalanBorc = window.odaKalanBorc;
 
   // Bugün çıkışı olan dolu odalar — "arandı" işaretlenenler gizlenir
   const bugunCikis = HOTEL_ODALAR.map(no => {

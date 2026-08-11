@@ -123,6 +123,7 @@ tr:hover td{background:#fafafa;}
   <div class="top-bar">
     <div class="top-brand">SWISS <em>HOUSE</em> <span style="font-size:11px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— Veri Yönetimi</span></div>
     <div class="top-right">
+      <a href="#" onclick="yetimKomisyonTara();return false;">🧹 Yetim Komisyon Temizle</a>
       <a href="resepsiyon.html">← Resepsiyon</a>
       <a href="#" onclick="location.reload()">🔒 Kilitle</a>
     </div>
@@ -185,6 +186,31 @@ tr:hover td{background:#fafafa;}
         <thead id="tableHead"></thead>
         <tbody id="tableBody"><tr><td class="yukluyor">Yükleniyor...</td></tr></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- YETİM KOMİSYON TEMİZLEME MODAL -->
+<div class="modal-overlay" id="yetimModal">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <div class="modal-title">🧹 Yetim Komisyon Kayıtları</div>
+      <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)" onclick="document.getElementById('yetimModal').classList.remove('aktif')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="yetimAciklama">Taranıyor...</div>
+      <div class="tablo-wrap" style="max-height:400px;overflow-y:auto">
+        <table>
+          <thead><tr>
+            <th>Oda</th><th>Misafir</th><th>Tarih</th><th>Komisyoncu</th><th style="text-align:right">Tutar</th>
+          </tr></thead>
+          <tbody id="yetimTablo"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-ghost" onclick="document.getElementById('yetimModal').classList.remove('aktif')">Kapat</button>
+      <button class="btn-sm btn-danger" id="yetimSilBtn" onclick="yetimKomisyonSilHepsi()" style="display:none">🗑 Tümünü Sil</button>
     </div>
   </div>
 </div>
@@ -638,6 +664,68 @@ async function silinenKayitIcinKomisyonSil(kayit) {
   }
 }
 
+// ── YETİM KOMİSYON TEMİZLEME ──
+// Geçmişte (bu düzeltmeden önce) bir "gelirler" kaydı silindiğinde bağlı komisyon
+// kaydı silinmiyordu. Bu araç mevcut tüm 'komisyonlar' kayıtlarını 'gelirler'
+// koleksiyonuyla karşılaştırıp karşılığı olmayanları (yetim) bulur, listeler ve
+// onay sonrası toplu siler.
+let _yetimListe = [];
+window.yetimKomisyonTara = async function() {
+  document.getElementById('yetimModal').classList.add('aktif');
+  document.getElementById('yetimAciklama').textContent = 'Taranıyor...';
+  document.getElementById('yetimTablo').innerHTML = '';
+  document.getElementById('yetimSilBtn').style.display = 'none';
+  try {
+    const [komSnap, gelirSnap] = await Promise.all([
+      getDocs(collection(db, 'komisyonlar')),
+      getDocs(collection(db, 'gelirler'))
+    ]);
+    const gelirIdSeti = new Set(gelirSnap.docs.map(d => d.id));
+    _yetimListe = komSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(k => k.gelirDocId && !gelirIdSeti.has(k.gelirDocId));
+
+    if(!_yetimListe.length) {
+      document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon kaydı bulunamadı — hepsi güncel gelir kayıtlarına bağlı.';
+      return;
+    }
+
+    const toplam = _yetimListe.reduce((a,b) => a + (Number(b.toplamKomisyon)||0), 0);
+    document.getElementById('yetimAciklama').innerHTML =
+      `⚠ <b>${_yetimListe.length}</b> yetim komisyon kaydı bulundu — bunların bağlı olduğu gelir kaydı artık mevcut değil (muhtemelen daha önce elle silinmiş). Toplam <b>${toplam.toLocaleString('tr-TR')} ₺</b> komisyoncu bakiyelerinde hâlâ borç olarak görünüyor olabilir.`;
+    document.getElementById('yetimTablo').innerHTML = _yetimListe.map(k => `
+      <tr>
+        <td>${k.odaNo||'—'}</td>
+        <td>${k.misafir||'—'}</td>
+        <td>${k.tarih||'—'}</td>
+        <td>${k.araciAd||'—'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--red)">${(Number(k.toplamKomisyon)||0).toLocaleString('tr-TR')} ₺</td>
+      </tr>`).join('');
+    document.getElementById('yetimSilBtn').style.display = '';
+  } catch(e) {
+    document.getElementById('yetimAciklama').textContent = 'Tarama hatası: ' + e.message;
+  }
+};
+
+window.yetimKomisyonSilHepsi = async function() {
+  if(!_yetimListe.length) return;
+  if(!confirm(`${_yetimListe.length} yetim komisyon kaydı kalıcı olarak silinecek. Emin misiniz?`)) return;
+  const btn = document.getElementById('yetimSilBtn');
+  btn.disabled = true; btn.textContent = 'Siliniyor...';
+  try {
+    for(const k of _yetimListe) {
+      await deleteDoc(doc(db, 'komisyonlar', k.id));
+    }
+    toast(`${_yetimListe.length} yetim komisyon kaydı silindi ✓`, 'success');
+    document.getElementById('yetimModal').classList.remove('aktif');
+    _yetimListe = [];
+  } catch(e) {
+    toast('Silme hatası: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🗑 Tümünü Sil';
+  }
+};
+
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
@@ -667,11 +755,14 @@ window.hizliSil = async function(id) {
 
 window.modalKapat = function() {
   document.getElementById('duzenleModal').classList.remove('aktif');
-  duzenleId = null;
-};
+  duzenleId = null;};
 
 document.getElementById('duzenleModal').addEventListener('click', e => {
   if(e.target === document.getElementById('duzenleModal')) modalKapat();
+});
+
+document.getElementById('yetimModal').addEventListener('click', e => {
+  if(e.target === document.getElementById('yetimModal')) document.getElementById('yetimModal').classList.remove('aktif');
 });
 
 // ── TOAST ──
