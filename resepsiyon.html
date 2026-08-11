@@ -2325,6 +2325,39 @@ function komisyonKuraliHesapla(sozlesmeFiyat, ayar) {
   return { tip, deger, komisyon, otelFiyat: Math.max(0, Math.round((fiyat-komisyon)*100)/100) };
 }
 
+// Bir konaklamanın gece sayısı SONRADAN değiştiğinde (erken çıkış veya süre uzatma/
+// kısaltma) komisyoncunun hakediş kaydını da orantılı olarak günceller. Check-in
+// anında kaydedilmiş gecelik komisyon oranı (toplamKomisyon / eskiGece) korunarak
+// yeni gece sayısına göre yeniden hesaplanır — böylece manuel sözleşme farkı veya
+// ayar bazlı (sabit/oranlı) hesaplama fark etmeksizin aynı mantıkla ölçeklenir.
+// Komisyon sıfıra inerse (0 gece kaldıysa vb.) kayıt tamamen silinir.
+async function komisyonSureGuncelle(gelirDocId, yeniGece) {
+  if(!gelirDocId) return null;
+  try {
+    const komRef = doc(db, 'komisyonlar', 'komisyon_' + gelirDocId);
+    const komSnap = await getDoc(komRef);
+    if(!komSnap.exists()) return null; // bu konaklamada zaten komisyon yok (aracısız)
+    const kom = komSnap.data();
+    const eskiGece = Number(kom.gece) || 0;
+    const eskiKomisyon = Number(kom.toplamKomisyon) || 0;
+    if(eskiGece <= 0 || eskiKomisyon <= 0) return null;
+    const geceGuvenli = Math.max(0, Number(yeniGece) || 0);
+    const yeniKomisyon = Math.round((eskiKomisyon / eskiGece) * geceGuvenli * 100) / 100;
+    if(yeniKomisyon <= 0) {
+      await deleteDoc(komRef);
+      return { silindi: true, eski: eskiKomisyon, yeni: 0, araciAd: kom.araciAd };
+    }
+    await setDoc(komRef, {
+      gece: geceGuvenli, toplamKomisyon: yeniKomisyon, komisyonFark: yeniKomisyon,
+      guncelleme: nowISO()
+    }, { merge: true });
+    return { silindi: false, eski: eskiKomisyon, yeni: yeniKomisyon, araciAd: kom.araciAd };
+  } catch(e) {
+    console.warn('Komisyon süre güncelleme hatası:', e);
+    return null;
+  }
+}
+
 // Serbest yazılan "Aracı" adını sistemde KAYITLI komisyoncu adına çevirir.
 // Sadece büyük/küçük harf farkını değil, "PUNE" / "Pune" gibi KISALTILMIŞ yazımları da
 // tam kayıtlı isme ("pune iran") eşler — biri diğerinin baş kısmıysa (en az 3 harf) eşleşir.
@@ -3397,6 +3430,7 @@ window.openCheckin = function(no) {
   }
   currentCheckinOda = no;
   window._ciKaynakRevId = null; // boş check-in, rezervasyondan gelmiyor
+  window._ciOrijinalGiris = null;
   window._ciAraciAd = null;
   document.getElementById('checkinTitle').textContent = `Check-in — Oda ${no}`;
   // Temizle
@@ -3453,7 +3487,13 @@ window.hesaplaKonaklama = function() {
     document.getElementById('ci_cikis').value = cikis;
     const cikisGosterEl = document.getElementById('ci_cikis_goster'); if(cikisGosterEl) cikisGosterEl.value = cikis + ` (${gece} gece)`;
     const ozGirisEl = document.getElementById('ci_ozet_giris'); if(ozGirisEl) ozGirisEl.textContent = formatTarihGoster(giris);
-    const ozGirisGunEl = document.getElementById('ci_ozet_giris_gun'); if(ozGirisGunEl) ozGirisGunEl.textContent = gunAdiGoster(giris);
+    const ozGirisGunEl = document.getElementById('ci_ozet_giris_gun'); if(ozGirisGunEl) {
+      // Erken giriş: rezervasyondan gelen check-in'de misafir, sistemde kayıtlı planlanan
+      // tarihten daha erken giriyorsa personel bunu görsün — komisyon hesaplaması zaten
+      // gerçek (girilen) tarihe göre otomatik doğru çalışır, bu sadece bilgilendirme amaçlı.
+      const erkenGiris = window._ciOrijinalGiris && giris < window._ciOrijinalGiris;
+      ozGirisGunEl.innerHTML = gunAdiGoster(giris) + (erkenGiris ? ` <span class="badge badge-gold" style="font-size:9px">Erken Giriş · Planlanan: ${window._ciOrijinalGiris}</span>` : '');
+    }
     const ozGeceEl = document.getElementById('ci_ozet_gece'); if(ozGeceEl) ozGeceEl.textContent = gece;
     const ozCikisEl = document.getElementById('ci_ozet_cikis'); if(ozCikisEl) ozCikisEl.textContent = formatTarihGoster(cikis);
     const ozCikisGunEl = document.getElementById('ci_ozet_cikis_gun'); if(ozCikisGunEl) ozCikisGunEl.textContent = `${gunAdiGoster(cikis)} (${gece} Gece)`;
@@ -3772,6 +3812,7 @@ window.checkindenRezervasyon = function(rev) {
   document.getElementById('ci_dt').value = rev.dt || '';
   document.getElementById('ci_komisyoncu').value = rev.araciAd || '';
   document.getElementById('ci_giris').value = rev.giris || today();
+  window._ciOrijinalGiris = rev.giris || null; // erken giriş rozetini göstermek için orijinal planlanan tarih saklanır
   document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
   document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
   document.getElementById('ci_yetiskin').value = rev.yetiskin || 1;
@@ -4007,11 +4048,25 @@ window.saveCheckoutFromOzet = async function() {
   window._O['oda'+no] = {durum:'temizlik',misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
+  // Erken çıkış nedeniyle konaklanan gece, planlanandan az olduysa komisyoncu
+  // hakedişini de orantılı düşür (ya da o gece için komisyon yoksa hiçbir şey yapmaz).
+  let komSonuc = null;
+  const gecePlanliOrijinal = geceSayisi(o.giris, o.cikis);
+  if(gece !== gecePlanliOrijinal) {
+    komSonuc = await komisyonSureGuncelle(o.gelirDocId, gece);
+  }
+
   renderOdalar();
   closeModal('checkoutOzetModal');
   vardiyaIstatistikGuncelle('checkout', toplam);
-  await logAktivite('checkout', `${o.misafir||'?'} · ${gece} gece · Toplam ${fmt(toplam)}`, no);
-  toast(`${odaAdi} — Check-out tamamlandı ✓ · ${fmt(toplam)}`, 'success');
+  await logAktivite('checkout', `${o.misafir||'?'} · ${gece} gece · Toplam ${fmt(toplam)}${komSonuc?' · Komisyon: '+komSonuc.eski+'→'+komSonuc.yeni:''}`, no);
+  let coMesaj = `${odaAdi} — Check-out tamamlandı ✓ · ${fmt(toplam)}`;
+  if(komSonuc) {
+    coMesaj += komSonuc.silindi
+      ? ` · Komisyon hakedişi kaldırıldı (${komSonuc.eski.toLocaleString('tr-TR')} ₺ → 0 ₺)`
+      : ` · Komisyon güncellendi: ${komSonuc.eski.toLocaleString('tr-TR')} ₺ → ${komSonuc.yeni.toLocaleString('tr-TR')} ₺`;
+  }
+  toast(coMesaj, 'success');
   } catch(e) {
     console.error('Check-out kayıt hatası:',e);
     toast('Check-out tamamlanamadı: '+(e?.message||'Bilinmeyen hata'),'error');
@@ -6606,9 +6661,35 @@ window.sureDegistirKaydet = async function() {
     });
   }
 
+  // Gelir kaydını da yeni gece sayısına göre güncelle — aksi halde raporlarda
+  // (Gelirler, Rapor sekmesi) eski/planlanan gece sayısı üzerinden tutar görünmeye
+  // devam eder, gerçek konaklamayla uyuşmaz.
+  if(o.gelirDocId) {
+    const yeniTutar = yeniGece * (o.fiyat || 0);
+    const sozlesmeToplam = (o.sozlesmeFiyat || o.fiyat || 0) * yeniGece;
+    const oncekiAlinan = Number(o.kismiTutar) || 0;
+    try {
+      await updateDoc(doc(db,'gelirler', o.gelirDocId), {
+        cikis: yeniCikis, gece: yeniGece, tutar: yeniTutar,
+        kalanTahsilat: Math.max(0, sozlesmeToplam - oncekiAlinan),
+        guncelleme: nowISO()
+      });
+    } catch(e) { console.warn('Gelir kaydı güncellenemedi:', e); }
+  }
+
+  // Komisyoncu hakedişini de orantılı güncelle — süre kısaldıysa alacağından düşülür,
+  // uzadıysa hesabına eklenir.
+  const komSonuc = await komisyonSureGuncelle(o.gelirDocId, yeniGece);
+
   closeModal('sureDegistirModal');
-  toast(`Oda ${odaNo} — Çıkış tarihi ${yeniCikis} olarak güncellendi ✓`, 'success');
-  await logAktivite('sure_degisim', `${eskiCikis} → ${yeniCikis}`, odaNo);
+  let mesaj = `Oda ${odaNo} — Çıkış tarihi ${yeniCikis} olarak güncellendi ✓`;
+  if(komSonuc) {
+    mesaj += komSonuc.silindi
+      ? ` · Komisyon hakedişi kaldırıldı (${komSonuc.eski.toLocaleString('tr-TR')} ₺ → 0 ₺)`
+      : ` · Komisyon güncellendi: ${komSonuc.eski.toLocaleString('tr-TR')} ₺ → ${komSonuc.yeni.toLocaleString('tr-TR')} ₺`;
+  }
+  toast(mesaj, 'success');
+  await logAktivite('sure_degisim', `${eskiCikis} → ${yeniCikis}${komSonuc?' · Komisyon: '+komSonuc.eski+'→'+komSonuc.yeni:''}`, odaNo);
 };
 
 // ── OTOMATİK ODA DURUM GEÇİŞLERİ ──
