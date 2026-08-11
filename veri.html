@@ -123,7 +123,7 @@ tr:hover td{background:#fafafa;}
   <div class="top-bar">
     <div class="top-brand">SWISS <em>HOUSE</em> <span style="font-size:11px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— Veri Yönetimi</span></div>
     <div class="top-right">
-      <a href="#" onclick="yetimKomisyonTara();return false;">🧹 Yetim Komisyon Temizle</a>
+      <a href="#" onclick="yetimKomisyonTara();return false;">🔧 Veri Tutarlılık Kontrolü</a>
       <a href="resepsiyon.html">← Resepsiyon</a>
       <a href="#" onclick="location.reload()">🔒 Kilitle</a>
     </div>
@@ -194,23 +194,30 @@ tr:hover td{background:#fafafa;}
 <div class="modal-overlay" id="yetimModal">
   <div class="modal" style="max-width:720px">
     <div class="modal-header">
-      <div class="modal-title">🧹 Yetim Komisyon Kayıtları</div>
+      <div class="modal-title">🔧 Veri Tutarlılık Kontrolü</div>
       <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)" onclick="document.getElementById('yetimModal').classList.remove('aktif')">✕</button>
     </div>
     <div class="modal-body">
+      <div style="font-size:11px;background:#eef6ff;border:1px solid #cfe4fb;border-radius:6px;padding:8px 10px;margin-bottom:12px;color:#1a4d7a">
+        ℹ️ Bu ekran şu ana kadar sadece <b>tarama</b> yaptı, hiçbir veri değişmedi. Aşağıdaki liste
+        boşsa zaten sorun yok demektir. Doluysa, altta göreceğin buton sadece şu iki şeyi yapar —
+        <b>hiçbir gelir/ödeme tutarını silmez veya değiştirmez:</b><br>
+        1) Karşılığı kalmamış komisyon kayıtlarını siler (bunlar zaten para değil, sadece "şu kadar komisyon borcu var" notudur)<br>
+        2) Rezervasyon kayıtlarındaki durum/tarih alanlarını düzeltir (kaydı silmez, sadece "iptal/tamamlandı" işaretler ve tarihini düzeltir)
+      </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="yetimAciklama">Taranıyor...</div>
       <div class="tablo-wrap" style="max-height:400px;overflow-y:auto">
         <table>
           <thead><tr>
-            <th>Oda</th><th>Misafir</th><th>Tarih</th><th>Komisyoncu</th><th style="text-align:right">Tutar</th>
+            <th>Oda</th><th>Misafir</th><th>Tarih</th><th>Komisyoncu</th><th style="text-align:right">Ne Yapılacak</th>
           </tr></thead>
           <tbody id="yetimTablo"></tbody>
         </table>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-sm btn-ghost" onclick="document.getElementById('yetimModal').classList.remove('aktif')">Kapat</button>
-      <button class="btn-sm btn-danger" id="yetimSilBtn" onclick="yetimKomisyonSilHepsi()" style="display:none">🗑 Tümünü Sil</button>
+      <button class="btn-sm btn-ghost" onclick="document.getElementById('yetimModal').classList.remove('aktif')">Kapat (Hiçbir Şey Değişmez)</button>
+      <button class="btn-sm btn-primary" id="yetimSilBtn" onclick="yetimKomisyonSilHepsi()" style="display:none">✅ Bulunanları Düzelt</button>
     </div>
   </div>
 </div>
@@ -714,9 +721,11 @@ window.yetimKomisyonTara = async function() {
       .filter(k => k.gelirDocId && !gelirIdSeti.has(k.gelirDocId));
 
     // Check-in edilmiş (durum:'aktif') ama bağlı gelir kaydı artık mevcut olmayan
-    // rezervasyonlar — bunlar takvimde hayalet olarak "dolu/rezerve" görünmeye devam
-    // eder çünkü durum='iptal' değildir. (Henüz check-in edilmemiş, durum='bekliyor'
-    // olanlara dokunulmaz — onlar gerçek gelecek rezervasyonlardır.)
+    // rezervasyonlar. DİKKAT: bunlar OTOMATİK iptal edilmiyor — çünkü ücretsiz/promosyon
+    // konaklamalarda (toplam fiyat 0 olduğunda) sistem hiç gelir kaydı oluşturmuyor,
+    // yani gerçek bir konaklama olsa bile bu listede "yetim" gibi görünebilir. Bu
+    // liste sadece BİLGİLENDİRME amaçlı — "Bulunanları Düzelt" bu kategoriye
+    // dokunmaz, sen kontrol edip gerekirse Rezervasyonlar sekmesinden elle düzenlersin.
     _yetimRevListe = revSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(r => r.durum === 'aktif' && !gelirByRevId.has(r.id));
@@ -753,12 +762,12 @@ window.yetimKomisyonTara = async function() {
         </tr>`).join('');
     }
     if(_yetimRevListe.length) {
-      aciklama += `⚠ <b>${_yetimRevListe.length}</b> hayalet rezervasyon kaydı — check-in yapılmış ama gelir kaydı silinmiş, takvimde odayı hâlâ dolu gösteriyor.<br>`;
+      aciklama += `ℹ️ <b>${_yetimRevListe.length}</b> "aktif" rezervasyon — bağlı gelir kaydı bulunamadı. Bu ÜCRETSİZ/promosyon konaklama olabilir (sistem 0 ₺'lik konaklamalar için gelir kaydı oluşturmuyor), o yüzden <b>otomatik dokunulmuyor</b>. Gerçekten silinmiş bir kayıtsa Rezervasyonlar sekmesinden bul, "İptal" veya "Sil" ile sen düzelt.<br>`;
       tablo += _yetimRevListe.map(r => `
         <tr>
           <td>${r.odaNo||'—'}</td><td>${r.misafir||'—'}</td><td>${r.giris||'—'} → ${r.cikis||'—'}</td>
           <td>${r.araciAd||'—'}</td>
-          <td style="text-align:right;font-weight:700;color:var(--gold2)">Takvimde Dolu Gösteriyor</td>
+          <td style="text-align:right;font-weight:700;color:var(--muted)">Sadece Bilgi · Elle Kontrol Et</td>
         </tr>`).join('');
     }
     if(_yetimCikisListe.length) {
@@ -780,20 +789,20 @@ window.yetimKomisyonTara = async function() {
 };
 
 window.yetimKomisyonSilHepsi = async function() {
-  const toplamAdet = _yetimListe.length + _yetimRevListe.length + _yetimCikisListe.length;
+  // _yetimRevListe kasıtlı olarak dahil edilmiyor — otomatik iptal edilmiyor,
+  // sadece bilgilendirme amaçlı listeleniyor (yukarıdaki tarama fonksiyonuna bak).
+  const toplamAdet = _yetimListe.length + _yetimCikisListe.length;
   if(!toplamAdet) return;
-  if(!confirm(`${toplamAdet} kayıt düzeltilecek (yetim komisyonlar silinecek, hayalet rezervasyonlar iptal edilecek, hatalı çıkış tarihleri gerçek tarihe güncellenecek). Emin misiniz?`)) return;
+  const detay = [
+    _yetimListe.length ? `• ${_yetimListe.length} komisyon notu silinecek (gelir kaydı zaten yok, bu bir borç notundan başka bir şey değil)` : '',
+    _yetimCikisListe.length ? `• ${_yetimCikisListe.length} rezervasyon/gelir kaydında SADECE çıkış tarihi ve durum alanı düzeltilecek (tutar/ödeme bilgisi değişmez)` : ''
+  ].filter(Boolean).join('\n');
+  if(!confirm(`Şu değişiklikler yapılacak:\n\n${detay}\n\nHiçbir gelir tutarı silinmeyecek/değişmeyecek. Onaylıyor musun?`)) return;
   const btn = document.getElementById('yetimSilBtn');
   btn.disabled = true; btn.textContent = 'İşleniyor...';
   try {
     for(const k of _yetimListe) {
       await deleteDoc(doc(db, 'komisyonlar', k.id));
-    }
-    for(const r of _yetimRevListe) {
-      await updateDoc(doc(db, 'rezervasyonlar', r.id), {
-        durum: 'iptal', iptalNot: 'Yetim kayıt temizliği — bağlı gelir kaydı bulunamadı',
-        islemTarih: new Date().toISOString()
-      });
     }
     for(const { rev, gelir } of _yetimCikisListe) {
       const gerçekCikis = gelir.checkoutTarih;
@@ -812,7 +821,7 @@ window.yetimKomisyonSilHepsi = async function() {
   } catch(e) {
     toast('İşlem hatası: ' + e.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = '🗑 Tümünü Sil';
+    btn.disabled = false; btn.textContent = '✅ Bulunanları Düzelt';
   }
 };
 

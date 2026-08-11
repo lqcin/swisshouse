@@ -3748,8 +3748,15 @@ window.saveCheckin = async function() {
   if(aktifRevDoc?.id) {
     const odDurumVal2 = document.getElementById('ci_odeme_durum')?.value || 'odenmedi';
     const kismiTutarVal2 = ['kismi','depozito'].includes(odDurumVal2) ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null;
+    // Erken giriş: misafir, rezervasyonda planlanan tarihten daha erken check-in
+    // yapmışsa (veya tarih düzeltilmişse), rezervasyon kaydının giris/cikis alanları
+    // da gerçek tarihe eşitlenir. Bu yapılmazsa rezervasyon kaydı eski (planlanan)
+    // tarihte kalır ve ileride bu konaklama check-out olduğunda kaynak rezervasyonu
+    // bulmak için kullanılan eşleştirmeler (giris string karşılaştırması) tutmaz —
+    // takvimlerde tutarsızlığa yol açar.
     await updateDoc(doc(db,'rezervasyonlar', aktifRevDoc.id), {
       durum: 'aktif',
+      giris, cikis,
       fiyat: fiyat,
       sozlesmeFiyat: sozlesmeFiyatVal || aktifRevDoc.sozlesmeFiyat || null,
       odemeDurum: odDurumVal2,
@@ -4060,7 +4067,15 @@ window.saveCheckoutFromOzet = async function() {
   // rezervasyon/check-in girişimini "çakışma var" diyerek engeller; (2) komisyoncu
   // takvimindeki hücre rengi de bu rezervasyon kaydına bakarak hesaplandığından,
   // gerçek çıkıştan sonraki günlerde oda hâlâ dolu/rezerve görünmeye devam eder.
-  const kaynakRev = (window._R||[]).find(r => Number(r.odaNo)===Number(no) && r.giris===o.giris && r.durum!=='iptal');
+  // ÖNEMLİ: giris string eşleştirmesi kırılgandı — misafir erken giriş yaptığında
+  // (check-in'de gerçek/erken tarih girilip rezervasyon kaydının giris alanı
+  // güncellenmediği durumlarda) bu eşleşme tutmuyor ve kaynak rezervasyon
+  // bulunamıyordu, dolayısıyla check-out'ta rezervasyon hiç güncellenmiyordu.
+  // Artık check-in sırasında oda meta'sına doğrudan kaydedilen rezervasyonId
+  // üzerinden buluyoruz — bu her durumda güvenilir.
+  const kaynakRev = o.rezervasyonId
+    ? (window._R||[]).find(r => r.id === o.rezervasyonId)
+    : (window._R||[]).find(r => Number(r.odaNo)===Number(no) && r.giris===o.giris && r.durum!=='iptal');
   if(kaynakRev?.id) {
     try {
       await updateDoc(doc(db,'rezervasyonlar',kaynakRev.id), {
@@ -6656,7 +6671,9 @@ window.sureDegistirKaydet = async function() {
   const yeniGece = geceSayisi(o.giris, yeniCikis);
 
   // Mevcut konaklamanın rezervasyon kaydını bul (kontrol dışı tutulacak)
-  const rev = window._R.find(r => Number(r.odaNo)===Number(odaNo) && r.giris===o.giris && r.durum!=='iptal');
+  const rev = o.rezervasyonId
+    ? window._R.find(r => r.id === o.rezervasyonId)
+    : window._R.find(r => Number(r.odaNo)===Number(odaNo) && r.giris===o.giris && r.durum!=='iptal');
 
   // ÇAKIŞMA KONTROLÜ — uzatma sonraki rezervasyona çarpmasın
   // (sadece rezervasyon kontrolü; mevcut konaklama kendisi olduğu için _O kontrolü atlanır)
