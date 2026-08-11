@@ -693,6 +693,7 @@ async function silinenKayitIcinKomisyonSil(kayit) {
 // onay sonrası toplu siler.
 let _yetimListe = [];
 let _yetimRevListe = [];
+let _yetimCikisListe = [];
 window.yetimKomisyonTara = async function() {
   document.getElementById('yetimModal').classList.add('aktif');
   document.getElementById('yetimAciklama').textContent = 'Taranıyor...';
@@ -704,8 +705,9 @@ window.yetimKomisyonTara = async function() {
       getDocs(collection(db, 'gelirler')),
       getDocs(collection(db, 'rezervasyonlar'))
     ]);
-    const gelirIdSeti = new Set(gelirSnap.docs.map(d => d.id));
-    const gelirRevIdSeti = new Set(gelirSnap.docs.map(d => d.data()?.rezervasyonId).filter(Boolean));
+    const gelirler = gelirSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const gelirIdSeti = new Set(gelirler.map(g => g.id));
+    const gelirByRevId = new Map(gelirler.filter(g => g.rezervasyonId).map(g => [g.rezervasyonId, g]));
 
     _yetimListe = komSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
@@ -717,10 +719,24 @@ window.yetimKomisyonTara = async function() {
     // olanlara dokunulmaz — onlar gerçek gelecek rezervasyonlardır.)
     _yetimRevListe = revSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter(r => r.durum === 'aktif' && !gelirRevIdSeti.has(r.id));
+      .filter(r => r.durum === 'aktif' && !gelirByRevId.has(r.id));
 
-    if(!_yetimListe.length && !_yetimRevListe.length) {
-      document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon veya hayalet rezervasyon kaydı bulunamadı — her şey güncel.';
+    // ESKİ HATA (artık düzeltildi): check-out sırasında bağlı gelir kaydına GERÇEK
+    // çıkış tarihi değil PLANLANAN (o zamanki ileri) çıkış tarihi yazılıyordu ve
+    // rezervasyon kaydı hiç 'tamamlandi' yapılmıyordu. Bu yüzden erken çıkış yapılmış
+    // konaklamalar, gerçek çıkıştan sonraki günlerde de takvimde dolu görünmeye devam
+    // ediyordu. Burada checkoutTarih'i olan ama cikis'i checkoutTarih'ten farklı olan
+    // (veya rezervasyonu hâlâ 'aktif' kalmış) kayıtlar bulunup gerçek tarihe düzeltiliyor.
+    _yetimCikisListe = revSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .map(r => ({ rev: r, gelir: gelirByRevId.get(r.id) }))
+      .filter(({ rev, gelir }) =>
+        gelir && gelir.checkoutTarih &&
+        (rev.durum === 'aktif' || (gelir.cikis && gelir.cikis !== gelir.checkoutTarih))
+      );
+
+    if(!_yetimListe.length && !_yetimRevListe.length && !_yetimCikisListe.length) {
+      document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon, hayalet rezervasyon veya hatalı çıkış tarihi kaydı bulunamadı — her şey güncel.';
       return;
     }
 
@@ -737,12 +753,22 @@ window.yetimKomisyonTara = async function() {
         </tr>`).join('');
     }
     if(_yetimRevListe.length) {
-      aciklama += `⚠ <b>${_yetimRevListe.length}</b> hayalet rezervasyon kaydı — check-in yapılmış ama gelir kaydı silinmiş, takvimde odayı hâlâ dolu gösteriyor.`;
+      aciklama += `⚠ <b>${_yetimRevListe.length}</b> hayalet rezervasyon kaydı — check-in yapılmış ama gelir kaydı silinmiş, takvimde odayı hâlâ dolu gösteriyor.<br>`;
       tablo += _yetimRevListe.map(r => `
         <tr>
           <td>${r.odaNo||'—'}</td><td>${r.misafir||'—'}</td><td>${r.giris||'—'} → ${r.cikis||'—'}</td>
           <td>${r.araciAd||'—'}</td>
           <td style="text-align:right;font-weight:700;color:var(--gold2)">Takvimde Dolu Gösteriyor</td>
+        </tr>`).join('');
+    }
+    if(_yetimCikisListe.length) {
+      aciklama += `⚠ <b>${_yetimCikisListe.length}</b> hatalı çıkış tarihli kayıt — check-out yapılmış (erken çıkış) ama sistem eski planlanan tarihi kullanmaya devam ediyor, komisyoncu takviminde oda gerçek çıkıştan sonraki günlerde de dolu görünüyor.`;
+      tablo += _yetimCikisListe.map(({rev, gelir}) => `
+        <tr>
+          <td>${rev.odaNo||'—'}</td><td>${rev.misafir||gelir.misafir||'—'}</td>
+          <td>Eski: ${gelir.cikis||rev.cikis||'—'} → Gerçek: ${gelir.checkoutTarih}</td>
+          <td>${rev.araciAd||'—'}</td>
+          <td style="text-align:right;font-weight:700;color:#d97706">Tarih Düzeltilecek</td>
         </tr>`).join('');
     }
     document.getElementById('yetimAciklama').innerHTML = aciklama;
@@ -754,9 +780,9 @@ window.yetimKomisyonTara = async function() {
 };
 
 window.yetimKomisyonSilHepsi = async function() {
-  if(!_yetimListe.length && !_yetimRevListe.length) return;
-  const toplamAdet = _yetimListe.length + _yetimRevListe.length;
-  if(!confirm(`${toplamAdet} yetim/hayalet kayıt düzeltilecek (komisyonlar silinecek, hayalet rezervasyonlar iptal edilecek). Emin misiniz?`)) return;
+  const toplamAdet = _yetimListe.length + _yetimRevListe.length + _yetimCikisListe.length;
+  if(!toplamAdet) return;
+  if(!confirm(`${toplamAdet} kayıt düzeltilecek (yetim komisyonlar silinecek, hayalet rezervasyonlar iptal edilecek, hatalı çıkış tarihleri gerçek tarihe güncellenecek). Emin misiniz?`)) return;
   const btn = document.getElementById('yetimSilBtn');
   btn.disabled = true; btn.textContent = 'İşleniyor...';
   try {
@@ -769,9 +795,20 @@ window.yetimKomisyonSilHepsi = async function() {
         islemTarih: new Date().toISOString()
       });
     }
+    for(const { rev, gelir } of _yetimCikisListe) {
+      const gerçekCikis = gelir.checkoutTarih;
+      await updateDoc(doc(db, 'rezervasyonlar', rev.id), {
+        durum: 'tamamlandi', cikis: gerçekCikis, guncelleme: new Date().toISOString()
+      });
+      if(gelir.cikis !== gerçekCikis) {
+        await updateDoc(doc(db, 'gelirler', gelir.id), {
+          cikis: gerçekCikis, guncelleme: new Date().toISOString()
+        });
+      }
+    }
     toast(`${toplamAdet} kayıt düzeltildi ✓`, 'success');
     document.getElementById('yetimModal').classList.remove('aktif');
-    _yetimListe = []; _yetimRevListe = [];
+    _yetimListe = []; _yetimRevListe = []; _yetimCikisListe = [];
   } catch(e) {
     toast('İşlem hatası: ' + e.message, 'error');
   } finally {
