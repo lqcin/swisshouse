@@ -80,7 +80,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
    sadece ✓ işareti ve koyu kenarlık eklenir, böylece toplam renk sayısı 4'te kalır. */
 .takvim-table td.t-komisyoncu.benim-isaret{border:2px solid #00332c !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
 .takvim-table td.benim-isaret::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4);}
-.takvim-table td.t-komisyoncu,.takvim-table td.t-resepsiyon{cursor:default;}
+.takvim-table td.t-komisyoncu,.takvim-table td.t-resepsiyon{cursor:pointer;}
 
 /* Sözleşme modal */
 .sozlesme-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center;padding:0;}
@@ -246,6 +246,23 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         </div>
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="document.getElementById('kazancimModal').classList.remove('aktif')">Kapat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOLU ODA BİLGİ MODALI — takvimde dolu/rezerve bir hücreye tıklanınca kimlerin
+         kaldığını göstermek için (hassas bilgiler değil: sadece misafir adı ve tarih) -->
+    <div class="modal-overlay" id="odaBilgiModal">
+      <div class="modal" style="max-width:380px">
+        <div class="modal-header">
+          <div class="modal-title" id="odaBilgiBaslik">Oda Bilgisi</div>
+          <button class="modal-close" onclick="document.getElementById('odaBilgiModal').classList.remove('aktif')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="odaBilgiIcerik" style="font-size:13px;line-height:1.8;color:var(--dark)"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="document.getElementById('odaBilgiModal').classList.remove('aktif')">Kapat</button>
         </div>
       </div>
     </div>
@@ -1105,14 +1122,23 @@ function takvimTablosuCiz(gunList, today) {
       const doluKomisyoncuKaynakli = !!((gelir?.araciAd) || (odaMeta.araciAd && String(odaMeta.araciAd).trim()));
 
       let cls, onclick = '';
+      // Dolu/rezerve hücrede kim kaldığını (misafir adı + tarih) göstermek için
+      // hücreye tıklanınca odaBilgiGoster çağrılır — bilgi kaynağı öncelik sırasıyla
+      // gelir kaydı (check-in yapılmış) > oda meta (fiili dolu) > rezervasyon.
+      const misafirBilgi = gelir || (fiiliDolu || bugunDolu ? odaMeta : null) || rev || null;
+      const misafirOnclick = misafirBilgi
+        ? `onclick="odaBilgiGoster(${odaNo},'${iso}',${JSON.stringify({misafir:misafirBilgi.misafir||'—',giris:misafirBilgi.giris||iso,cikis:misafirBilgi.cikis||'',yetiskin:misafirBilgi.yetiskin||null,cocuk:misafirBilgi.cocuk||null}).replace(/"/g,'&quot;')})"`
+        : '';
       // 4 RENK: t-resepsiyon / t-komisyoncu / t-arizali / t-bos — dolu ile rezerve arasında
       // artık renk farkı yok (ikisi de "oda dolu/tutulu" anlamına geliyor, kaynağı önemli).
       if(gelir || fiiliDolu || bugunDolu) {
         cls = doluKomisyoncuKaynakli ? 't-komisyoncu' : 't-resepsiyon';
         if((beniimTalep || benimRev) && doluKomisyoncuKaynakli) cls += ' benim-isaret';
+        onclick = misafirOnclick;
       } else if(rev) {
         cls = revKomisyoncuKaynakli ? 't-komisyoncu' : 't-resepsiyon';
         if((beniimTalep || benimRev) && revKomisyoncuKaynakli) cls += ' benim-isaret';
+        onclick = misafirOnclick;
       } else if(odaMeta.durum === 'temizlik') {
         // Temizlik: sadece bugün saat 12:00'a kadar engeller
         // Bugünden sonraki günler ve bugün 12:00 sonrası tıklanabilir
@@ -1141,12 +1167,19 @@ function takvimTablosuCiz(gunList, today) {
         cls = 't-kontrol';
       }
 
-      // GÜVENLİK: bugünden önceki hiçbir gün tıklanabilir/talep girilebilir olmamalı —
-      // yukarıdaki dallardan hangisi tetiklenirse tetiklensin (t-bos, t-bugun, t-temizlik,
-      // t-kontrol), geçmiş bir tarihse burada zorla devre dışı bırakılır.
+      // GÜVENLİK: bugünden önceki hiçbir gün YENİ rezervasyon/talep girişine açık
+      // olmamalı — yukarıdaki dallardan hangisi tetiklenirse tetiklensin (t-bos,
+      // t-bugun, t-temizlik, t-kontrol), geçmiş bir tarihse burada zorla devre dışı
+      // bırakılır. Dolu/rezerve (t-komisyoncu/t-resepsiyon) hücrelerde ise geçmişte
+      // bile olsa "kimler kalmış" bilgisini görebilmek faydalı olduğu için bu hücrelerin
+      // rengi ve misafir-bilgi tıklaması korunur, sadece yeni kayıt girişi engellenir.
       if(iso < today && onclick) {
-        onclick = '';
-        cls = 't-gecmis';
+        if(cls === 't-komisyoncu' || cls === 't-resepsiyon' || cls.startsWith('t-komisyoncu ') || cls.startsWith('t-resepsiyon ')) {
+          onclick = misafirOnclick; // sadece bilgi görüntüleme kalsın
+        } else {
+          onclick = '';
+          cls = 't-gecmis';
+        }
       }
 
       const hucreBaslik = _veriDurumu.rezervasyon
@@ -1162,6 +1195,23 @@ function takvimTablosuCiz(gunList, today) {
   document.getElementById('takvimTable').innerHTML = html;
 }
 
+
+// Takvimde dolu/rezerve bir hücreye tıklanınca o gün o odada kimin kaldığını
+// (misafir adı, giriş-çıkış tarihi, kişi sayısı) küçük bir bilgi penceresinde gösterir.
+window.odaBilgiGoster = function(odaNo, iso, bilgi) {
+  const odaLabel = dil === 'fa' ? `اتاق ${odaNo}` : `Oda ${odaNo}`;
+  document.getElementById('odaBilgiBaslik').textContent = `${odaLabel} · ${iso}`;
+  const kisi = (bilgi.yetiskin || bilgi.cocuk)
+    ? `${bilgi.yetiskin || 1} yetişkin${bilgi.cocuk ? ' + ' + bilgi.cocuk + ' çocuk' : ''}`
+    : '';
+  document.getElementById('odaBilgiIcerik').innerHTML = `
+    <div><b>Misafir:</b> ${bilgi.misafir || '—'}</div>
+    <div><b>Giriş:</b> ${bilgi.giris || '—'}</div>
+    <div><b>Çıkış:</b> ${bilgi.cikis || '—'}</div>
+    ${kisi ? `<div><b>Kişi:</b> ${kisi}</div>` : ''}
+  `;
+  document.getElementById('odaBilgiModal').classList.add('aktif');
+};
 
 // ── MODAL ──
 let secilenOda = null;

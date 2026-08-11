@@ -620,6 +620,24 @@ async function silinenKayitIcinTalepIptalEt(kayit) {
   }
 }
 
+// "gelirler" sekmesinden bir kayıt silindiğinde, o gelire bağlı olarak oluşturulmuş
+// bir komisyon (hakediş) kaydı varsa ('komisyon_'+gelirDocId) o da silinmezse
+// komisyoncu portalındaki "Kazancım" bakiyesinde silinen/iptal edilen bir konaklamanın
+// komisyonu borç olarak görünmeye devam ediyordu — ciddi bir mali hataydı. Artık
+// gelir kaydıyla birlikte bağlı komisyon kaydı da otomatik siliniyor.
+async function silinenKayitIcinKomisyonSil(kayit) {
+  if(!kayit || aktifSekme !== 'gelirler') return;
+  const gelirDocId = kayit.gelirDocId || kayit._id;
+  if(!gelirDocId) return;
+  try {
+    await deleteDoc(doc(db, 'komisyonlar', 'komisyon_' + gelirDocId));
+    toast('Bağlı komisyon kaydı da silindi ✓', 'success');
+  } catch(e) {
+    // Zaten yoksa (komisyon oluşmamış konaklama) sessizce geç; başka bir hata varsa uyar.
+    console.warn('Komisyon kaydı silinemedi:', e);
+  }
+}
+
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
@@ -627,6 +645,7 @@ window.kaydSil = async function() {
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
+    await silinenKayitIcinKomisyonSil(kayit);
     toast('Kayıt silindi', 'success');
     modalKapat();
     await sekmeYukle(aktifSekme);
@@ -640,6 +659,7 @@ window.hizliSil = async function(id) {
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
+    await silinenKayitIcinKomisyonSil(kayit);
     toast('Silindi', 'success');
     await sekmeYukle(aktifSekme);
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
