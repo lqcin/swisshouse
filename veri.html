@@ -234,7 +234,7 @@ tr:hover td{background:#fafafa;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDd1m3Az_JKKF__73dLj3mPA9Y5HOJw9mQ",
@@ -646,6 +646,28 @@ async function silinenKayitIcinTalepIptalEt(kayit) {
   }
 }
 
+// "gelirler" sekmesinden bir kayıt silindiğinde, o geliri doğuran "rezervasyonlar"
+// kaydı (check-in sırasında durum:'aktif' yapılmıştı) hâlâ iptal edilmeden kalıyordu.
+// Oda meta'sı temizlense bile, hem resepsiyon hem komisyoncu takvimindeki hücre rengi
+// bu "rev" kaydına bakarak hesaplandığı için (durum!=='iptal' olduğu sürece dolu
+// gösteriliyor) — takvimde oda hâlâ dolu/rezerve görünmeye devam ediyordu. Artık
+// bağlı rezervasyon kaydı da otomatik "iptal" olarak işaretlenip senkronize ediliyor.
+async function silinenGelirIcinRezervasyonuIptalEt(kayit) {
+  if(!kayit || aktifSekme !== 'gelirler') return;
+  const revId = kayit.rezervasyonId;
+  if(!revId) return;
+  try {
+    await updateDoc(doc(db, 'rezervasyonlar', revId), {
+      durum: 'iptal',
+      iptalNot: 'Gelir kaydı veri panelinden silindi',
+      islemTarih: new Date().toISOString()
+    });
+    toast('Bağlı rezervasyon kaydı da iptal edildi, takvim boşaldı ✓', 'success');
+  } catch(e) {
+    console.warn('Kaynak rezervasyon iptal edilemedi:', e);
+  }
+}
+
 // "gelirler" sekmesinden bir kayıt silindiğinde, o gelire bağlı olarak oluşturulmuş
 // bir komisyon (hakediş) kaydı varsa ('komisyon_'+gelirDocId) o da silinmezse
 // komisyoncu portalındaki "Kazancım" bakiyesinde silinen/iptal edilen bir konaklamanın
@@ -670,37 +692,61 @@ async function silinenKayitIcinKomisyonSil(kayit) {
 // koleksiyonuyla karşılaştırıp karşılığı olmayanları (yetim) bulur, listeler ve
 // onay sonrası toplu siler.
 let _yetimListe = [];
+let _yetimRevListe = [];
 window.yetimKomisyonTara = async function() {
   document.getElementById('yetimModal').classList.add('aktif');
   document.getElementById('yetimAciklama').textContent = 'Taranıyor...';
   document.getElementById('yetimTablo').innerHTML = '';
   document.getElementById('yetimSilBtn').style.display = 'none';
   try {
-    const [komSnap, gelirSnap] = await Promise.all([
+    const [komSnap, gelirSnap, revSnap] = await Promise.all([
       getDocs(collection(db, 'komisyonlar')),
-      getDocs(collection(db, 'gelirler'))
+      getDocs(collection(db, 'gelirler')),
+      getDocs(collection(db, 'rezervasyonlar'))
     ]);
     const gelirIdSeti = new Set(gelirSnap.docs.map(d => d.id));
+    const gelirRevIdSeti = new Set(gelirSnap.docs.map(d => d.data()?.rezervasyonId).filter(Boolean));
+
     _yetimListe = komSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(k => k.gelirDocId && !gelirIdSeti.has(k.gelirDocId));
 
-    if(!_yetimListe.length) {
-      document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon kaydı bulunamadı — hepsi güncel gelir kayıtlarına bağlı.';
+    // Check-in edilmiş (durum:'aktif') ama bağlı gelir kaydı artık mevcut olmayan
+    // rezervasyonlar — bunlar takvimde hayalet olarak "dolu/rezerve" görünmeye devam
+    // eder çünkü durum='iptal' değildir. (Henüz check-in edilmemiş, durum='bekliyor'
+    // olanlara dokunulmaz — onlar gerçek gelecek rezervasyonlardır.)
+    _yetimRevListe = revSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(r => r.durum === 'aktif' && !gelirRevIdSeti.has(r.id));
+
+    if(!_yetimListe.length && !_yetimRevListe.length) {
+      document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon veya hayalet rezervasyon kaydı bulunamadı — her şey güncel.';
       return;
     }
 
-    const toplam = _yetimListe.reduce((a,b) => a + (Number(b.toplamKomisyon)||0), 0);
-    document.getElementById('yetimAciklama').innerHTML =
-      `⚠ <b>${_yetimListe.length}</b> yetim komisyon kaydı bulundu — bunların bağlı olduğu gelir kaydı artık mevcut değil (muhtemelen daha önce elle silinmiş). Toplam <b>${toplam.toLocaleString('tr-TR')} ₺</b> komisyoncu bakiyelerinde hâlâ borç olarak görünüyor olabilir.`;
-    document.getElementById('yetimTablo').innerHTML = _yetimListe.map(k => `
-      <tr>
-        <td>${k.odaNo||'—'}</td>
-        <td>${k.misafir||'—'}</td>
-        <td>${k.tarih||'—'}</td>
-        <td>${k.araciAd||'—'}</td>
-        <td style="text-align:right;font-weight:700;color:var(--red)">${(Number(k.toplamKomisyon)||0).toLocaleString('tr-TR')} ₺</td>
-      </tr>`).join('');
+    let aciklama = '';
+    let tablo = '';
+    if(_yetimListe.length) {
+      const toplam = _yetimListe.reduce((a,b) => a + (Number(b.toplamKomisyon)||0), 0);
+      aciklama += `⚠ <b>${_yetimListe.length}</b> yetim komisyon kaydı — bağlı gelir kaydı yok, toplam <b>${toplam.toLocaleString('tr-TR')} ₺</b> hatalı komisyoncu borcu.<br>`;
+      tablo += _yetimListe.map(k => `
+        <tr>
+          <td>${k.odaNo||'—'}</td><td>${k.misafir||'—'}</td><td>${k.tarih||'—'}</td>
+          <td>${k.araciAd||'—'}</td>
+          <td style="text-align:right;font-weight:700;color:var(--red)">${(Number(k.toplamKomisyon)||0).toLocaleString('tr-TR')} ₺ · Komisyon</td>
+        </tr>`).join('');
+    }
+    if(_yetimRevListe.length) {
+      aciklama += `⚠ <b>${_yetimRevListe.length}</b> hayalet rezervasyon kaydı — check-in yapılmış ama gelir kaydı silinmiş, takvimde odayı hâlâ dolu gösteriyor.`;
+      tablo += _yetimRevListe.map(r => `
+        <tr>
+          <td>${r.odaNo||'—'}</td><td>${r.misafir||'—'}</td><td>${r.giris||'—'} → ${r.cikis||'—'}</td>
+          <td>${r.araciAd||'—'}</td>
+          <td style="text-align:right;font-weight:700;color:var(--gold2)">Takvimde Dolu Gösteriyor</td>
+        </tr>`).join('');
+    }
+    document.getElementById('yetimAciklama').innerHTML = aciklama;
+    document.getElementById('yetimTablo').innerHTML = tablo;
     document.getElementById('yetimSilBtn').style.display = '';
   } catch(e) {
     document.getElementById('yetimAciklama').textContent = 'Tarama hatası: ' + e.message;
@@ -708,23 +754,46 @@ window.yetimKomisyonTara = async function() {
 };
 
 window.yetimKomisyonSilHepsi = async function() {
-  if(!_yetimListe.length) return;
-  if(!confirm(`${_yetimListe.length} yetim komisyon kaydı kalıcı olarak silinecek. Emin misiniz?`)) return;
+  if(!_yetimListe.length && !_yetimRevListe.length) return;
+  const toplamAdet = _yetimListe.length + _yetimRevListe.length;
+  if(!confirm(`${toplamAdet} yetim/hayalet kayıt düzeltilecek (komisyonlar silinecek, hayalet rezervasyonlar iptal edilecek). Emin misiniz?`)) return;
   const btn = document.getElementById('yetimSilBtn');
-  btn.disabled = true; btn.textContent = 'Siliniyor...';
+  btn.disabled = true; btn.textContent = 'İşleniyor...';
   try {
     for(const k of _yetimListe) {
       await deleteDoc(doc(db, 'komisyonlar', k.id));
     }
-    toast(`${_yetimListe.length} yetim komisyon kaydı silindi ✓`, 'success');
+    for(const r of _yetimRevListe) {
+      await updateDoc(doc(db, 'rezervasyonlar', r.id), {
+        durum: 'iptal', iptalNot: 'Yetim kayıt temizliği — bağlı gelir kaydı bulunamadı',
+        islemTarih: new Date().toISOString()
+      });
+    }
+    toast(`${toplamAdet} kayıt düzeltildi ✓`, 'success');
     document.getElementById('yetimModal').classList.remove('aktif');
-    _yetimListe = [];
+    _yetimListe = []; _yetimRevListe = [];
   } catch(e) {
-    toast('Silme hatası: ' + e.message, 'error');
+    toast('İşlem hatası: ' + e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = '🗑 Tümünü Sil';
   }
 };
+
+// Aynı sorunun tersi: "rezervasyonlar" sekmesinden bir kayıt silinirse ama bu
+// rezervasyon zaten check-in edilmiş olup ona bağlı bir "gelirler" kaydı varsa,
+// o gelir kaydı silinmediği sürece takvim hücresi "gelir" eşleşmesi üzerinden hâlâ
+// dolu görünmeye devam eder. Otomatik silmiyoruz (mali kayıt, geri dönüşü yok) —
+// bunun yerine personeli net şekilde uyarıp doğru sekmeye yönlendiriyoruz.
+async function silinenRezervasyonIcinGelirUyar(kayit) {
+  if(!kayit || aktifSekme !== 'rezervasyonlar') return;
+  try {
+    const gq = query(collection(db, 'gelirler'), where('rezervasyonId', '==', kayit._id));
+    const gsnap = await getDocs(gq);
+    if(!gsnap.empty) {
+      toast('⚠ Bu rezervasyona bağlı bir GELİR/check-in kaydı hâlâ mevcut — takvimde oda boşalması için Gelirler sekmesinden de ilgili kaydı silin', 'error');
+    }
+  } catch(e) { console.warn('Bağlı gelir kaydı kontrol edilemedi:', e); }
+}
 
 window.kaydSil = async function() {
   if(!duzenleId || !confirm('Bu kayıt kalıcı olarak silinecek. Emin misiniz?')) return;
@@ -733,7 +802,9 @@ window.kaydSil = async function() {
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
+    await silinenGelirIcinRezervasyonuIptalEt(kayit);
     await silinenKayitIcinKomisyonSil(kayit);
+    await silinenRezervasyonIcinGelirUyar(kayit);
     toast('Kayıt silindi', 'success');
     modalKapat();
     await sekmeYukle(aktifSekme);
@@ -747,7 +818,9 @@ window.hizliSil = async function(id) {
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
+    await silinenGelirIcinRezervasyonuIptalEt(kayit);
     await silinenKayitIcinKomisyonSil(kayit);
+    await silinenRezervasyonIcinGelirUyar(kayit);
     toast('Silindi', 'success');
     await sekmeYukle(aktifSekme);
   } catch(e) { toast('Hata: ' + e.message, 'error'); }
