@@ -634,6 +634,7 @@ input[type="number"], input[type="date"], input[type="password"] {
             <div class="form-group" style="margin-bottom:0">
               <label>Ödeme Durumu</label>
               <select id="ci_odeme_durum" onchange="odemeDurumAlanGuncelle('ci')">
+                <option value="" selected disabled>— Ödeme durumu seçin (zorunlu) —</option>
                 <option value="odenmedi">Ödenmedi</option>
                 <option value="odendi">Ödendi</option>
                 <option value="depozito">Depozito Alındı</option>
@@ -3445,6 +3446,7 @@ window.openCheckin = function(no) {
   document.getElementById('ci_cocuk').value = 0;
   document.getElementById('ci_kaynak').value = 'walk-in';
   document.getElementById('ci_odeme').value = 'nakit';
+  document.getElementById('ci_odeme_durum').value = ''; // her check-in'de personel bilinçli seçim yapmak zorunda
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
   document.getElementById('musteriBulundu').style.display = 'none';
   // Manuel fiyat flag'ini sıfırla
@@ -3658,6 +3660,15 @@ window.saveCheckin = async function() {
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
   if(tc && tc.length===11 && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz — lütfen kontrol edin','error'); return; }
   if(!fiyat || fiyat <= 0) { toast('Gecelik fiyat girilmeden check-in yapılamaz — Fiyat Tipi seçin veya fiyatı kontrol edin','error'); return; }
+  // Ödeme durumu ZORUNLU — müşteri nereden gelirse gelsin (walk-in, komisyoncu,
+  // online rezervasyon fark etmez) check-in'de ödeme durumu mutlaka sorulup
+  // seçilmeli. Boş bırakılıp sessizce "ödenmedi"ye düşmesine izin verilmiyor.
+  const odemeDurumSecimi = document.getElementById('ci_odeme_durum')?.value || '';
+  if(!odemeDurumSecimi) { toast('⚠ Ödeme durumu seçilmeden check-in yapılamaz — Ödendi / Ödenmedi / Kısmi / Depozito seçin','error'); return; }
+  if(['kismi','depozito'].includes(odemeDurumSecimi)) {
+    const kismiVal = Number(document.getElementById('ci_kismi_tutar')?.value)||0;
+    if(kismiVal <= 0) { toast('⚠ Kısmi ödeme/depozito seçildi ama alınan tutar girilmedi','error'); return; }
+  }
 
   // ÇAKIŞMA KONTROLÜ — son güvenlik: kaydetmeden önce tekrar bak
   // (checkinSozlesmeOnayla'nın geçici _O kaydı kendisiyle çakışmasın diye geçici çıkar)
@@ -3822,6 +3833,7 @@ window.checkindenRezervasyon = function(rev) {
   window._ciOrijinalGiris = rev.giris || null; // erken giriş rozetini göstermek için orijinal planlanan tarih saklanır
   document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
   document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
+  document.getElementById('ci_odeme_durum').value = ''; // rezervasyondan gelse bile check-in'de ödeme durumu yeniden ve bilinçli seçilmeli
   document.getElementById('ci_yetiskin').value = rev.yetiskin || 1;
   document.getElementById('ci_cocuk').value = rev.cocuk || 0;
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
@@ -3840,11 +3852,11 @@ window.checkindenRezervasyon = function(rev) {
     }
   });
 
-  // Ödeme durumunu rezervasyondan getir
-  const odDurumEl = document.getElementById('ci_odeme_durum');
-  if(odDurumEl) odDurumEl.value = rev.odemeDurum || 'odenmedi';
+  // Ödeme durumu BİLEREK boş bırakılıyor — rezervasyonda önceden girilmiş olsa bile
+  // check-in anında personel ödeme durumunu MUTLAKA yeniden ve bilinçli seçmeli.
+  // (Müşteri nereden gelirse gelsin — walk-in, komisyoncu, online — aynı kural geçerli.)
   const ciKismiWrap = document.getElementById('ci_kismi_wrap');
-  if(ciKismiWrap) ciKismiWrap.style.display = (rev.odemeDurum === 'kismi' || rev.odemeDurum === 'depozito') ? 'block' : 'none';
+  if(ciKismiWrap) ciKismiWrap.style.display = 'none';
   const ciKismiTutar = document.getElementById('ci_kismi_tutar');
   if(ciKismiTutar) ciKismiTutar.value = rev.kismiTutar ?? '';
   // Sözleşme fiyatı her zaman boş başlar — check-in anında girilmeli
