@@ -278,7 +278,6 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
           <div id="odaBilgiIcerik" style="font-size:13px;line-height:1.8;color:var(--dark)"></div>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-danger" id="odaBilgiSilBtn" style="display:none" onclick="komisyoncuMisafirSil()">🗑 Misafir Kaydını Sil / Odayı Boşalt</button>
           <button class="btn btn-ghost" onclick="document.getElementById('odaBilgiModal').classList.remove('aktif')">Kapat</button>
         </div>
       </div>
@@ -499,7 +498,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app = initializeApp({
@@ -1276,14 +1275,6 @@ window.takvimHoverGizle = function() {
 
 // Takvimde dolu/rezerve bir hücreye tıklanınca o gün o odada kimin kaldığını
 // (misafir adı, giriş-çıkış tarihi, kişi sayısı) küçük bir bilgi penceresinde gösterir.
-let _odaBilgiSecim = null;
-
-function komisyoncuKaydiBenimMi(kayit) {
-  if(!kayit || !aktifKom) return false;
-  return rKomisyoncuAnahtar(kayit) === aktifKom.key ||
-    araciBenimMi(kayit.araciAd || kayit.komisyoncuAd);
-}
-
 window.odaBilgiGoster = function(odaNo, iso, bilgi) {
   const odaLabel = dil === 'fa' ? `اتاق ${odaNo}` : `Oda ${odaNo}`;
   document.getElementById('odaBilgiBaslik').textContent = `${odaLabel} · ${iso}`;
@@ -1291,81 +1282,13 @@ window.odaBilgiGoster = function(odaNo, iso, bilgi) {
     ? `${bilgi.yetiskin || 1} yetişkin${bilgi.cocuk ? ' + ' + bilgi.cocuk + ' çocuk' : ''}`
     : '';
 
-  // Silinecek gerçek kaydı oda+tarih üzerinden bul. Check-in varsa gelir önceliklidir.
-  const gelir = _G.find(g => Number(g.odaNo) === Number(odaNo) && (g.giris||'') <= iso && (g.cikis||'') > iso);
-  const rev = _R.find(r => Number(r.odaNo) === Number(odaNo) && (r.giris||'') <= iso && (r.cikis||'') > iso && r.durum !== 'iptal');
-  const odaMeta = _O['oda'+odaNo] || null;
-  const benimKaydim = komisyoncuKaydiBenimMi(gelir) || komisyoncuKaydiBenimMi(rev) || komisyoncuKaydiBenimMi(odaMeta);
-  _odaBilgiSecim = { odaNo:Number(odaNo), iso, gelir, rev, odaMeta, benimKaydim };
-
   document.getElementById('odaBilgiIcerik').innerHTML = `
     <div><b>Misafir:</b> ${bilgi.misafir || '—'}</div>
     <div><b>Giriş:</b> ${bilgi.giris || '—'}</div>
     <div><b>Çıkış:</b> ${bilgi.cikis || '—'}</div>
     ${kisi ? `<div><b>Kişi:</b> ${kisi}</div>` : ''}
-    ${benimKaydim ? '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Bu kayıt size ait. Silindiğinde oda aynı gün yeniden kullanılabilir.</div>' : ''}
   `;
-  const silBtn = document.getElementById('odaBilgiSilBtn');
-  if(silBtn) silBtn.style.display = benimKaydim ? '' : 'none';
   document.getElementById('odaBilgiModal').classList.add('aktif');
-};
-
-window.komisyoncuMisafirSil = async function() {
-  const sec = _odaBilgiSecim;
-  if(!sec || !sec.benimKaydim) return;
-  if(!confirm(`Oda ${sec.odaNo} için bu misafir/rezervasyon kaydı silinecek ve oda hemen boşaltılacak. Emin misiniz?`)) return;
-  const btn = document.getElementById('odaBilgiSilBtn');
-  if(btn) { btn.disabled = true; btn.textContent = 'Siliniyor...'; }
-  try {
-    const gelirler = [];
-    if(sec.gelir?.id) gelirler.push(sec.gelir);
-    if(sec.rev?.id) {
-      const qg = query(collection(db,'gelirler'), where('rezervasyonId','==',sec.rev.id));
-      const snap = await getDocs(qg);
-      snap.docs.forEach(d => { if(!gelirler.some(g=>g.id===d.id)) gelirler.push({id:d.id,...d.data()}); });
-    }
-
-    for(const g of gelirler) {
-      try { await deleteDoc(doc(db,'komisyonlar','komisyon_'+g.id)); } catch(_) {}
-      await deleteDoc(doc(db,'gelirler',g.id));
-    }
-
-    if(sec.rev?.id) {
-      // Kaynak talebi varsa komisyonda da iptal görünür.
-      if(sec.rev.kaynakTalepId) {
-        try { await updateDoc(doc(db,'rezervasyon_talepleri',sec.rev.kaynakTalepId), {durum:'iptal', iptalNot:'Komisyoncu portalından silindi', islemTarih:new Date().toISOString()}); } catch(_) {}
-      }
-      await deleteDoc(doc(db,'rezervasyonlar',sec.rev.id));
-    }
-
-    // Oda meta kaydı aynı konaklamaya aitse tamamen boşalt.
-    const metaSnap = await getDoc(doc(db,'meta','odalar'));
-    if(metaSnap.exists()) {
-      const meta = metaSnap.data();
-      const key = 'oda'+sec.odaNo;
-      const mevcut = meta[key];
-      const giris = sec.gelir?.giris || sec.rev?.giris || sec.odaMeta?.giris || '';
-      if(mevcut && (!giris || mevcut.giris === giris)) {
-        meta[key] = {
-          durum:'bos', misafir:'', tc:'', tel:'', email:'', plaka:'',
-          kaynak:'', araciAd:'', komisyoncu:'', komisyoncuAd:'', fiyatTip:1, fiyat:0,
-          odemeTuru:'nakit', odemeDurum:'odenmedi', toplamBorc:0, tahsilEdilen:0, kalanTutar:0,
-          giris:'', cikis:'', girisSaati:'', yetiskin:1, cocuk:0, not:'',
-          guncelleme:new Date().toISOString()
-        };
-        await setDoc(doc(db,'meta','odalar'),meta);
-      }
-    }
-
-    document.getElementById('odaBilgiModal').classList.remove('aktif');
-    await takvimVerisiYukle();
-    alert(`Oda ${sec.odaNo} boşaltıldı. Aynı gün yeni rezervasyon alınabilir.`);
-  } catch(e) {
-    console.error('Komisyoncu silme hatası:', e);
-    alert('Kayıt silinemedi: ' + e.message);
-  } finally {
-    if(btn) { btn.disabled = false; btn.textContent = '🗑 Misafir Kaydını Sil / Odayı Boşalt'; }
-  }
 };
 
 // ── MODAL ──

@@ -3871,7 +3871,15 @@ window.checkindenRezervasyon = function(rev) {
   window._ciOrijinalGiris = rev.giris || null; // erken giriş rozetini göstermek için orijinal planlanan tarih saklanır
   document.getElementById('ci_kaynak').value = rev.kaynak || 'walk-in';
   document.getElementById('ci_odeme').value = rev.odemeTuru || 'nakit';
-  document.getElementById('ci_odeme_durum').value = ''; // rezervasyondan gelse bile check-in'de ödeme durumu yeniden ve bilinçli seçilmeli
+  // Rezervasyonda alınmış ödeme/depozito check-in sırasında KAYBOLMAMALI.
+  // Eski sürüm ödeme durumunu bilerek boşalttığı için kısmi/depozito tutarı input'a
+  // yazılsa bile alan gizli kalıyor ve personel alınmış ön ödemeyi göremiyordu.
+  const rezervasyonOnOdeme = Math.max(0, Number(rev.kismiTutar ?? rev.tahsilEdilen ?? 0) || 0);
+  let rezervasyonOdemeDurumu = rev.odemeDurum || 'odenmedi';
+  if(rezervasyonOnOdeme > 0 && !['kismi','depozito','odendi'].includes(rezervasyonOdemeDurumu)) {
+    rezervasyonOdemeDurumu = 'kismi';
+  }
+  document.getElementById('ci_odeme_durum').value = rezervasyonOdemeDurumu;
   document.getElementById('ci_yetiskin').value = rev.yetiskin || 1;
   document.getElementById('ci_cocuk').value = rev.cocuk || 0;
   document.getElementById('ci_saat').value = new Date().toLocaleTimeString('tr-TR');
@@ -3890,13 +3898,12 @@ window.checkindenRezervasyon = function(rev) {
     }
   });
 
-  // Ödeme durumu BİLEREK boş bırakılıyor — rezervasyonda önceden girilmiş olsa bile
-  // check-in anında personel ödeme durumunu MUTLAKA yeniden ve bilinçli seçmeli.
-  // (Müşteri nereden gelirse gelsin — walk-in, komisyoncu, online — aynı kural geçerli.)
+  // Rezervasyonda alınmış ön ödemeyi check-in formuna eksiksiz taşı.
+  // Böylece toplam borç, daha önce tahsil edilen tutar ve kalan bakiye aynı akışta görünür.
   const ciKismiWrap = document.getElementById('ci_kismi_wrap');
-  if(ciKismiWrap) ciKismiWrap.style.display = 'none';
   const ciKismiTutar = document.getElementById('ci_kismi_tutar');
-  if(ciKismiTutar) ciKismiTutar.value = rev.kismiTutar ?? '';
+  if(ciKismiTutar) ciKismiTutar.value = rezervasyonOnOdeme > 0 ? rezervasyonOnOdeme : '';
+  if(ciKismiWrap) ciKismiWrap.style.display = ['kismi','depozito'].includes(rezervasyonOdemeDurumu) ? 'block' : 'none';
   // Sözleşme fiyatı her zaman boş başlar — check-in anında girilmeli
   const sozFiyatEl = document.getElementById('ci_sozlesme_fiyat');
   if(sozFiyatEl) sozFiyatEl.value = '';
@@ -3935,6 +3942,9 @@ window.checkindenRezervasyon = function(rev) {
   const ozCikisGunEl = document.getElementById('ci_ozet_cikis_gun'); if(ozCikisGunEl) ozCikisGunEl.textContent = `${gunAdiGoster(rev.cikis)} (${gece} Gece)`;
   const ozOdaEl = document.getElementById('ci_ozet_oda'); if(ozOdaEl) ozOdaEl.textContent = rev.odaNo;
 
+  ciFiyatGuncelle();
+  odemeDurumAlanGuncelle('ci');
+  // odemeDurumAlanGuncelle alanı açtıktan sonra ön ödeme + kalan tutarı yeniden hesapla.
   ciFiyatGuncelle();
   kisilerGuncelle();
   openModal('checkinModal');
