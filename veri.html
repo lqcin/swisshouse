@@ -633,6 +633,27 @@ async function silinenKayitIcinOdaTemizle(kayit) {
   }
 }
 
+
+// Rezervasyon kaydı siliniyorsa ona bağlı check-in/gelir kayıtları da temizlenir.
+// Böylece takvimde gelir kaydından kalan hayalet doluluk oluşmaz ve oda aynı gün
+// yeniden rezervasyon/check-in kabul edebilir.
+async function silinenRezervasyonIcinBagliGelirleriSil(kayit) {
+  if(!kayit || aktifSekme !== 'rezervasyonlar' || !kayit._id) return;
+  try {
+    const gq = query(collection(db, 'gelirler'), where('rezervasyonId', '==', kayit._id));
+    const gsnap = await getDocs(gq);
+    for(const gdoc of gsnap.docs) {
+      // Gelire bağlı komisyon hakedişini de kaldır.
+      try { await deleteDoc(doc(db, 'komisyonlar', 'komisyon_' + gdoc.id)); } catch(_) {}
+      await deleteDoc(doc(db, 'gelirler', gdoc.id));
+    }
+    if(!gsnap.empty) toast('Bağlı check-in/gelir kaydı da temizlendi ✓', 'success');
+  } catch(e) {
+    console.warn('Bağlı gelir temizleme hatası:', e);
+    throw new Error('Rezervasyon silindi ancak bağlı check-in kaydı temizlenemedi: ' + e.message);
+  }
+}
+
 // Bir "rezervasyonlar" kaydı silindiğinde, onu doğuran orijinal komisyoncu talebi
 // (rezervasyon_talepleri) hâlâ "Onaylandı" görünmeye devam ediyordu — komisyoncunun
 // takviminden kayıt gitmiş olsa da "Taleplerim" listesinde/notlarda kalıyordu.
@@ -846,6 +867,7 @@ window.kaydSil = async function() {
   try {
     const kayit = tumVeri.find(x => x._id === duzenleId);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, duzenleId));
+    await silinenRezervasyonIcinBagliGelirleriSil(kayit);
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
     await silinenGelirIcinRezervasyonuIptalEt(kayit);
@@ -862,6 +884,7 @@ window.hizliSil = async function(id) {
   try {
     const kayit = tumVeri.find(x => x._id === id);
     await deleteDoc(doc(db, KOLEKSIYON[aktifSekme].col, id));
+    await silinenRezervasyonIcinBagliGelirleriSil(kayit);
     await silinenKayitIcinOdaTemizle(kayit);
     await silinenKayitIcinTalepIptalEt(kayit);
     await silinenGelirIcinRezervasyonuIptalEt(kayit);

@@ -99,6 +99,22 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
 /* ── REZERVASYON FORMU MODAL ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);}
+
+/* Takvim gezici misafir bilgi kartı */
+.takvim-hover-pop{
+  position:fixed;display:none;z-index:2500;pointer-events:none;
+  min-width:210px;max-width:290px;padding:11px 13px;
+  background:rgba(32,37,35,.97);color:#fff;border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 10px 28px rgba(0,0,0,.24);font-size:11px;line-height:1.55;
+  border-radius:7px;backdrop-filter:blur(5px);
+}
+.takvim-hover-pop.aktif{display:block}
+.takvim-hover-pop .hp-baslik{font-weight:700;font-size:12px;margin-bottom:5px;color:#f3dfad}
+.takvim-hover-pop .hp-satir{display:flex;gap:7px;align-items:flex-start}
+.takvim-hover-pop .hp-etiket{color:rgba(255,255,255,.62);min-width:54px}
+.takvim-hover-pop .hp-deger{font-weight:600;color:#fff;overflow-wrap:anywhere}
+@media (hover:none),(pointer:coarse){.takvim-hover-pop{display:none!important}}
+
 .modal-overlay.aktif{display:flex;}
 .modal{background:var(--white);border:1px solid var(--border);padding:0;width:100%;max-width:640px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:var(--parchment);}
@@ -262,6 +278,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
           <div id="odaBilgiIcerik" style="font-size:13px;line-height:1.8;color:var(--dark)"></div>
         </div>
         <div class="modal-actions">
+          <button class="btn btn-danger" id="odaBilgiSilBtn" style="display:none" onclick="komisyoncuMisafirSil()">🗑 Misafir Kaydını Sil / Odayı Boşalt</button>
           <button class="btn btn-ghost" onclick="document.getElementById('odaBilgiModal').classList.remove('aktif')">Kapat</button>
         </div>
       </div>
@@ -345,6 +362,10 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 </div>
 
 <!-- REZERVASYON MODAL -->
+
+<!-- Takvimde dolu/rezerve hücre üzerinde fareyi izleyen kısa misafir bilgisi -->
+<div id="takvimHoverPop" class="takvim-hover-pop" aria-hidden="true"></div>
+
 <div class="modal-overlay" id="rezervModal">
   <div class="modal">
     <div class="modal-header">
@@ -478,7 +499,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, getDocs, getDoc, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app = initializeApp({
@@ -1126,8 +1147,20 @@ function takvimTablosuCiz(gunList, today) {
       // hücreye tıklanınca odaBilgiGoster çağrılır — bilgi kaynağı öncelik sırasıyla
       // gelir kaydı (check-in yapılmış) > oda meta (fiili dolu) > rezervasyon.
       const misafirBilgi = gelir || (fiiliDolu || bugunDolu ? odaMeta : null) || rev || null;
-      const misafirOnclick = misafirBilgi
-        ? `onclick="odaBilgiGoster(${odaNo},'${iso}',${JSON.stringify({misafir:misafirBilgi.misafir||'—',giris:misafirBilgi.giris||iso,cikis:misafirBilgi.cikis||'',yetiskin:misafirBilgi.yetiskin||null,cocuk:misafirBilgi.cocuk||null}).replace(/"/g,'&quot;')})"`
+      const misafirOzet = misafirBilgi ? {
+        misafir: misafirBilgi.misafir || '—',
+        giris: misafirBilgi.giris || iso,
+        cikis: misafirBilgi.cikis || '',
+        yetiskin: misafirBilgi.yetiskin || null,
+        cocuk: misafirBilgi.cocuk || null,
+        durum: gelir || fiiliDolu || bugunDolu ? 'Konaklıyor' : 'Rezervasyon'
+      } : null;
+      const misafirJson = misafirOzet ? JSON.stringify(misafirOzet).replace(/"/g,'&quot;') : '';
+      const misafirOnclick = misafirOzet
+        ? `onclick="odaBilgiGoster(${odaNo},'${iso}',${misafirJson})"`
+        : '';
+      const misafirHover = misafirOzet
+        ? `onmouseenter="takvimHoverGoster(event,${odaNo},'${iso}',${misafirJson})" onmousemove="takvimHoverHareket(event)" onmouseleave="takvimHoverGizle()"`
         : '';
       // 4 RENK: t-resepsiyon / t-komisyoncu / t-arizali / t-bos — dolu ile rezerve arasında
       // artık renk farkı yok (ikisi de "oda dolu/tutulu" anlamına geliyor, kaynağı önemli).
@@ -1185,7 +1218,7 @@ function takvimTablosuCiz(gunList, today) {
       const hucreBaslik = _veriDurumu.rezervasyon
         ? `Oda ${odaNo} · ${iso}`
         : `Oda ${odaNo} · ${iso} · Müsaitlik yönetici onayında kesinleşir`;
-      html += `<td class="${cls}" ${onclick} title="${hucreBaslik}"></td>`;
+      html += `<td class="${cls}" ${onclick} ${misafirHover} title="${misafirOzet ? '' : hucreBaslik}"></td>`;
     });
 
     html += '</tr>';
@@ -1196,21 +1229,143 @@ function takvimTablosuCiz(gunList, today) {
 }
 
 
+
+// Takvim dolu/rezerve hücrelerinde fareyi takip eden hızlı bilgi kartı.
+// Tıklama ile açılan mevcut detay modalını değiştirmez.
+function htmlGuvenli(deger) {
+  return String(deger ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+window.takvimHoverGoster = function(e, odaNo, iso, bilgi) {
+  if(window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
+  const pop = document.getElementById('takvimHoverPop');
+  if(!pop) return;
+  const kisi = (bilgi.yetiskin || bilgi.cocuk)
+    ? `${bilgi.yetiskin || 1} yetişkin${bilgi.cocuk ? ' + ' + bilgi.cocuk + ' çocuk' : ''}`
+    : '';
+  pop.innerHTML = `
+    <div class="hp-baslik">Oda ${htmlGuvenli(odaNo)} · ${htmlGuvenli(bilgi.durum || '')}</div>
+    <div class="hp-satir"><span class="hp-etiket">Misafir</span><span class="hp-deger">${htmlGuvenli(bilgi.misafir || '—')}</span></div>
+    <div class="hp-satir"><span class="hp-etiket">Giriş</span><span class="hp-deger">${htmlGuvenli(bilgi.giris || iso || '—')}</span></div>
+    <div class="hp-satir"><span class="hp-etiket">Çıkış</span><span class="hp-deger">${htmlGuvenli(bilgi.cikis || '—')}</span></div>
+    ${kisi ? `<div class="hp-satir"><span class="hp-etiket">Kişi</span><span class="hp-deger">${htmlGuvenli(kisi)}</span></div>` : ''}
+  `;
+  pop.classList.add('aktif');
+  pop.setAttribute('aria-hidden','false');
+  takvimHoverHareket(e);
+};
+
+window.takvimHoverHareket = function(e) {
+  const pop = document.getElementById('takvimHoverPop');
+  if(!pop || !pop.classList.contains('aktif')) return;
+  const pay = 14;
+  let x = e.clientX + pay, y = e.clientY + pay;
+  const w = pop.offsetWidth || 240, h = pop.offsetHeight || 120;
+  if(x + w + 8 > window.innerWidth) x = e.clientX - w - pay;
+  if(y + h + 8 > window.innerHeight) y = e.clientY - h - pay;
+  pop.style.left = Math.max(8,x) + 'px';
+  pop.style.top = Math.max(8,y) + 'px';
+};
+
+window.takvimHoverGizle = function() {
+  const pop = document.getElementById('takvimHoverPop');
+  if(!pop) return;
+  pop.classList.remove('aktif');
+  pop.setAttribute('aria-hidden','true');
+};
+
 // Takvimde dolu/rezerve bir hücreye tıklanınca o gün o odada kimin kaldığını
 // (misafir adı, giriş-çıkış tarihi, kişi sayısı) küçük bir bilgi penceresinde gösterir.
+let _odaBilgiSecim = null;
+
+function komisyoncuKaydiBenimMi(kayit) {
+  if(!kayit || !aktifKom) return false;
+  return rKomisyoncuAnahtar(kayit) === aktifKom.key ||
+    araciBenimMi(kayit.araciAd || kayit.komisyoncuAd);
+}
+
 window.odaBilgiGoster = function(odaNo, iso, bilgi) {
   const odaLabel = dil === 'fa' ? `اتاق ${odaNo}` : `Oda ${odaNo}`;
   document.getElementById('odaBilgiBaslik').textContent = `${odaLabel} · ${iso}`;
   const kisi = (bilgi.yetiskin || bilgi.cocuk)
     ? `${bilgi.yetiskin || 1} yetişkin${bilgi.cocuk ? ' + ' + bilgi.cocuk + ' çocuk' : ''}`
     : '';
+
+  // Silinecek gerçek kaydı oda+tarih üzerinden bul. Check-in varsa gelir önceliklidir.
+  const gelir = _G.find(g => Number(g.odaNo) === Number(odaNo) && (g.giris||'') <= iso && (g.cikis||'') > iso);
+  const rev = _R.find(r => Number(r.odaNo) === Number(odaNo) && (r.giris||'') <= iso && (r.cikis||'') > iso && r.durum !== 'iptal');
+  const odaMeta = _O['oda'+odaNo] || null;
+  const benimKaydim = komisyoncuKaydiBenimMi(gelir) || komisyoncuKaydiBenimMi(rev) || komisyoncuKaydiBenimMi(odaMeta);
+  _odaBilgiSecim = { odaNo:Number(odaNo), iso, gelir, rev, odaMeta, benimKaydim };
+
   document.getElementById('odaBilgiIcerik').innerHTML = `
     <div><b>Misafir:</b> ${bilgi.misafir || '—'}</div>
     <div><b>Giriş:</b> ${bilgi.giris || '—'}</div>
     <div><b>Çıkış:</b> ${bilgi.cikis || '—'}</div>
     ${kisi ? `<div><b>Kişi:</b> ${kisi}</div>` : ''}
+    ${benimKaydim ? '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Bu kayıt size ait. Silindiğinde oda aynı gün yeniden kullanılabilir.</div>' : ''}
   `;
+  const silBtn = document.getElementById('odaBilgiSilBtn');
+  if(silBtn) silBtn.style.display = benimKaydim ? '' : 'none';
   document.getElementById('odaBilgiModal').classList.add('aktif');
+};
+
+window.komisyoncuMisafirSil = async function() {
+  const sec = _odaBilgiSecim;
+  if(!sec || !sec.benimKaydim) return;
+  if(!confirm(`Oda ${sec.odaNo} için bu misafir/rezervasyon kaydı silinecek ve oda hemen boşaltılacak. Emin misiniz?`)) return;
+  const btn = document.getElementById('odaBilgiSilBtn');
+  if(btn) { btn.disabled = true; btn.textContent = 'Siliniyor...'; }
+  try {
+    const gelirler = [];
+    if(sec.gelir?.id) gelirler.push(sec.gelir);
+    if(sec.rev?.id) {
+      const qg = query(collection(db,'gelirler'), where('rezervasyonId','==',sec.rev.id));
+      const snap = await getDocs(qg);
+      snap.docs.forEach(d => { if(!gelirler.some(g=>g.id===d.id)) gelirler.push({id:d.id,...d.data()}); });
+    }
+
+    for(const g of gelirler) {
+      try { await deleteDoc(doc(db,'komisyonlar','komisyon_'+g.id)); } catch(_) {}
+      await deleteDoc(doc(db,'gelirler',g.id));
+    }
+
+    if(sec.rev?.id) {
+      // Kaynak talebi varsa komisyonda da iptal görünür.
+      if(sec.rev.kaynakTalepId) {
+        try { await updateDoc(doc(db,'rezervasyon_talepleri',sec.rev.kaynakTalepId), {durum:'iptal', iptalNot:'Komisyoncu portalından silindi', islemTarih:new Date().toISOString()}); } catch(_) {}
+      }
+      await deleteDoc(doc(db,'rezervasyonlar',sec.rev.id));
+    }
+
+    // Oda meta kaydı aynı konaklamaya aitse tamamen boşalt.
+    const metaSnap = await getDoc(doc(db,'meta','odalar'));
+    if(metaSnap.exists()) {
+      const meta = metaSnap.data();
+      const key = 'oda'+sec.odaNo;
+      const mevcut = meta[key];
+      const giris = sec.gelir?.giris || sec.rev?.giris || sec.odaMeta?.giris || '';
+      if(mevcut && (!giris || mevcut.giris === giris)) {
+        meta[key] = {
+          durum:'bos', misafir:'', tc:'', tel:'', email:'', plaka:'',
+          kaynak:'', araciAd:'', komisyoncu:'', komisyoncuAd:'', fiyatTip:1, fiyat:0,
+          odemeTuru:'nakit', odemeDurum:'odenmedi', toplamBorc:0, tahsilEdilen:0, kalanTutar:0,
+          giris:'', cikis:'', girisSaati:'', yetiskin:1, cocuk:0, not:'',
+          guncelleme:new Date().toISOString()
+        };
+        await setDoc(doc(db,'meta','odalar'),meta);
+      }
+    }
+
+    document.getElementById('odaBilgiModal').classList.remove('aktif');
+    await takvimVerisiYukle();
+    alert(`Oda ${sec.odaNo} boşaltıldı. Aynı gün yeni rezervasyon alınabilir.`);
+  } catch(e) {
+    console.error('Komisyoncu silme hatası:', e);
+    alert('Kayıt silinemedi: ' + e.message);
+  } finally {
+    if(btn) { btn.disabled = false; btn.textContent = '🗑 Misafir Kaydını Sil / Odayı Boşalt'; }
+  }
 };
 
 // ── MODAL ──

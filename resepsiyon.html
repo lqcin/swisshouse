@@ -213,7 +213,7 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
    ayrıştırılır, resepsiyon oda kartlarına tek bakışta kimin ödeme yapmadığını gösterir. */
 .room-card.dolu.borclu{background:#fff4e0;border-color:rgba(217,119,6,.35);}
 .room-card.dolu.borclu::before{background:#d97706;}
-.room-borc-rozet{position:absolute;top:6px;right:6px;background:#d97706;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;letter-spacing:.3px;}
+.room-borc-rozet{position:absolute;top:6px;right:6px;background:#d97706;color:#fff;font-size:9px;font-weight:700;padding:3px 7px;letter-spacing:.3px;border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 .room-card.bos{background:#edfbf2;border-color:rgba(22,163,74,.2);}
 .room-card.bos::before{background:var(--green);}
 .room-card.temizlik{background:#fdf8ee;border-color:rgba(154,124,63,.2);}
@@ -2880,7 +2880,7 @@ window.renderOdalar = function() {
       if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
       if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
-      if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">💰 ${kalanBorc.toLocaleString('tr-TR')}₺</div>`;
+      if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">KALAN: ${kalanBorc.toLocaleString('tr-TR')} ₺</div>`;
       if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Giriş bugün</div>`;
       icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
 
@@ -2986,6 +2986,9 @@ window.openOdaDetay = function(no) {
     const fiyat   = o.fiyat   || 0;
     const kaynak  = o.kaynak  || '';
     const gece    = geceSayisi(giris, cikis);
+    const kalanBorc = window.odaKalanBorc(o);
+    const odemeToplam = Number(o.odemeToplam != null ? o.odemeToplam : ((o.sozlesmeFiyat||o.fiyat||0)*gece)) || 0;
+    const tahsilEdilen = Math.max(0, odemeToplam - kalanBorc);
     bilgi = `<div style="background:var(--parchment);border:1px solid var(--border);padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Misafir</div>
@@ -2998,6 +3001,10 @@ window.openOdaDetay = function(no) {
         <div style="font-size:13px;font-weight:600;color:var(--dark)">${giris||'?'} → ${cikis||'?'}</div>
         <div style="font-size:11px;color:var(--muted)">${gece} gece · ${fiyat ? fiyat.toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
         <div style="font-size:11px;color:var(--muted)">${kaynak||'walk-in'}</div>
+      </div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <div style="font-size:11px;color:var(--muted)">Toplam: <strong style="color:var(--dark)">${fmt(odemeToplam)}</strong> · Tahsil: <strong style="color:var(--green)">${fmt(tahsilEdilen)}</strong></div>
+        <div style="font-size:13px;font-weight:800;color:${kalanBorc>0?'#d97706':'var(--green)'}">${kalanBorc>0?'Kalan: '+fmt(kalanBorc):'✓ Ödeme Tamam'}</div>
       </div>
     </div>`;
   } else if(aktifRev) {
@@ -3263,6 +3270,13 @@ window.odaCakismaKontrol = function(odaNo, giris, cikis, excludeRevId = null) {
 
 window.checkinSozlesmeOnayla = function() {
   const no    = currentCheckinOda;
+  const mevcutOda = window._O['oda'+no] || {};
+  // Form açık kaldığı sırada başka bir cihaz/personel check-in yaptıysa burada da engelle.
+  if(mevcutOda.durum === 'dolu') {
+    const kalan = window.odaKalanBorc(mevcutOda);
+    toast(`Oda ${no} artık dolu. Önce mevcut konaklamanın check-out işlemini tamamlayın${kalan>0 ? ` · Kalan ödeme: ${fmt(kalan)}` : ''}.`, 'error');
+    return;
+  }
   const ad    = document.getElementById('ci_ad').value.trim();
   const giris = document.getElementById('ci_giris').value;
   const cikis = document.getElementById('ci_cikis').value;
@@ -3313,6 +3327,9 @@ window.checkinSozlesmeOnayla = function() {
     odemeTuru:odeme, odemeDurum: document.getElementById('ci_odeme_durum')?.value || 'odenmedi',
     kismiTutar: ['kismi','depozito'].includes(document.getElementById('ci_odeme_durum')?.value) ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null,
     kismiKalan: ['kismi','depozito'].includes(document.getElementById('ci_odeme_durum')?.value) ? Math.max(0,((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece)-(Number(document.getElementById('ci_kismi_tutar')?.value)||0)) : null,
+    odemeToplam: ((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece),
+    tahsilEdilen: odemeAlinanTutar(document.getElementById('ci_odeme_durum')?.value||'odenmedi', ((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece), Number(document.getElementById('ci_kismi_tutar')?.value)||0),
+    kalanTutar: Math.max(0, ((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece) - odemeAlinanTutar(document.getElementById('ci_odeme_durum')?.value||'odenmedi', ((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece), Number(document.getElementById('ci_kismi_tutar')?.value)||0)),
     giris, cikis, girisSaati:now, yetiskin, cocuk, not:not_,
     refakatciler, guncelleme:now,
     dt: document.getElementById('ci_dt')?.value || '',
@@ -3424,7 +3441,15 @@ window.ciOdemeOnaylaVeCheckin = async function() {
 };
 
 window.openCheckin = function(no) {
-  const odaDurum = window._O['oda'+no]?.durum;
+  const mevcutOda = window._O['oda'+no] || {};
+  const odaDurum = mevcutOda.durum;
+  // Aktif konaklama, planlanan çıkış tarihi geçmiş olsa bile CHECK-OUT yapılmadan
+  // kapanmış sayılmaz. Aynı odaya ikinci check-in kesinlikle açılamaz.
+  if(odaDurum === 'dolu') {
+    const kalan = window.odaKalanBorc(mevcutOda);
+    toast(`Oda ${no} için aktif konaklama var (${mevcutOda.misafir||'misafir'}). Önce check-out işlemini tamamlayın${kalan>0 ? ` · Kalan ödeme: ${fmt(kalan)}` : ''}.`, 'error');
+    return;
+  }
   if(odaDurum === 'arizali') {
     toast(`Oda ${no} arızalı/bakımda — check-in yapılamaz. Önce oda durumunu güncelleyin.`, 'error');
     return;
@@ -3695,9 +3720,16 @@ window.saveCheckin = async function() {
   const gelirDocId = konaklamaGelirId(no,giris,tc,ad,window._ciKaynakRevId||'');
   const konaklamaKey = `${no}|${temizAnahtar(tc||ad)}|${giris}`;
 
-  // Oda güncelle
+  // Oda güncelle — ödeme özeti oda kaydında açık biçimde tutulur. Böylece
+  // checkout yapılana kadar resepsiyon ekranı her zaman kalan borcu gösterebilir.
   const refakatciler = getRefakatciler();
-  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,pasaport,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null,odemeTuru:odeme,odemeDurum:document.getElementById('ci_odeme_durum')?.value||'odenmedi',kismiTutar:['kismi','depozito'].includes(document.getElementById('ci_odeme_durum')?.value)?(Number(document.getElementById('ci_kismi_tutar')?.value)||0):null,kismiKalan:['kismi','depozito'].includes(document.getElementById('ci_odeme_durum')?.value)?Math.max(0,((Number(document.getElementById('ci_sozlesme_fiyat')?.value)||fiyat)*gece)-(Number(document.getElementById('ci_kismi_tutar')?.value)||0)):null,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,dt:document.getElementById('ci_dt')?.value||'',araciAd:window._ciAraciAd||document.getElementById('ci_komisyoncu')?.value.trim()||null,guncelleme:now,gelirKaydedildi:true,gelirDocId,konaklamaKey,rezervasyonId:window._ciKaynakRevId||null};
+  const odaOdemeDurum = document.getElementById('ci_odeme_durum')?.value || 'odenmedi';
+  const odaKismiTutar = ['kismi','depozito'].includes(odaOdemeDurum) ? (Number(document.getElementById('ci_kismi_tutar')?.value)||0) : null;
+  const odaSozlesmeFiyat = document.getElementById('ci_sozlesme_fiyat')?.value ? Number(document.getElementById('ci_sozlesme_fiyat').value) : null;
+  const odaOdemeToplam = (odaSozlesmeFiyat || fiyat) * gece;
+  const odaTahsilEdilen = odemeAlinanTutar(odaOdemeDurum, odaOdemeToplam, odaKismiTutar);
+  const odaKalanTutar = Math.max(0, odaOdemeToplam - odaTahsilEdilen);
+  window._O['oda'+no] = {durum:'dolu',misafir:ad,tc,pasaport,tel,email,plaka,kaynak,fiyatTip,fiyat,sozlesmeFiyat:odaSozlesmeFiyat,odemeTuru:odeme,odemeDurum:odaOdemeDurum,kismiTutar:odaKismiTutar,kismiKalan:odaKalanTutar,odemeToplam:odaOdemeToplam,tahsilEdilen:odaTahsilEdilen,kalanTutar:odaKalanTutar,giris,cikis,girisSaati,yetiskin,cocuk,not:not_,refakatciler,dt:document.getElementById('ci_dt')?.value||'',araciAd:window._ciAraciAd||document.getElementById('ci_komisyoncu')?.value.trim()||null,guncelleme:now,gelirKaydedildi:true,gelirDocId,konaklamaKey,rezervasyonId:window._ciKaynakRevId||null};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   const sozlesmeFiyatVal = window._O['oda'+no]?.sozlesmeFiyat || null;
@@ -3805,6 +3837,12 @@ window.saveCheckin = async function() {
 
 // Rezervasyondan check-in
 window.checkindenRezervasyon = function(rev) {
+  const mevcutOda = window._O['oda'+rev.odaNo] || {};
+  if(mevcutOda.durum === 'dolu') {
+    const kalan = window.odaKalanBorc(mevcutOda);
+    toast(`Oda ${rev.odaNo} için ${mevcutOda.misafir||'bir misafir'} hâlâ check-in durumda. Önce check-out yapılmalı${kalan>0 ? ` · Kalan ödeme: ${fmt(kalan)}` : ''}.`, 'error');
+    return;
+  }
   currentCheckinOda = rev.odaNo;
   window._ciKaynakRevId = rev.id || null;
   window._ciAraciAd = rev.aracirez ? (rev.araciAd || rev.misafir || null) : (rev.araciAd || null);
@@ -6173,10 +6211,16 @@ window.saveHarcama = async function() {
 // fiyatı × gece üzerinden tam tutarı borç kabul eder. Hem oda kartlarında (renk) hem
 // de hatırlatma banner'ında (rozet) kullanılan ortak fonksiyon.
 window.odaKalanBorc = function(oda) {
-  if(!oda || oda.odemeDurum === 'odendi') return 0;
-  if(oda.kismiKalan != null) return Number(oda.kismiKalan) || 0;
+  if(!oda) return 0;
+  if(oda.kalanTutar != null) return Math.max(0, Number(oda.kalanTutar) || 0);
+  if(oda.odemeDurum === 'odendi') return 0;
+  if(oda.kismiKalan != null) return Math.max(0, Number(oda.kismiKalan) || 0);
   const geceSayi = oda.gece || geceSayisi(oda.giris, oda.cikis) || 0;
-  return Math.max(0, (Number(oda.sozlesmeFiyat || oda.fiyat) || 0) * geceSayi);
+  const toplam = oda.odemeToplam != null
+    ? Number(oda.odemeToplam)||0
+    : (Number(oda.sozlesmeFiyat || oda.fiyat) || 0) * geceSayi;
+  const tahsil = oda.tahsilEdilen != null ? Number(oda.tahsilEdilen)||0 : (Number(oda.kismiTutar)||0);
+  return Math.max(0, toplam - tahsil);
 };
 
 window.renderHatirlatma = function renderHatirlatma() {
