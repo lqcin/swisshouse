@@ -1947,6 +1947,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal('komDetayModal')">Kapat</button>
         <button class="btn btn-ghost" onclick="komEkstreYazdir()">🖨 Ekstre Yazdır</button>
+        <button class="btn btn-ghost" onclick="komEkstrePdfIndir()">PDF İndir</button>
         <button class="btn btn-primary" id="komDetayOdemeAlBtn">+ Ödeme Yap</button>
       </div>
     </div>
@@ -2758,7 +2759,7 @@ window.talepOnayla = function(id) {
     document.getElementById('rev_yetiskin').value = t.yetiskin || 1;
     document.getElementById('rev_cocuk').value = t.cocuk || 0;
     const kaynakNot = t.kaynak === 'komisyoncu'
-      ? `[Komisyoncu: ${t.komisyoncuAd||t.komisyoncu}]`
+      ? `[Acenta: ${t.komisyoncuAd||t.komisyoncu}]`
       : `[Instagram talebi]`;
     document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + kaynakNot;
     document.getElementById('rev_kaynak').value = 'diger';
@@ -2881,6 +2882,7 @@ window.renderOdalar = function() {
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
       if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
       if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">KALAN: ${kalanBorc.toLocaleString('tr-TR')} ₺</div>`;
+      else if(durum==='dolu' && o.odemeDurum==='odendi') icerik+=`<div class="room-borc-rozet" style="background:#16a34a;color:#fff">✓ ÖDENDİ</div>`;
       if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Giriş bugün</div>`;
       icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
 
@@ -2908,7 +2910,7 @@ function buildPopup(no, o, oz, durum, aktifRev, bekleyenRev) {
       <div class="popup-misafir-ad">${o.misafir}</div>
       <div style="font-size:11px;color:rgba(255,180,180,.7)">${o.giris||'?'} → ${o.cikis||'?'} · ${gece} gece</div>
       ${o.tc?`<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">TC: ${o.tc}</div>`:''}
-      ${kalanBorc>0?`<div style="font-size:11px;color:#ffb020;font-weight:700;margin-top:4px">💰 ${kalanBorc.toLocaleString('tr-TR')} ₺ ödenmedi</div>`:''}
+      ${kalanBorc>0?`<div style="font-size:11px;color:#ffb020;font-weight:700;margin-top:4px">💰 ${kalanBorc.toLocaleString('tr-TR')} ₺ ödenmedi</div>`:(o.odemeDurum==='odendi'?`<div style="font-size:11px;color:#4ade80;font-weight:700;margin-top:4px">✓ Ödendi</div>`:'')}
     </div>`;
   }
 
@@ -4940,7 +4942,15 @@ window.saveNoShow = async function(tip) {
 window.iptalRezervasyon = async function(id) {
   if(!confirm('Rezervasyon iptal edilsin mi?')) return;
   const rev = window._R.find(r => r.id === id);
-  await deleteDoc(doc(db,'rezervasyonlar',id));
+  // Bağlı check-in geliri ve komisyonu da aynı işlemde kaldırılır.
+  const bagliGelirSnap = await getDocs(query(collection(db,'gelirler'), where('rezervasyonId','==',id)));
+  const batch = writeBatch(db);
+  bagliGelirSnap.docs.forEach(gd => {
+    batch.delete(doc(db,'komisyonlar','komisyon_' + gd.id));
+    batch.delete(gd.ref);
+  });
+  batch.delete(doc(db,'rezervasyonlar',id));
+  await batch.commit();
   // Bağlı komisyoncu talebini güncelle
   await talepIptalGuncelle(rev, 'iptal', 'Rezervasyon iptal edildi');
   await logAktivite('rezervasyon_iptal', `Rezervasyon iptal edildi (ID: ${id})`);
@@ -5147,9 +5157,15 @@ window.renderRapor = function() {
   const fmt2 = n => Number(n||0).toLocaleString('tr-TR', {minimumFractionDigits:0}) + ' ₺';
 
   // Ay içindeki rezervasyonlar (giriş veya çıkış bu ayda olanlar — doluluk hesabı için)
+  // Ayla herhangi bir noktada örtüşen, iptal/no-show olmayan rezervasyonlar.
+  const [rapYil, rapAyNo] = ay.split('-').map(Number);
+  const rapAyBas = ay + '-01';
+  const rapSonrakiYil = rapAyNo === 12 ? rapYil + 1 : rapYil;
+  const rapSonrakiAy = rapAyNo === 12 ? 1 : rapAyNo + 1;
+  const rapAyBit = rapSonrakiYil + '-' + String(rapSonrakiAy).padStart(2,'0') + '-01';
   const ayRezervler = (window._R||[]).filter(r => {
-    if(r.durum==='iptal') return false;
-    return (r.giris||'').slice(0,7) === ay || (r.cikis||'').slice(0,7) === ay;
+    if(r.durum==='iptal' || r.durum==='noshow') return false;
+    return Boolean(r.giris && r.cikis && r.giris < rapAyBit && r.cikis > rapAyBas);
   });
 
   // Ay içindeki tüm gelirler ve gerçek konaklamalar ayrı tutulur.
@@ -5233,10 +5249,43 @@ window.renderRapor = function() {
 
   // Oda bazlı dolu gün sayısı (ay sınırlarına kırpılmış)
   const odaDolu = {};
-  HOTEL_ODALAR.forEach(no => odaDolu[no] = 0);
+  const odaGelir = {};
+  HOTEL_ODALAR.forEach(no => { odaDolu[no] = 0; odaGelir[String(no)] = 0; });
+
+  // Aynı rezervasyona bağlı birden fazla eski gelir belgesi bulunsa bile yalnız
+  // en güncel olan eşleşme kabul edilir; gelir oda/gece/fiyat üzerinden yeniden
+  // hesaplanır ve seçilen aya orantılı dağıtılır.
+  const gelirByRezervasyon = new Map();
+  ayGelirler.forEach(g => {
+    if(!g.rezervasyonId || g.kaynak === 'no-show') return;
+    const eski = gelirByRezervasyon.get(String(g.rezervasyonId));
+    if(!eski || String(g.guncelleme||g.kayitTarih||'') > String(eski.guncelleme||eski.kayitTarih||'')) {
+      gelirByRezervasyon.set(String(g.rezervasyonId), g);
+    }
+  });
+  const kullanilanGelirId = new Set();
   ayRezervler.forEach(r => {
     const g = ayIciGeceSayisi(r.giris, r.cikis);
-    if(odaDolu[r.odaNo] !== undefined) odaDolu[r.odaNo] += g;
+    const no = String(r.odaNo);
+    if(odaDolu[r.odaNo] !== undefined) {
+      odaDolu[r.odaNo] += g;
+      const bagliGelir = gelirByRezervasyon.get(String(r.id));
+      if(bagliGelir?.id) kullanilanGelirId.add(bagliGelir.id);
+      const gecelik = Number(r.fiyat ?? bagliGelir?.fiyat) || 0;
+      odaGelir[no] = (odaGelir[no]||0) + gecelik * g;
+    }
+  });
+
+  // Rezervasyonsuz doğrudan check-in kayıtları da konaklamadır. Oda masrafı ve
+  // no-show bedeli oda bazlı konaklama gelirini şişirmesin diye dahil edilmez.
+  ayGelirler.forEach(g => {
+    if(kullanilanGelirId.has(g.id) || g.rezervasyonId || g.kaynak === 'no-show' || g.kaynak === 'oda-masrafi') return;
+    if(!g.giris || !g.cikis || !g.odaNo) return;
+    const gece = ayIciGeceSayisi(g.giris, g.cikis);
+    const no = String(g.odaNo);
+    if(odaDolu[Number(no)] === undefined || gece <= 0) return;
+    odaDolu[Number(no)] += gece;
+    odaGelir[no] = (odaGelir[no]||0) + (Number(g.fiyat)||0) * gece;
   });
   const toplamDoluGun = Object.values(odaDolu).reduce((a,b)=>a+b, 0);
   const dolulukOrani = toplamOdaGun > 0 ? Math.round(toplamDoluGun / toplamOdaGun * 100) : 0;
@@ -5248,12 +5297,6 @@ window.renderRapor = function() {
   document.getElementById('rapor-komisyon').textContent = toplamKomisyon > 0 ? fmt2(toplamKomisyon) : '—';
 
   // Oda bazlı doluluk tablosu
-  const odaGelir = {};
-  ayTumGelirler.forEach(g => {
-    const k = String(g.odaNo);
-    odaGelir[k] = (odaGelir[k]||0) + Number(g.tutar||0);
-  });
-
   document.getElementById('rapor-doluluk-body').innerHTML = HOTEL_ODALAR.map(no => {
     const gece = odaDolu[no] || 0;
     const oran = ayGunSayisi > 0 ? Math.round(gece / ayGunSayisi * 100) : 0;
@@ -5640,18 +5683,18 @@ window.komDetayAc = function(araciKey, adGoster) {
 
 // Komisyoncu ekstresini ayrı bir pencerede yazdırılabilir olarak açar —
 // ay sonu görüşmesinde ekrandaki tabloyu göstermek yerine tek tık yazdırmak için.
-window.komEkstreYazdir = function() {
+window.komEkstreYazdir = function(pdfOtomatik=false) {
   const veri = window._komEkstreAktif;
   if(!veri) return;
   const bugun = (() => { const n=new Date(),p=x=>String(x).padStart(2,'0'); return `${p(n.getDate())}.${p(n.getMonth()+1)}.${n.getFullYear()}`; })();
 
   let bakiye = 0;
   const satirlar = veri.hareketler.map(h => {
-    bakiye += h.tip==='borc' ? h.tutar : -h.tutar;
+    bakiye += (h.tip==='borc' || h.tip==='beklenen') ? h.tutar : -h.tutar;
     return `<tr>
       <td>${h.tarih||'—'}</td>
       <td>${h.aciklama}</td>
-      <td style="text-align:right">${h.tip==='borc'?fmt(h.tutar)+' ₺':'—'}</td>
+      <td style="text-align:right">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar)+' ₺':'—'}</td>
       <td style="text-align:right">${h.tip==='odeme'?fmt(h.tutar)+' ₺':'—'}</td>
       <td style="text-align:right;font-weight:700">${fmt(bakiye)} ₺</td>
     </tr>`;
@@ -5661,7 +5704,7 @@ window.komEkstreYazdir = function() {
   const kalanEtiket = bakiye > 0.5 ? 'Ödenecek Bakiye' : (bakiye < -0.5 ? 'Fazla Ödeme' : 'Bakiye Kapandı');
 
   const html = `<!DOCTYPE html>
-<html lang="tr"><head><meta charset="UTF-8"><title>Komisyoncu Ekstresi — ${veri.araciAd}</title>
+<html lang="tr"><head><meta charset="UTF-8"><title>Acenta Rezervasyon ve Kazanç Raporu — ${veri.araciAd}</title>
 <style>
 @page{size:A4;margin:12mm}
 *{box-sizing:border-box}
@@ -5686,12 +5729,12 @@ th{background:#f2f3f5;text-align:left;letter-spacing:.5px;text-transform:upperca
 <body>
 <div class="page">
   <div class="header">
-    <div><div class="logo"><span>SWISS</span> HOUSE</div><div class="baslik">Komisyoncu Cari Hesap Ekstresi</div></div>
+    <div><div class="logo"><span>SWISS</span> HOUSE</div><div class="baslik">Acenta Rezervasyon ve Kazanç Raporu</div></div>
     <div class="tarih">Düzenleme Tarihi: ${bugun}</div>
   </div>
-  <p style="font-size:13px;margin-bottom:14px"><b>Komisyoncu:</b> ${veri.araciAd}</p>
+  <p style="font-size:13px;margin-bottom:14px"><b>Acenta:</b> ${veri.araciAd}</p>
   <table>
-    <thead><tr><th>Tarih</th><th>Açıklama</th><th style="text-align:right">Borç (Komisyon)</th><th style="text-align:right">Ödeme</th><th style="text-align:right">Bakiye</th></tr></thead>
+    <thead><tr><th>Tarih</th><th>Rezervasyon / Misafir</th><th style="text-align:right">Kazanç</th><th style="text-align:right">Ödenen</th><th style="text-align:right">Bakiye</th></tr></thead>
     <tbody>${satirlar || '<tr><td colspan="5" style="text-align:center;color:#999">Hareket yok</td></tr>'}</tbody>
   </table>
   <div class="sonuc">
@@ -5700,12 +5743,22 @@ th{background:#f2f3f5;text-align:left;letter-spacing:.5px;text-transform:upperca
   </div>
   <div class="footer">Bu ekstre Swiss House Yönetim Sistemi tarafından otomatik oluşturulmuştur.</div>
 </div>
-<div class="aksiyon-bar"><button onclick="window.print()">🖨 Yazdır</button></div>
+<div class="aksiyon-bar"><button onclick="window.print()">🖨 Yazdır</button><button onclick="indirPdf()">⬇ PDF İndir</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+<script>
+function indirPdf(){
+  const ad=${JSON.stringify(veri.araciAd)}.replace(/[^a-z0-9çğıöşü_-]+/gi,'_');
+  html2pdf().set({margin:[8,8,8,8],filename:'acenta-rezervasyon-kazanc-'+ad+'.pdf',image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.querySelector('.page')).save();
+}
+${pdfOtomatik?'window.addEventListener("load",()=>setTimeout(indirPdf,400));':''}
+<\/script>
 </body></html>`;
 
   const w = window.open('', '_blank');
   if(w) { w.document.write(html); w.document.close(); }
 };
+
+window.komEkstrePdfIndir = function() { komEkstreYazdir(true); };
 
 
 // Ödeme formunu açar — komDetayAc'tan geliniyorsa komisyoncu adı önceden dolu gelir
@@ -6114,7 +6167,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
   </div>
 
   <div class="section-title">4. NOT / DETAY</div>
-  <div class="note">${o.not||'—'}</div>
+      <div class="note">${String(o.not||'—').replace(/Komisyoncu/gi,'Acenta')}</div>
 
   <div class="signatures">
     <div>
@@ -6647,6 +6700,39 @@ window.revDuzenleKaydet = async function() {
     kismiKalan: kismiTutarVal!=null ? Math.max(0, kismiToplamBaz - kismiTutarVal) : null,
     guncelleme: nowISO()
   });
+
+  // Check-in yapılmış rezervasyon başka odaya/tarihe/fiyata taşındığında bağlı
+  // gelir ve komisyon kayıtlarını da yeni konuma taşı.
+  try {
+    const bagliSnap = await getDocs(query(collection(db,'gelirler'), where('rezervasyonId','==',id)));
+    for(const gd of bagliSnap.docs) {
+      const gelir = gd.data();
+      if(gelir.kaynak === 'no-show') continue;
+      const yeniTutar = Math.round(fiyat * gece * 100) / 100;
+      await updateDoc(gd.ref, {
+        odaNo:String(odaNo), giris, cikis, tarih:giris, gece, fiyat,
+        tutar:yeniTutar, sozlesmeFiyat:sozlesmeFiyatVal,
+        guncelleme:nowISO()
+      });
+      const komRef = doc(db,'komisyonlar','komisyon_' + gd.id);
+      const komSnap = await getDoc(komRef);
+      if(komSnap.exists()) {
+        const kom = komSnap.data();
+        const eskiGece = Number(kom.gece)||Number(gelir.gece)||1;
+        const eskiToplam = Number(kom.toplamKomisyon)||Number(kom.komisyonFark)||0;
+        const yeniKomisyon = Math.round((eskiToplam/eskiGece)*gece*100)/100;
+        await setDoc(komRef, {
+          odaNo:String(odaNo), tarih:giris, gece,
+          gercekFiyat:fiyat, sozlesmeFiyat:sozlesmeFiyatVal,
+          toplamKomisyon:yeniKomisyon, komisyonFark:yeniKomisyon,
+          guncelleme:nowISO()
+        }, {merge:true});
+      }
+    }
+  } catch(e) {
+    console.warn('Bağlı gelir/komisyon senkronizasyonu:', e);
+    toast('Rezervasyon güncellendi; bağlı mali kayıt kontrolü gerekli: '+e.message,'error');
+  }
 
   // Eğer bu rezervasyon komisyoncu kaynağından geldiyse, değişikliği talep kaydına not olarak ekle
   try {

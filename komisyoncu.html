@@ -262,6 +262,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         </div>
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="document.getElementById('kazancimModal').classList.remove('aktif')">Kapat</button>
+          <button class="btn btn-primary" onclick="kazancimPdfIndir()">⬇ Rezervasyon ve Kazanç PDF</button>
         </div>
       </div>
     </div>
@@ -1009,6 +1010,7 @@ function kazancimDetayDoldur(borclar, odemeler, beklenenler) {
     ...odemeler.map(p => ({ tarih: p.tarih||p.kayitTarih||'', tip:'odeme',
       aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı', tutar: Number(p.tutar)||0 }))
   ].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
+  window._kazancPdfHareketler = hareketler;
 
   let bakiye = 0;
   const satirlar = hareketler.map(h => {
@@ -1024,6 +1026,19 @@ function kazancimDetayDoldur(borclar, odemeler, beklenenler) {
   }).join('');
   document.getElementById('kazancimDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Henüz hareket yok</td></tr>';
 }
+
+window.kazancimPdfIndir = function() {
+  if(!aktifKom) return;
+  const hareketler = window._kazancPdfHareketler || [];
+  let bakiye=0;
+  const satirlar=hareketler.map(h=>{
+    bakiye+=(h.tip==='borc'||h.tip==='beklenen')?h.tutar:-h.tutar;
+    return `<tr><td>${h.tarih||'—'}</td><td>${h.aciklama}</td><td class="num">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar)+' ₺':'—'}</td><td class="num">${h.tip==='odeme'?fmt(h.tutar)+' ₺':'—'}</td><td class="num"><b>${fmt(bakiye)} ₺</b></td></tr>`;
+  }).join('');
+  const ad=aktifKom.ad||aktifKom.key;
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Acenta Rezervasyon ve Kazanç Raporu</title><style>@page{size:A4;margin:10mm}body{font-family:Arial;color:#1a1d23;font-size:11px}.page{max-width:190mm;margin:auto}.head{border-bottom:3px solid #c8102e;padding-bottom:12px;margin-bottom:16px}.logo{font-size:23px;font-weight:800}.logo span{color:#c8102e}h1{font-size:17px;margin:5px 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px}th{background:#f3f4f6;font-size:9px;text-transform:uppercase;text-align:left}.num{text-align:right}.toplam{margin-top:14px;border:2px solid #c8102e;padding:12px;display:flex;justify-content:space-between;font-size:16px;font-weight:800}</style></head><body><div class="page"><div class="head"><div class="logo"><span>SWISS</span> HOUSE</div><h1>Acenta Rezervasyon ve Kazanç Raporu</h1><div><b>Acenta:</b> ${ad} · <b>Tarih:</b> ${new Date().toLocaleDateString('tr-TR')}</div></div><table><thead><tr><th>Tarih</th><th>Rezervasyon / Misafir</th><th>Kazanç</th><th>Ödenen</th><th>Bakiye</th></tr></thead><tbody>${satirlar||'<tr><td colspan="5">Kayıt yok</td></tr>'}</tbody></table><div class="toplam"><span>Kalan Kazanç</span><span>${fmt(bakiye)} ₺</span></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({margin:[8,8,8,8],filename:'acenta-rezervasyon-kazanc.pdf',image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.querySelector('.page')).save();<\/script></body></html>`;
+  const w=window.open('','_blank'); if(w){w.document.write(html);w.document.close();}
+};
 
 window.kazancimGoster = function() {
   if(!aktifKom) return;
@@ -1790,7 +1805,7 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
     </div>
   </div>
   <div class="section-title">4. NOT / DETAY</div>
-  <div class="note">${o.not||'—'}</div>
+  <div class="note">${String(o.not||'—').replace(/Komisyoncu/gi,'Acenta')}</div>
   <div class="signatures">
     <div><div class="sig-title">KİRAYA VEREN</div><div class="sig-name">Swiss House Yönetimi</div><div class="sig-line">İMZA</div></div>
     <div><div class="sig-title">KİRACI</div><div class="sig-name">${o.misafir||'—'}</div><div class="sig-line">İMZA</div></div>

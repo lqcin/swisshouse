@@ -123,7 +123,7 @@ tr:hover td{background:#fafafa;}
   <div class="top-bar">
     <div class="top-brand">SWISS <em>HOUSE</em> <span style="font-size:11px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— Veri Yönetimi</span></div>
     <div class="top-right">
-      <a href="#" onclick="yetimKomisyonTara();return false;">🔧 Veri Tutarlılık Kontrolü</a>
+      <a href="#" onclick="yetimKomisyonTara();return false;">🔧 Geçmiş Kayıtları Tara ve Düzelt</a>
       <a href="resepsiyon.html">← Resepsiyon</a>
       <a href="#" onclick="location.reload()">🔒 Kilitle</a>
     </div>
@@ -194,16 +194,16 @@ tr:hover td{background:#fafafa;}
 <div class="modal-overlay" id="yetimModal">
   <div class="modal" style="max-width:720px">
     <div class="modal-header">
-      <div class="modal-title">🔧 Veri Tutarlılık Kontrolü</div>
+      <div class="modal-title">🔧 Geçmiş Kayıtları Tara ve Düzelt</div>
       <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)" onclick="document.getElementById('yetimModal').classList.remove('aktif')">✕</button>
     </div>
     <div class="modal-body">
       <div style="font-size:11px;background:#eef6ff;border:1px solid #cfe4fb;border-radius:6px;padding:8px 10px;margin-bottom:12px;color:#1a4d7a">
         ℹ️ Bu ekran şu ana kadar sadece <b>tarama</b> yaptı, hiçbir veri değişmedi. Aşağıdaki liste
-        boşsa zaten sorun yok demektir. Doluysa, altta göreceğin buton sadece şu iki şeyi yapar —
-        <b>hiçbir gelir/ödeme tutarını silmez veya değiştirmez:</b><br>
-        1) Karşılığı kalmamış komisyon kayıtlarını siler (bunlar zaten para değil, sadece "şu kadar komisyon borcu var" notudur)<br>
-        2) Rezervasyon kayıtlarındaki durum/tarih alanlarını düzeltir (kaydı silmez, sadece "iptal/tamamlandı" işaretler ve tarihini düzeltir)
+        boşsa zaten sorun yok demektir. Doluysa önce yapılacak işlemlerin tamamını listeler; yalnız sen onayladıktan sonra:<br>
+        1) Mükerrer ve iptal/silinmiş rezervasyondan kalan gelir-komisyon kayıtlarını kaldırır,<br>
+        2) Eski oda, tarih, gece ve tutarları bağlı rezervasyonla eşitler,<br>
+        3) Gerçekleşmiş konaklamanın eksik gelir kaydını tamamlar ve hatalı çıkış tarihlerini düzeltir.
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="yetimAciklama">Taranıyor...</div>
       <div class="tablo-wrap" style="max-height:400px;overflow-y:auto">
@@ -722,6 +722,7 @@ async function silinenKayitIcinKomisyonSil(kayit) {
 let _yetimListe = [];
 let _yetimRevListe = [];
 let _yetimCikisListe = [];
+let _gecmisMaliListe = [];
 window.yetimKomisyonTara = async function() {
   document.getElementById('yetimModal').classList.add('aktif');
   document.getElementById('yetimAciklama').textContent = 'Taranıyor...';
@@ -734,8 +735,39 @@ window.yetimKomisyonTara = async function() {
       getDocs(collection(db, 'rezervasyonlar'))
     ]);
     const gelirler = gelirSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rezervasyonlar = revSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const gelirIdSeti = new Set(gelirler.map(g => g.id));
     const gelirByRevId = new Map(gelirler.filter(g => g.rezervasyonId).map(g => [g.rezervasyonId, g]));
+    const revById = new Map(rezervasyonlar.map(r => [r.id, r]));
+
+    // Geçmiş mali kayıt denetimi: aynı rezervasyonun birden fazla geliri, iptal
+    // edilmiş/silinmiş rezervasyondan kalan gelir, eski odada kalan gelir ve
+    // check-in yapılmış olmasına rağmen eksik gelir kayıtları.
+    _gecmisMaliListe = [];
+    const gelirGruplari = new Map();
+    gelirler.filter(g => g.rezervasyonId && g.kaynak!=='no-show' && g.kaynak!=='oda-masrafi').forEach(g => {
+      const key = String(g.rezervasyonId);
+      if(!gelirGruplari.has(key)) gelirGruplari.set(key, []);
+      gelirGruplari.get(key).push(g);
+    });
+    for(const [revId, grup] of gelirGruplari.entries()) {
+      grup.sort((a,b)=>String(b.guncelleme||b.kayitTarih||'').localeCompare(String(a.guncelleme||a.kayitTarih||'')));
+      const ana = grup[0];
+      grup.slice(1).forEach(g => _gecmisMaliListe.push({tip:'sil', neden:'Mükerrer gelir', gelir:g, rev:null}));
+      const rev = revById.get(revId);
+      if(!rev || rev.durum==='iptal' || rev.durum==='noshow') {
+        _gecmisMaliListe.push({tip:'sil', neden:rev?'İptal/no-show rezervasyondan kalan gelir':'Silinmiş rezervasyondan kalan gelir', gelir:ana, rev:rev||null});
+        continue;
+      }
+      const gece = Math.max(0, Math.round((new Date(rev.cikis+'T00:00:00')-new Date(rev.giris+'T00:00:00'))/864e5));
+      const tutar = Math.round((Number(rev.fiyat)||0)*gece*100)/100;
+      const uyusmaz = String(ana.odaNo)!==String(rev.odaNo) || ana.giris!==rev.giris || ana.cikis!==rev.cikis || Number(ana.gece)!==gece || Math.abs(Number(ana.tutar||0)-tutar)>.01;
+      if(uyusmaz) _gecmisMaliListe.push({tip:'guncelle', neden:'Oda/tarih/gece/tutar rezervasyonla uyuşmuyor', gelir:ana, rev, gece, tutar});
+    }
+    rezervasyonlar.filter(r => (r.durum==='aktif'||r.durum==='tamamlandi') && r.durum!=='iptal' && r.durum!=='noshow' && !gelirGruplari.has(String(r.id)) && Number(r.fiyat)>0).forEach(rev => {
+      const gece = Math.max(0, Math.round((new Date(rev.cikis+'T00:00:00')-new Date(rev.giris+'T00:00:00'))/864e5));
+      if(gece>0) _gecmisMaliListe.push({tip:'olustur', neden:'Gerçekleşmiş konaklamanın gelir kaydı eksik', gelir:null, rev, gece, tutar:Math.round(Number(rev.fiyat)*gece*100)/100});
+    });
 
     _yetimListe = komSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
@@ -765,7 +797,7 @@ window.yetimKomisyonTara = async function() {
         (rev.durum === 'aktif' || (gelir.cikis && gelir.cikis !== gelir.checkoutTarih))
       );
 
-    if(!_yetimListe.length && !_yetimRevListe.length && !_yetimCikisListe.length) {
+    if(!_yetimListe.length && !_yetimRevListe.length && !_yetimCikisListe.length && !_gecmisMaliListe.length) {
       document.getElementById('yetimAciklama').innerHTML = '✅ Yetim komisyon, hayalet rezervasyon veya hatalı çıkış tarihi kaydı bulunamadı — her şey güncel.';
       return;
     }
@@ -801,6 +833,16 @@ window.yetimKomisyonTara = async function() {
           <td style="text-align:right;font-weight:700;color:#d97706">Tarih Düzeltilecek</td>
         </tr>`).join('');
     }
+    if(_gecmisMaliListe.length) {
+      const silinecek = _gecmisMaliListe.filter(x=>x.tip==='sil').length;
+      const guncellenecek = _gecmisMaliListe.filter(x=>x.tip==='guncelle').length;
+      const olusturulacak = _gecmisMaliListe.filter(x=>x.tip==='olustur').length;
+      aciklama += `<br>⚠ <b>${_gecmisMaliListe.length}</b> geçmiş mali uyumsuzluk: ${silinecek} mükerrer/yetim silinecek, ${guncellenecek} kayıt rezervasyonla eşitlenecek, ${olusturulacak} eksik gelir oluşturulacak.<br>`;
+      tablo += _gecmisMaliListe.map(x => {
+        const r=x.rev||{}, g=x.gelir||{};
+        return `<tr><td>${r.odaNo||g.odaNo||'—'}</td><td>${r.misafir||g.misafir||'—'}</td><td>${r.giris||g.giris||g.tarih||'—'}</td><td>${r.araciAd||g.araciAd||'—'}</td><td style="text-align:right;font-weight:700;color:${x.tip==='sil'?'#dc2626':x.tip==='olustur'?'#16a34a':'#d97706'}">${x.neden}</td></tr>`;
+      }).join('');
+    }
     document.getElementById('yetimAciklama').innerHTML = aciklama;
     document.getElementById('yetimTablo').innerHTML = tablo;
     document.getElementById('yetimSilBtn').style.display = '';
@@ -812,13 +854,14 @@ window.yetimKomisyonTara = async function() {
 window.yetimKomisyonSilHepsi = async function() {
   // _yetimRevListe kasıtlı olarak dahil edilmiyor — otomatik iptal edilmiyor,
   // sadece bilgilendirme amaçlı listeleniyor (yukarıdaki tarama fonksiyonuna bak).
-  const toplamAdet = _yetimListe.length + _yetimCikisListe.length;
+  const toplamAdet = _yetimListe.length + _yetimCikisListe.length + _gecmisMaliListe.length;
   if(!toplamAdet) return;
   const detay = [
     _yetimListe.length ? `• ${_yetimListe.length} komisyon notu silinecek (gelir kaydı zaten yok, bu bir borç notundan başka bir şey değil)` : '',
     _yetimCikisListe.length ? `• ${_yetimCikisListe.length} rezervasyon/gelir kaydında SADECE çıkış tarihi ve durum alanı düzeltilecek (tutar/ödeme bilgisi değişmez)` : ''
+    ,_gecmisMaliListe.length ? `• ${_gecmisMaliListe.length} geçmiş gelir kaydı rezervasyon kayıtlarıyla güvenli biçimde eşitlenecek` : ''
   ].filter(Boolean).join('\n');
-  if(!confirm(`Şu değişiklikler yapılacak:\n\n${detay}\n\nHiçbir gelir tutarı silinmeyecek/değişmeyecek. Onaylıyor musun?`)) return;
+  if(!confirm(`Şu değişiklikler yapılacak:\n\n${detay}\n\nMükerrer/yetim gelirler kaldırılabilir; kalan kayıtların oda, tarih, gece ve tutarı rezervasyon bilgisiyle eşitlenecektir. Onaylıyor musun?`)) return;
   const btn = document.getElementById('yetimSilBtn');
   btn.disabled = true; btn.textContent = 'İşleniyor...';
   try {
@@ -836,9 +879,40 @@ window.yetimKomisyonSilHepsi = async function() {
         });
       }
     }
+    for(const islem of _gecmisMaliListe) {
+      if(islem.tip==='sil' && islem.gelir) {
+        await deleteDoc(doc(db,'komisyonlar','komisyon_'+islem.gelir.id));
+        await deleteDoc(doc(db,'gelirler',islem.gelir.id));
+        continue;
+      }
+      const r=islem.rev;
+      if(!r) continue;
+      const gelirId = islem.gelir?.id || `konaklama_${r.id}`;
+      const gece = islem.gece || Math.max(0,Math.round((new Date(r.cikis+'T00:00:00')-new Date(r.giris+'T00:00:00'))/864e5));
+      const tutar = islem.tutar ?? Math.round((Number(r.fiyat)||0)*gece*100)/100;
+      await setDoc(doc(db,'gelirler',gelirId), {
+        kayitTip:'konaklama', gelirDocId:gelirId, rezervasyonId:r.id,
+        giris:r.giris, cikis:r.cikis, tarih:r.giris, odaNo:String(r.odaNo),
+        misafir:r.misafir||'', tc:r.tc||'', kaynak:r.kaynak||'rezervasyon',
+        gece, fiyat:Number(r.fiyat)||0, tutar,
+        sozlesmeFiyat:r.sozlesmeFiyat||null, araciAd:r.araciAd||null,
+        odemeDurum:r.odemeDurum||islem.gelir?.odemeDurum||'odenmedi',
+        guncelleme:new Date().toISOString()
+      },{merge:true});
+      const komRef=doc(db,'komisyonlar','komisyon_'+gelirId);
+      const komSnap=await getDoc(komRef);
+      if(komSnap.exists()) {
+        const k=komSnap.data(), eskiGece=Number(k.gece)||Number(islem.gelir?.gece)||1;
+        const yeniKom=Math.round(((Number(k.toplamKomisyon)||Number(k.komisyonFark)||0)/eskiGece)*gece*100)/100;
+        await setDoc(komRef,{odaNo:String(r.odaNo),tarih:r.giris,gece,gercekFiyat:Number(r.fiyat)||0,sozlesmeFiyat:r.sozlesmeFiyat||null,toplamKomisyon:yeniKom,komisyonFark:yeniKom,guncelleme:new Date().toISOString()},{merge:true});
+      } else if(r.araciAd && Number(r.sozlesmeFiyat)>Number(r.fiyat)) {
+        const komisyon=Math.round((Number(r.sozlesmeFiyat)-Number(r.fiyat))*gece*100)/100;
+        await setDoc(komRef,{gelirDocId:gelirId,tarih:r.giris,odaNo:String(r.odaNo),misafir:r.misafir||'',gece,gercekFiyat:Number(r.fiyat)||0,sozlesmeFiyat:Number(r.sozlesmeFiyat),toplamKomisyon:komisyon,komisyonFark:komisyon,araciAd:r.araciAd,guncelleme:new Date().toISOString()},{merge:true});
+      }
+    }
     toast(`${toplamAdet} kayıt düzeltildi ✓`, 'success');
     document.getElementById('yetimModal').classList.remove('aktif');
-    _yetimListe = []; _yetimRevListe = []; _yetimCikisListe = [];
+    _yetimListe = []; _yetimRevListe = []; _yetimCikisListe = []; _gecmisMaliListe = [];
   } catch(e) {
     toast('İşlem hatası: ' + e.message, 'error');
   } finally {
