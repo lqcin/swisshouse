@@ -771,7 +771,7 @@ window.yetimKomisyonTara = async function() {
 
     _yetimListe = komSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter(k => k.gelirDocId && !gelirIdSeti.has(k.gelirDocId));
+      .filter(k => (k.gelirDocId && !gelirIdSeti.has(k.gelirDocId)) || !String(k.araciAd||'').trim());
 
     // Check-in edilmiş (durum:'aktif') ama bağlı gelir kaydı artık mevcut olmayan
     // rezervasyonlar. DİKKAT: bunlar OTOMATİK iptal edilmiyor — çünkü ücretsiz/promosyon

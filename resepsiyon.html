@@ -2582,6 +2582,9 @@ async function initOdalar() {
 
 // Çıkış tarihi bugünden önce olan dolu odaları otomatik temizliğe al
 async function otomatikBosal() {
+  // Gece yarısı çalışan eski kontrol, checkout saati gelmeden odayı temizliğe
+  // alıyordu. 11:00 öncesinde işlem yapma; 5 dakikalık yeni geçiş sistemi devralır.
+  if(new Date().getHours() < 11) return;
   const todayStr = today();
   let degisti = false;
   const now = nowISO();
@@ -2840,7 +2843,7 @@ window.renderOdalar = function() {
     if(durum==='dolu') dolu++;
     else if(durum==='temizlik') temizlik++;
     else if(durum==='arizali') arizali++;
-    else if(aktifRev) dolu++;
+    else if(aktifRev?.durum==='aktif') dolu++;
     else if(bugunRev) rezerve++;
     else bos++;
   }
@@ -2869,7 +2872,7 @@ window.renderOdalar = function() {
       const bekleyenRev = window._R.find(r => Number(r.odaNo)===i && r.giris>todayStr && r.durum!=='iptal');
 
       let durum = o.durum;
-      if(durum!=='dolu' && durum!=='temizlik' && durum!=='arizali' && aktifRev) durum='dolu';
+      if(durum!=='dolu' && durum!=='temizlik' && durum!=='arizali' && aktifRev?.durum==='aktif') durum='dolu';
 
       const div = document.createElement('div');
       // Sadece bugün girişi varsa "rezerve" rengi göster, gelecek rezervasyonlar görünmez
@@ -2877,13 +2880,13 @@ window.renderOdalar = function() {
       div.className = `room-card ${durum}${bugunRev&&durum==='bos'?' rezerve':''}${kalanBorc>0?' borclu':''}`;
 
       let icerik = `<div class="room-no">${i}${oz.ad?`<span style="display:block;font-size:10px;color:var(--gold);font-family:'Jost',sans-serif;font-weight:600;letter-spacing:.5px;margin-top:-2px">${oz.ad}</span>`:''}</div>`;
-      icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':durum==='arizali'?'Arızalı / Bakımda':bugunRev?'Bugün Giriş':'Boş'}</div>`;
+      icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':durum==='arizali'?'Arızalı / Bakımda':bugunRev?'Check-in Bekleniyor':'Boş'}</div>`;
       if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
       if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
       if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">KALAN: ${kalanBorc.toLocaleString('tr-TR')} ₺</div>`;
       else if(durum==='dolu' && o.odemeDurum==='odendi') icerik+=`<div class="room-borc-rozet" style="background:#16a34a;color:#fff">✓ ÖDENDİ</div>`;
-      if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Giriş bugün</div>`;
+      if(bugunRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunRev.misafir||'—'}</div><div class="room-info">Check-in bekleniyor</div>`;
       icerik += buildPopup(i, o, oz, durum, aktifRev, bekleyenRev);
 
       div.innerHTML = icerik;
@@ -3741,6 +3744,9 @@ window.saveCheckin = async function() {
   // tanımlı sabit/oranlı bir ayar varsa komisyon YİNE DE hesaplanır — bu bir veri
   // girişi unutkanlığıdır, komisyoncunun hak ettiği komisyonu ortadan kaldırmaz.
   const araciAdVal = window._O['oda'+no]?.araciAd || null;
+  // Resepsiyonda açıkça bir komisyoncu/acenta seçilmediyse fiyat farkı hiçbir
+  // kişiye komisyon oluşturamaz.
+  if(!araciAdVal) komisyonFark = 0;
   if(komisyonFark === 0 && araciAdVal) {
     const ayar = komisyonAyariBul(araciAdVal);
     if(ayar && (ayar.tip === 'sabit' || ayar.tip === 'oran') && Number(ayar.deger) > 0) {
@@ -3782,6 +3788,9 @@ window.saveCheckin = async function() {
       araciAd: araciKanonikAd(window._O['oda'+no]?.araciAd || '') || null,
       kayitTarih:now,guncelleme:now
     },{merge:true});
+  } else if(!araciAdVal) {
+    // Aynı konaklama daha önce acentaya bağlı kaydedildiyse eski hakediş kalmasın.
+    try { await deleteDoc(doc(db,'komisyonlar','komisyon_'+gelirDocId)); } catch(_) {}
   }
 
   // Aktif rezervasyonu güncelle — durum:aktif, fiyat ve sozlesmeFiyat koru
@@ -4120,7 +4129,7 @@ window.saveCheckoutFromOzet = async function() {
   }
 
   // Odayı temizliğe al
-  window._O['oda'+no] = {durum:'temizlik',misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',guncelleme:now};
+  window._O['oda'+no] = {durum:'temizlik',misafir:'',tc:'',tel:'',email:'',plaka:'',kaynak:'',fiyatTip:1,fiyat:0,odemeTuru:'nakit',giris:'',cikis:'',girisSaati:'',yetiskin:1,cocuk:0,not:'',_otoTemizlik:today(),temizlikBaslangic:now,guncelleme:now};
   await setDoc(doc(db,'meta','odalar'), window._O);
 
   // Bu konaklamayı doğuran rezervasyon kaydını da tamamlanmış olarak işaretle ve
@@ -5187,7 +5196,7 @@ window.renderRapor = function() {
       const fark = g.komisyonFark!=null ? Number(g.komisyonFark) : ((sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0);
       return {...g, _komisyonTutar: fark};
     })
-    .filter(g => g.araciAd || g._komisyonTutar > 0);
+    .filter(g => Boolean(g.araciAd));
 
   const toplamKomisyonGerceklesen = gerceklesenKomisyonlar.reduce((a,b)=>a+b._komisyonTutar, 0);
 
@@ -5247,45 +5256,48 @@ window.renderRapor = function() {
     return Math.round((new Date(ey,em-1,ed) - new Date(by,bm-1,bd)) / 864e5);
   }
 
-  // Oda bazlı dolu gün sayısı (ay sınırlarına kırpılmış)
-  const odaDolu = {};
-  const odaGelir = {};
-  HOTEL_ODALAR.forEach(no => { odaDolu[no] = 0; odaGelir[String(no)] = 0; });
-
-  // Aynı rezervasyona bağlı birden fazla eski gelir belgesi bulunsa bile yalnız
-  // en güncel olan eşleşme kabul edilir; gelir oda/gece/fiyat üzerinden yeniden
-  // hesaplanır ve seçilen aya orantılı dağıtılır.
+  // Oda + gün bazında tekilleştirme: aynı odada aynı takvim gecesi, eski
+  // mükerrer rezervasyon/gelir bulunsa bile yalnız bir kez sayılabilir.
+  const odaGunleri = {};
+  HOTEL_ODALAR.forEach(no => odaGunleri[String(no)] = new Map());
+  const tumKonaklamaGelirler = (window._G||[]).filter(g => g.kaynak!=='no-show' && g.kaynak!=='oda-masrafi');
   const gelirByRezervasyon = new Map();
-  ayGelirler.forEach(g => {
-    if(!g.rezervasyonId || g.kaynak === 'no-show') return;
-    const eski = gelirByRezervasyon.get(String(g.rezervasyonId));
-    if(!eski || String(g.guncelleme||g.kayitTarih||'') > String(eski.guncelleme||eski.kayitTarih||'')) {
-      gelirByRezervasyon.set(String(g.rezervasyonId), g);
-    }
+  tumKonaklamaGelirler.forEach(g => {
+    if(!g.rezervasyonId) return;
+    const eski=gelirByRezervasyon.get(String(g.rezervasyonId));
+    if(!eski || String(g.guncelleme||g.kayitTarih||'')>String(eski.guncelleme||eski.kayitTarih||'')) gelirByRezervasyon.set(String(g.rezervasyonId),g);
   });
-  const kullanilanGelirId = new Set();
+  const gunGunEkle = (noRaw, giris, cikis, kayit) => {
+    const no=String(noRaw), map=odaGunleri[no];
+    if(!map || !giris || !cikis) return;
+    let gun=giris>ayBas?giris:ayBas;
+    const bit=cikis<ayBit?cikis:ayBit;
+    while(gun<bit) {
+      const mevcut=map.get(gun);
+      if(!mevcut || kayit.oncelik>mevcut.oncelik || (kayit.oncelik===mevcut.oncelik && kayit.zaman>mevcut.zaman)) map.set(gun,kayit);
+      gun=addDays(gun,1);
+    }
+  };
   ayRezervler.forEach(r => {
-    const g = ayIciGeceSayisi(r.giris, r.cikis);
-    const no = String(r.odaNo);
-    if(odaDolu[r.odaNo] !== undefined) {
-      odaDolu[r.odaNo] += g;
-      const bagliGelir = gelirByRezervasyon.get(String(r.id));
-      if(bagliGelir?.id) kullanilanGelirId.add(bagliGelir.id);
-      const gecelik = Number(r.fiyat ?? bagliGelir?.fiyat) || 0;
-      odaGelir[no] = (odaGelir[no]||0) + gecelik * g;
-    }
+    const bagli=gelirByRezervasyon.get(String(r.id));
+    const gerceklesmis = r.durum==='aktif'||r.durum==='tamamlandi'||Boolean(bagli);
+    gunGunEkle(r.odaNo,r.giris,r.cikis,{
+      fiyat:Number(r.fiyat ?? bagli?.fiyat)||0,
+      oncelik:gerceklesmis?3:2,
+      zaman:String(r.guncelleme||r.kayitTarih||'')
+    });
   });
-
-  // Rezervasyonsuz doğrudan check-in kayıtları da konaklamadır. Oda masrafı ve
-  // no-show bedeli oda bazlı konaklama gelirini şişirmesin diye dahil edilmez.
-  ayGelirler.forEach(g => {
-    if(kullanilanGelirId.has(g.id) || g.rezervasyonId || g.kaynak === 'no-show' || g.kaynak === 'oda-masrafi') return;
-    if(!g.giris || !g.cikis || !g.odaNo) return;
-    const gece = ayIciGeceSayisi(g.giris, g.cikis);
-    const no = String(g.odaNo);
-    if(odaDolu[Number(no)] === undefined || gece <= 0) return;
-    odaDolu[Number(no)] += gece;
-    odaGelir[no] = (odaGelir[no]||0) + (Number(g.fiyat)||0) * gece;
+  // Rezervasyon kimliği olmayan eski/walk-in gelir yalnız o gün için henüz bir
+  // rezervasyon bulunmuyorsa eklenir; böylece 203 gibi 39 gece/%126 oluşamaz.
+  tumKonaklamaGelirler.forEach(g => {
+    if(g.rezervasyonId || !g.giris || !g.cikis) return;
+    gunGunEkle(g.odaNo,g.giris,g.cikis,{fiyat:Number(g.fiyat)||0,oncelik:1,zaman:String(g.guncelleme||g.kayitTarih||'')});
+  });
+  const odaDolu={}, odaGelir={};
+  HOTEL_ODALAR.forEach(no => {
+    const kayitlar=[...odaGunleri[String(no)].values()];
+    odaDolu[no]=kayitlar.length;
+    odaGelir[String(no)]=kayitlar.reduce((t,k)=>t+(Number(k.fiyat)||0),0);
   });
   const toplamDoluGun = Object.values(odaDolu).reduce((a,b)=>a+b, 0);
   const dolulukOrani = toplamOdaGun > 0 ? Math.round(toplamDoluGun / toplamOdaGun * 100) : 0;
@@ -6161,8 +6173,9 @@ th{background:#f2f3f5;letter-spacing:1px;text-transform:uppercase}
       <div class="rule"><b>6.</b><span>Kiracı, konutta sözleşmede belirtilenden fazla kişiyi barındırmamayı kabul eder.</span></div>
       <div class="rule"><b>7.</b><span>Konut içinde ateş yakmak, yüksek sesle müzik çalmak ve komşuları rahatsız etmek yasaktır.</span></div>
       <div class="rule"><b>8.</b><span>Kiracı, konut anahtarını çıkış tarihinde kiraya verene iade etmekle yükümlüdür.</span></div>
-      <div class="rule"><b>9.</b><span>Konaklamada giriş (check-in) saati en erken 12:00, çıkış (check-out) saati en geç 10:00'dur.</span></div>
-      <div class="rule"><b>10.</b><span>Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
+      <div class="rule"><b>9.</b><span>Konaklamada giriş (check-in) saati en erken 14:00, çıkış (check-out) saati en geç 11:00'dir.</span></div>
+      <div class="rule"><b>10.</b><span>Check-in tarihine 1 gün veya daha az süre kala yapılan oda iptallerinde ücret iadesi yapılmaz.</span></div>
+      <div class="rule"><b>11.</b><span>Sözleşmeden doğacak uyuşmazlıklarda yetkili Mahkemeler ve İcra Daireleri yetkilidir.</span></div>
     </div>
   </div>
 
@@ -6353,9 +6366,9 @@ window.renderHatirlatma = function renderHatirlatma() {
     // Çıkış uyarısı
     if(r._tip === 'cikis') {
       const saat = new Date().getHours();
-      const acil = saat >= 9 && saat < 10;   // 09:00–10:00 arası son çağrı
-      const gecikti = saat >= 10;            // 10:00 geçti, hâlâ çıkış yok
-      const etiketTxt = gecikti ? '🔴 ÇIKIŞ SAATİ GEÇTİ · 10:00' : acil ? '🔔 SON 1 SAAT — CHECK-OUT 10:00' : '⏰ BUGÜN ÇIKIŞ · 10:00';
+      const acil = saat >= 10 && saat < 11;   // 10:00–11:00 arası son çağrı
+      const gecikti = saat >= 11;             // 11:00 geçti, hâlâ çıkış yok
+      const etiketTxt = gecikti ? '🔴 ÇIKIŞ SAATİ GEÇTİ · 11:00' : acil ? '🔔 SON 1 SAAT — CHECK-OUT 11:00' : '⏰ BUGÜN ÇIKIŞ · 11:00';
       const etiketStil = (acil||gecikti) ? 'background:var(--red);color:#fff' : 'background:var(--gold2);color:#1a1d23';
       // Ödenmemiş borcu olan bir çıkış, saat henüz gelmemiş olsa bile görsel olarak
       // acil (kırmızı) kabul edilir — misafir kapıdan borçlu çıkmasın diye.
@@ -6883,7 +6896,7 @@ window.sureDegistirKaydet = async function() {
 };
 
 // ── OTOMATİK ODA DURUM GEÇİŞLERİ ──
-// 10:00 → bugün (veya önce) çıkışlı DOLU odalar otomatik "temizlik" durumuna geçer
+// 11:00 → bugün (veya önce) çıkışlı DOLU odalar otomatik "temizlik" durumuna geçer
 // 14:00 → temizlik durumundaki odalar, bugün girişli rezervasyon yoksa "boş" durumuna geçer
 // Her oda için günde bir kez uygulanır (oda datasında işaret tutulur)
 async function otomatikDurumGecisleri() {
@@ -6897,14 +6910,14 @@ async function otomatikDurumGecisleri() {
     const oda = window._O['oda'+no];
     if(!oda) continue;
 
-    // 10:00 — çıkış günü gelen dolu oda → temizlik
-    if(saat >= 10 && oda.durum === 'dolu' && oda.cikis && oda.cikis <= todayStr && oda._otoTemizlik !== todayStr) {
+    // 11:00 — çıkış günü gelen dolu oda → temizlik
+    if(saat >= 11 && oda.durum === 'dolu' && oda.cikis && oda.cikis <= todayStr && oda._otoTemizlik !== todayStr) {
       const eskiMisafir = oda.misafir || '?';
       // Konaklama bilgisi aktivite loguna arşivlenir, finansal kayıtlar zaten check-in'de yazıldı
       window._O['oda'+no] = { durum:'temizlik', _otoTemizlik: todayStr, _sonMisafir: eskiMisafir, _sonCikis: oda.cikis };
       degisti = true;
       await logAktivite('oto_temizlik', `Oda ${no} otomatik temizliğe alındı (çıkış: ${oda.cikis}, misafir: ${eskiMisafir})`, no);
-      toast(`Oda ${no} otomatik temizlik durumuna geçti (çıkış saati 10:00 doldu)`, 'info');
+      toast(`Oda ${no} otomatik temizlik durumuna geçti (çıkış saati 11:00 doldu)`, 'info');
     }
 
     // 14:00 — temizlikteki oda, bugün girişli rezervasyon yoksa → boş
@@ -6914,12 +6927,10 @@ async function otomatikDurumGecisleri() {
         r.giris === todayStr &&
         r.durum !== 'iptal' && r.durum !== 'noshow'
       );
-      if(!bugunGiris) {
-        window._O['oda'+no] = { durum:'bos', _otoBos: todayStr };
-        degisti = true;
-        await logAktivite('oto_bos', `Oda ${no} otomatik boş durumuna geçti (14:00 kontrolü)`, no);
-        toast(`Oda ${no} temizlik tamamlandı sayıldı, boş durumuna geçti`, 'info');
-      }
+      window._O['oda'+no] = { durum:'bos', _otoBos: todayStr };
+      degisti = true;
+      await logAktivite('oto_bos', `Oda ${no} otomatik boş durumuna geçti (14:00 kontrolü${bugunGiris?', check-in bekleniyor':''})`, no);
+      toast(bugunGiris ? `Oda ${no} — temizlik süresi bitti, check-in bekleniyor` : `Oda ${no} temizlik tamamlandı sayıldı, boş durumuna geçti`, 'info');
     }
   }
 
