@@ -1821,6 +1821,50 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div class="total-row" id="rapor-tarih-detay-toplam"></div>
   </div>
 
+
+
+  <!-- Komisyoncu kaynaklı rezervasyonların tamamlanma / gerçekleşme raporu -->
+  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Rezervasyon Raporu</em></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;max-width:900px">Komisyoncu portalından gelen tüm talepleri; tamamlanmış, tamamlanmamış ve iptal/no-show olarak izler. Onaylı bir talebin gerçekten check-in yapıp yapmadığı ve checkout ile tamamlanıp tamamlanmadığı bağlı rezervasyon/konaklama kayıtlarından doğrulanır.</div>
+      </div>
+      <button class="btn btn-ghost" onclick="raporKomisyonRezPdf()">PDF / Döküm</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;align-items:end;margin-bottom:10px">
+      <div class="form-group" style="margin:0"><label>Komisyoncu</label><select id="rapor-kom-araci" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Komisyoncular</option></select></div>
+      <div class="form-group" style="margin:0"><label>Tamamlanma Durumu</label><select id="rapor-kom-tamamlanma" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tümü</option><option value="tamamlandi">Tamamlanmış</option><option value="tamamlanmadi">Tamamlanmamış</option><option value="iptal">İptal / No-show</option></select></div>
+      <div class="form-group" style="margin:0"><label>Konaklama Durumu</label><select id="rapor-kom-konaklama" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Durumlar</option><option value="planlandi">Planlandı</option><option value="aktif">Konaklıyor / Check-in Var</option><option value="checkout_bekliyor">Check-out Bekleniyor</option><option value="kayit_yok">Konaklama Kaydı Yok</option><option value="tamamlandi">Konakladı / Tamamlandı</option></select></div>
+      <div class="form-group" style="margin:0"><label>Tarih Kriteri</label><select id="rapor-kom-tarih-alani" onchange="renderRaporKomisyonRez()"><option value="konaklama">Konaklama Tarihi</option><option value="talep">Talep Gönderme Tarihi</option></select></div>
+      <div class="form-group" style="margin:0"><label>Başlangıç</label><input type="date" id="rapor-kom-bas" onchange="renderRaporKomisyonRez()"></div>
+      <div class="form-group" style="margin:0"><label>Bitiş</label><input type="date" id="rapor-kom-bit" onchange="renderRaporKomisyonRez()"></div>
+      <div class="form-group" style="margin:0"><label>Sırala</label><select id="rapor-kom-sirala" onchange="renderRaporKomisyonRez()"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="komisyoncu">Komisyoncu</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="tamamlanma">Tamamlanma Durumu</option></select></div>
+      <div class="form-group" style="margin:0"><label>Yön</label><select id="rapor-kom-yon" onchange="renderRaporKomisyonRez()"><option value="desc">Yeni → Eski</option><option value="asc">Eski → Yeni</option></select></div>
+      <div class="form-group" style="margin:0"><label>Ara</label><input type="text" id="rapor-kom-ara" placeholder="Misafir, oda, komisyoncu..." oninput="renderRaporKomisyonRez()"></div>
+    </div>
+    <div id="rapor-kom-ozet" style="margin-bottom:10px;padding:9px 11px;background:var(--cream);border:1px solid var(--border);font-size:11px;color:var(--muted)"></div>
+    <div style="overflow:auto;max-height:520px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:1250px">
+        <thead style="position:sticky;top:0;background:var(--white);z-index:1"><tr>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Komisyoncu</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Misafir</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Oda</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Konaklama</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Talep Tarihi</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Tamamlanma</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Gerçek Konaklama</th>
+          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Müşteri</th>
+          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Otel Net</th>
+          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Komisyon</th>
+          <th style="text-align:center;padding:7px 8px;border-bottom:1px solid var(--border)">İşlem</th>
+        </tr></thead>
+        <tbody id="rapor-kom-body"><tr class="empty-row"><td colspan="11">Kayıtlar yükleniyor...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="total-row" id="rapor-kom-toplam"></div>
+  </div>
+
   <!-- Komisyoncu Yönetimi — giriş bilgisi tanımlama/düzenleme/silme, artık kod değiştirmeye gerek yok -->
   <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
@@ -2702,6 +2746,7 @@ async function initOdalar() {
       window._O = snap.data() || {};
       renderOdalar();
       renderHatirlatma();
+      if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
       syncStatus(true);
     }, () => syncStatus(false));
   }
@@ -2731,7 +2776,7 @@ function gunlukKontrolKur() {
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
   renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true);
-  if(document.getElementById('page-rapor')?.classList.contains('active')) renderKomisyonCari();
+  if(document.getElementById('page-rapor')?.classList.contains('active')) { renderKomisyonCari(); renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 }, () => syncStatus(false));
 
 onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), s => {
@@ -2741,6 +2786,7 @@ onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), 
 
 onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
   window._G = gelirleriTekillestir(s.docs.map(d=>({id:d.id,...d.data()})));
+  if(document.getElementById('page-rapor')?.classList.contains('active')) { renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 });
 
 onSnapshot(query(collection(db,'komisyonlar'), orderBy('kayitTarih','desc')), s => {
@@ -2764,6 +2810,7 @@ onSnapshot(query(collection(db,'rezervasyon_talepleri'), orderBy('kayitTarih','d
   window._TALEP = s.docs.map(d=>({id:d.id,...d.data()}));
   const yeniBekleyenSayisi = window._TALEP.filter(t => t.durum==='bekliyor').length;
   renderInstagramTalepleri();
+  if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
   // Sayfa ilk açıldığında ses çalma — sadece sonradan yeni talep gelirse çal
   if(!_talepIlkYukleme && yeniBekleyenSayisi > oncekiBekleyenSayisi) {
     talepSesiCal();
@@ -5765,6 +5812,7 @@ window.renderRapor = function() {
   renderOdemeGecmisi();
   renderKomisyoncuYonetimi();
   renderRaporTarihDetay(); // v6 tarih detayı
+  renderRaporKomisyonRez(); // komisyoncu rezervasyon raporu
 
 };
 
@@ -5899,6 +5947,141 @@ window.raporTarihDetayPdf = function() {
   const rows=liste.map(x=>{const gece=Math.max(0,geceSayisi(x.giris,x.cikis));const toplam=x.odemeToplam||((x.sozlesmeFiyat||x.fiyat)*gece);return `<tr><td>${x.tur==='konaklama'?'Konaklama':'Rezervasyon'}</td><td>${shEsc(x.misafir)}</td><td>${shEsc(x.odaNo)}</td><td>${shEsc(x.giris)} → ${shEsc(x.cikis)}</td><td>${shEsc(x.araciAd||x.kaynak||'—')}</td><td class="num">${toplam?fmt(toplam):'—'}</td><td>${shEsc(x.odemeDurum||'—')}</td></tr>`}).join('');
   const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Swiss House Tarih Raporu</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;color:#222;font-size:10px}.head{border-bottom:3px solid #c8102e;margin-bottom:14px;padding-bottom:10px}h1{font-size:18px;margin:0 0 5px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Tarih Bazlı Konaklama / Rezervasyon Raporu</h1><b>Tarih:</b> ${tarih} · <b>Kayıt:</b> ${liste.length}</div><table><thead><tr><th>Kayıt</th><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Kaynak / Aracı</th><th>Müşteri Hesabı</th><th>Ödeme</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'swiss-house-${tarih}-konaklama-rezervasyon.pdf',html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+};
+
+
+
+// ── KOMİSYONCU REZERVASYON RAPORU (RESEPSİYON > RAPOR) ───────────────────
+function raporKomIsoGun(v){ return String(v||'').slice(0,10); }
+function raporKomAraciAd(t,r,g){ return t?.komisyoncuAd||t?.komisyoncu||r?.komisyoncuAd||r?.araciAd||g?.komisyoncuAd||g?.araciAd||'—'; }
+function raporKomBagliKayitlar(t){
+  const R=window._R||[], G=(window._G||[]).filter(x=>x.kaynak!=='oda-masrafi'&&x.kaynak!=='no-show'), O=window._O||{};
+  const r=R.find(x => x.kaynakTalepId===t.id || (t.rezervasyonId && x.id===t.rezervasyonId)) || null;
+  const g=G.find(x => (r?.id && x.rezervasyonId===r.id) || (t.rezervasyonId && x.rezervasyonId===t.rezervasyonId)) || null;
+  const oda=O['oda'+(r?.odaNo||t.odaNo)];
+  const o=oda?.durum==='dolu' && ((r?.id&&oda.rezervasyonId===r.id) || oda.kaynakTalepId===t.id || (oda.giris===t.giris && String(oda.odaNo||t.odaNo)===String(t.odaNo))) ? oda : null;
+  return {r,g,o};
+}
+function raporKomKonaklamaDurumu(t){
+  const {r,g,o}=raporKomBagliKayitlar(t), bugun=today(), d=String(t.durum||''), rd=String(r?.durum||'');
+  if(['reddedildi','iptal'].includes(d)||rd==='iptal') return {kod:'iptal',etiket:'❌ İptal / Reddedildi',renk:'var(--red)',r,g,o};
+  if(d==='noshow'||rd==='noshow') return {kod:'noshow',etiket:'🚫 No-show',renk:'var(--red)',r,g,o};
+  if(d==='tamamlandi'||rd==='tamamlandi'||g?.checkoutTarih||t.checkoutTarih) return {kod:'tamamlandi',etiket:'✅ Konakladı / Check-out Tamamlandı',renk:'var(--green)',r,g,o};
+  if(d==='aktif'||rd==='aktif'||o||g){
+    if((t.cikis||r?.cikis) && bugun >= (t.cikis||r.cikis)) return {kod:'checkout_bekliyor',etiket:'⚠ Check-out Bekleniyor',renk:'#d97706',r,g,o};
+    return {kod:'aktif',etiket:'🟢 Konaklıyor / Check-in Var',renk:'var(--green)',r,g,o};
+  }
+  const giris=t.giris||r?.giris||'', cikis=t.cikis||r?.cikis||'';
+  if(giris && bugun<giris) return {kod:'planlandi',etiket:'🗓 Planlandı',renk:'var(--blue)',r,g,o};
+  if(giris&&cikis&&bugun>=giris&&bugun<cikis) return {kod:'kayit_yok',etiket:'⚠ Check-in Kaydı Yok',renk:'#d97706',r,g,o};
+  if(cikis&&bugun>=cikis) return {kod:'kayit_yok',etiket:'❌ Konaklama Kaydı Bulunamadı',renk:'var(--red)',r,g,o};
+  return {kod:'planlandi',etiket:d==='bekliyor'?'Talep Bekliyor':'Onaylandı / Planlandı',renk:'var(--muted)',r,g,o};
+}
+function raporKomTamamlanma(t,k){
+  k=k||raporKomKonaklamaDurumu(t); const d=String(t?.durum||''), rd=String(k.r?.durum||'');
+  if(['reddedildi','iptal','noshow'].includes(d)||['iptal','noshow'].includes(rd)||['iptal','noshow'].includes(k.kod)) return {kod:'iptal',etiket:'İptal / No-show',renk:'var(--red)'};
+  if(d==='tamamlandi'||rd==='tamamlandi'||k.kod==='tamamlandi'||k.g?.checkoutTarih||t.checkoutTarih) return {kod:'tamamlandi',etiket:'Tamamlanmış',renk:'var(--green)'};
+  return {kod:'tamamlanmadi',etiket:'Tamamlanmamış',renk:'#d97706'};
+}
+function raporKomTalepMi(t){ return t && (t.kaynak==='komisyoncu'||t.komisyoncu||t.komisyoncuAd); }
+function raporKomSatir(t){
+  const k=raporKomKonaklamaDurumu(t), grup=raporKomTamamlanma(t,k), r=k.r||{}, g=k.g||{}, o=k.o||{};
+  const giris=t.giris||r.giris||g.giris||o.giris||'', cikis=t.cikis||r.cikis||g.cikis||o.cikis||'';
+  const gece=Number(t.gece||r.gece||g.gece)||Math.max(0,geceSayisi(giris,cikis));
+  const musteriGecelik=Number(t.sozlesmeFiyat||r.sozlesmeFiyat||g.sozlesmeFiyat||t.fiyat||r.fiyat||g.fiyat)||0;
+  const otelGecelik=Number(t.fiyat||r.fiyat||g.fiyat)||0;
+  const musteriToplam=Number(t.odemeToplam||r.odemeToplam||g.odemeToplam)||(musteriGecelik*gece);
+  const otelToplam=otelGecelik*gece;
+  const komisyon=Number(t.komisyonToplam||r.komisyonToplam||g.komisyonToplam)||Math.max(0,musteriToplam-otelToplam);
+  return {t,k,grup,r,g,o,giris,cikis,gece,musteriGecelik,otelGecelik,musteriToplam,otelToplam,komisyon,araciAd:raporKomAraciAd(t,r,g),misafir:t.misafir||r.misafir||g.misafir||o.misafir||'—',odaNo:t.odaNo||r.odaNo||g.odaNo||o.odaNo||'—',kayitTarih:t.kayitTarih||'',talepDurum:t.durum||'—'};
+}
+function raporKomAraciSecenekleriniDoldur(list){
+  const sel=document.getElementById('rapor-kom-araci'); if(!sel) return;
+  const mevcut=sel.value||'hepsi';
+  const adlar=[...new Set(list.map(x=>x.araciAd).filter(x=>x&&x!=='—'))].sort((a,b)=>a.localeCompare(b,'tr'));
+  sel.innerHTML='<option value="hepsi">Tüm Komisyoncular</option>'+adlar.map(a=>`<option value="${shEsc(a)}">${shEsc(a)}</option>`).join('');
+  if([...sel.options].some(o=>o.value===mevcut)) sel.value=mevcut;
+}
+function raporKomFiltrele(){
+  let list=(window._TALEP||[]).filter(raporKomTalepMi).map(raporKomSatir);
+  raporKomAraciSecenekleriniDoldur(list);
+  const araci=document.getElementById('rapor-kom-araci')?.value||'hepsi';
+  const tamam=document.getElementById('rapor-kom-tamamlanma')?.value||'hepsi';
+  const konak=document.getElementById('rapor-kom-konaklama')?.value||'hepsi';
+  const tarihAlani=document.getElementById('rapor-kom-tarih-alani')?.value||'konaklama';
+  const bas=document.getElementById('rapor-kom-bas')?.value||'', bit=document.getElementById('rapor-kom-bit')?.value||'';
+  const sirala=document.getElementById('rapor-kom-sirala')?.value||'giris', yon=document.getElementById('rapor-kom-yon')?.value||'desc';
+  const ara=String(document.getElementById('rapor-kom-ara')?.value||'').trim().toLocaleLowerCase('tr-TR');
+  if(araci!=='hepsi') list=list.filter(x=>x.araciAd===araci);
+  if(tamam!=='hepsi') list=list.filter(x=>x.grup.kod===tamam);
+  if(konak!=='hepsi') list=list.filter(x=>x.k.kod===konak);
+  if(bas||bit){
+    list=list.filter(x=>{
+      if(tarihAlani==='talep'){
+        const v=raporKomIsoGun(x.kayitTarih); return !!v && (!bas||v>=bas) && (!bit||v<=bit);
+      }
+      // Konaklama tarih aralığı rezervasyonla kesişiyorsa göster. Sadece giriş gününe bakılmaz.
+      if(!x.giris) return false;
+      const c=x.cikis||x.giris;
+      return (!bas||c>=bas) && (!bit||x.giris<=bit);
+    });
+  }
+  if(ara) list=list.filter(x=>[x.araciAd,x.misafir,x.odaNo,x.giris,x.cikis,x.kayitTarih,x.grup.etiket,x.k.etiket,x.talepDurum,x.t.not].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(ara)));
+  const val=x=>{
+    if(sirala==='odaNo') return Number(x.odaNo)||0;
+    if(sirala==='komisyoncu') return x.araciAd.toLocaleLowerCase('tr-TR');
+    if(sirala==='misafir') return x.misafir.toLocaleLowerCase('tr-TR');
+    if(sirala==='tamamlanma') return x.grup.kod;
+    if(sirala==='kayitTarih') return x.kayitTarih||'';
+    return x.giris||'';
+  };
+  list.sort((a,b)=>{const av=val(a),bv=val(b);let c=typeof av==='number'?(av-bv):String(av).localeCompare(String(bv),'tr');return yon==='asc'?c:-c;});
+  return list;
+}
+window.renderRaporKomisyonRez=function(){
+  const body=document.getElementById('rapor-kom-body'); if(!body) return;
+  const tum=(window._TALEP||[]).filter(raporKomTalepMi).map(raporKomSatir);
+  const liste=raporKomFiltrele(); window._raporKomListe=liste;
+  const toplamlar={tamamlandi:0,tamamlanmadi:0,iptal:0}; tum.forEach(x=>toplamlar[x.grup.kod]++);
+  const oz=document.getElementById('rapor-kom-ozet'); if(oz) oz.innerHTML=`Tüm kayıtlar: <b>${tum.length}</b> · <span style="color:var(--green)">Tamamlanmış <b>${toplamlar.tamamlandi}</b></span> · <span style="color:#d97706">Tamamlanmamış <b>${toplamlar.tamamlanmadi}</b></span> · <span style="color:var(--red)">İptal / No-show <b>${toplamlar.iptal}</b></span> · Filtre sonucu <b>${liste.length}</b>`;
+  if(!liste.length){body.innerHTML='<tr class="empty-row"><td colspan="11">Bu kriterlerde komisyoncu rezervasyonu yok</td></tr>';document.getElementById('rapor-kom-toplam').textContent='0 kayıt';return;}
+  body.innerHTML=liste.map((x,i)=>`<tr>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:700">${shEsc(x.araciAd)}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);font-weight:600">${shEsc(x.misafir)}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border)">Oda ${shEsc(x.odaNo)}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border)">${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')}<br><span style="font-size:9px;color:var(--muted)">${x.gece} gece</span></td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px">${shEsc((x.kayitTarih||'—').replace('T',' ').slice(0,16))}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);font-weight:800;color:${x.grup.renk}">${shEsc(x.grup.etiket)}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);font-weight:700;color:${x.k.renk}">${shEsc(x.k.etiket)}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right">${x.musteriToplam?fmt(x.musteriToplam):'—'}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right">${x.otelToplam?fmt(x.otelToplam):'—'}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--gold2);font-weight:700">${x.komisyon?fmt(x.komisyon):'—'}</td>
+    <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center"><button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="raporKomTalepDetayAc(${i})">Detay</button></td>
+  </tr>`).join('');
+  const musteri=liste.reduce((a,x)=>a+x.musteriToplam,0), net=liste.reduce((a,x)=>a+x.otelToplam,0), kom=liste.reduce((a,x)=>a+x.komisyon,0);
+  document.getElementById('rapor-kom-toplam').textContent=`${liste.length} kayıt · Müşteri: ${fmt(musteri)} · Otel net: ${fmt(net)} · Komisyon: ${fmt(kom)}`;
+};
+window.raporKomTalepDetayAc=function(i){
+  const x=(window._raporKomListe||[])[i]; if(!x) return;
+  const t=x.t, r=x.r||{}, g=x.g||{}, o=x.o||{};
+  const row=(k,v)=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:180px 1fr;gap:12px"><b style="color:var(--muted)">${k}</b><span>${v}</span></div>`;
+  const tc=t.tc||r.tc||g.tc||o.tc||'—', tel=t.tel||r.tel||g.tel||o.tel||'—';
+  document.getElementById('raporKayitDetayBaslik').textContent=`${x.araciAd} · Oda ${x.odaNo} · ${x.misafir}`;
+  document.getElementById('raporKayitDetayIcerik').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div>${row('Komisyoncu',shEsc(x.araciAd))}${row('Misafir',shEsc(x.misafir))}${row('TC / Pasaport',shEsc(tc))}${row('Telefon',shEsc(tel))}${row('Oda','Oda '+shEsc(x.odaNo))}${row('Konaklama',`${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')} · ${x.gece} gece`)}</div>
+      <div>${row('Tamamlanma',`<b style="color:${x.grup.renk}">${shEsc(x.grup.etiket)}</b>`)}${row('Gerçek Konaklama',`<b style="color:${x.k.renk}">${shEsc(x.k.etiket)}</b>`)}${row('Talep Durumu',shEsc(t.durum||'—'))}${row('Talep Gönderme',shEsc((x.kayitTarih||'—').replace('T',' ').slice(0,19)))}${row('Onay / İşlem',shEsc((t.islemTarih||'—').replace('T',' ').slice(0,19)))}${row('Check-in / Check-out',`${shEsc(g.giris||o.giris||'Yok')} / ${shEsc(g.checkoutTarih||t.checkoutTarih||'Yok')}`)}</div>
+    </div>
+    <div style="margin-top:16px;background:var(--parchment);border:1px solid var(--border);padding:12px 14px">${row('Müşteri Gecelik',x.musteriGecelik?fmt(x.musteriGecelik):'—')}${row('Otel Net Gecelik',x.otelGecelik?fmt(x.otelGecelik):'—')}${row('Müşteri Toplam',x.musteriToplam?fmt(x.musteriToplam):'—')}${row('Otel Net Toplam',x.otelToplam?fmt(x.otelToplam):'—')}${row('Komisyon',x.komisyon?fmt(x.komisyon):'—')}</div>
+    <div style="margin-top:16px">${row('Rezervasyon Kaydı',r.id?'Bağlı rezervasyon bulundu':'Bağlı rezervasyon yok')}${row('Konaklama / Gelir Kaydı',g.id?'Check-in/gelir kaydı bulundu':'Kayıt yok')}${row('Not',`<span style="white-space:pre-wrap">${shEsc(t.degisiklikNot||t.iptalNot||t.not||r.not||'—')}</span>`)}</div>`;
+  openModal('raporKayitDetayModal');
+};
+window.raporKomisyonRezPdf=function(){
+  const liste=window._raporKomListe||[]; if(!liste.length){toast('Döküm alınacak kayıt yok','error');return;}
+  const rows=liste.map(x=>`<tr><td>${shEsc(x.araciAd)}</td><td>${shEsc(x.misafir)}</td><td>${shEsc(x.odaNo)}</td><td>${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')}</td><td>${shEsc((x.kayitTarih||'—').replace('T',' ').slice(0,16))}</td><td>${shEsc(x.grup.etiket)}</td><td>${shEsc(x.k.etiket)}</td><td class="num">${x.musteriToplam?fmt(x.musteriToplam):'—'}</td><td class="num">${x.otelToplam?fmt(x.otelToplam):'—'}</td><td class="num">${x.komisyon?fmt(x.komisyon):'—'}</td></tr>`).join('');
+  const kriter=`Komisyoncu: ${document.getElementById('rapor-kom-araci')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tamamlanma: ${document.getElementById('rapor-kom-tamamlanma')?.selectedOptions?.[0]?.textContent||'Tümü'} · Konaklama: ${document.getElementById('rapor-kom-konaklama')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tarih: ${document.getElementById('rapor-kom-tarih-alani')?.selectedOptions?.[0]?.textContent||'—'} ${document.getElementById('rapor-kom-bas')?.value||'başlangıç yok'} → ${document.getElementById('rapor-kom-bit')?.value||'bitiş yok'} · Sıralama: ${document.getElementById('rapor-kom-sirala')?.selectedOptions?.[0]?.textContent||'—'}`;
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Komisyoncu Rezervasyon Raporu</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:8.5px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:8.5px;color:#555;margin-top:4px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Komisyoncu Rezervasyon Raporu</h1><div><b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${shEsc(kriter)}</div></div><table><thead><tr><th>Komisyoncu</th><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Tamamlanma</th><th>Gerçek Konaklama</th><th>Müşteri</th><th>Otel Net</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'swiss-house-komisyoncu-rezervasyon-raporu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
+  const w=window.open('','_blank'); if(w){w.document.write(html);w.document.close();}
 };
 
 function araciAnahtar(ad) {

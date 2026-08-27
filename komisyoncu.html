@@ -314,22 +314,8 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 
     <!-- GEÇMİŞ TALEPLERİM / REZERVASYON RAPORU -->
     <div class="talepler-wrap">
-      <div class="talepler-header" style="display:block">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <div class="talepler-baslik">Taleplerim / Rezervasyonlarım</div>
-          <button class="btn btn-primary" style="padding:7px 14px;font-size:10px" onclick="taleplerDokumanIndir()">⬇ Filtreli PDF / Döküm</button>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;align-items:end">
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Tamamlanma Durumu</label><select id="taleplerTamamlanmaFiltre" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="hepsi">Tüm Rezervasyonlar</option><option value="tamamlandi">Tamamlanmış</option><option value="tamamlanmadi">Tamamlanmamış</option><option value="iptal">İptal / No-show</option></select></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Detay Durumu</label><select id="taleplerDurumFiltre" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="hepsi">Tüm Alt Durumlar</option><option value="bekliyor">Bekliyor</option><option value="onaylandi">Onaylandı</option><option value="planlandi">Planlandı</option><option value="aktif">Konaklıyor / Check-in Var</option><option value="kayit_yok">Konaklama Kaydı Yok</option></select></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Tarih Kriteri</label><select id="taleplerTarihAlani" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option></select></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Başlangıç</label><input type="date" id="taleplerTarihBas" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:6px 8px;background:var(--cream)"></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Bitiş</label><input type="date" id="taleplerTarihBit" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:6px 8px;background:var(--cream)"></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Sırala</label><select id="taleplerSirala" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="durum">Talep Durumu</option><option value="tamamlanma">Tamamlanma Durumu</option><option value="konaklamaDurumu">Konaklama Durumu</option></select></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Yön</label><select id="taleplerSiralaYon" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="desc">Yeni → Eski</option><option value="asc">Eski → Yeni</option></select></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Ara</label><input type="text" id="taleplerAra" oninput="taleplerFiltreDegisti()" placeholder="Misafir / oda / not" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"></div>
-        </div>
-        <div id="taleplerOzet" style="margin-top:10px;padding:9px 11px;background:var(--cream);border:1px solid var(--border);font-size:10px;color:var(--muted)"></div>
+      <div class="talepler-header">
+        <div class="talepler-baslik">Taleplerim / Rezervasyonlarım</div>
       </div>
       <div style="max-height:520px;overflow-y:auto;overflow-x:auto">
       <table class="talepler-table" style="min-width:1180px">
