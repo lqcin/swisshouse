@@ -536,6 +536,8 @@ function authHazirBekle() {
 authHazirBekle(); // sayfa açılır açılmaz girişi başlat, portal beklemeden hazırlansın
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
+const REZ_ODA_BLOKLAYAN_DURUMLAR = new Set(['bekliyor','aktif','gecikmis']);
+function rezervasyonOdayiBloklar(r){ return !!r && REZ_ODA_BLOKLAYAN_DURUMLAR.has(String(r.durum || 'bekliyor')); }
 
 // ── KOMİSYONCU LİSTESİ ──
 // Artık koddan değil Firestore'dan (meta/komisyoncular) okunuyor — resepsiyon tarafındaki
@@ -1132,7 +1134,7 @@ function takvimTablosuCiz(gunList, today) {
         Number(r.odaNo) === odaNo &&
         (r.giris||'') <= iso &&
         (r.cikis||'') > iso &&
-        r.durum !== 'iptal'
+        rezervasyonOdayiBloklar(r)
       );
       const benimRev = rev && aktifKom && (
         rKomisyoncuAnahtar(rev) === aktifKom.key ||
@@ -1413,7 +1415,7 @@ window.hesaplaOzet = function() {
   // Çakışma kontrolü
   const cakısma = _R.find(r =>
     Number(r.odaNo) === odaNo &&
-    r.durum !== 'iptal' &&
+    rezervasyonOdayiBloklar(r) &&
     (r.giris||'') < cikis &&
     (r.cikis||'') > giris
   );
@@ -1429,7 +1431,7 @@ window.hesaplaOzet = function() {
 function komOdaMusaitMi(odaNo, giris, cikis) {
   const carpisanRev = (_R||[]).find(r =>
     Number(r.odaNo) === Number(odaNo) &&
-    r.durum !== 'iptal' && r.durum !== 'noshow' && r.durum !== 'tamamlandi' &&
+    rezervasyonOdayiBloklar(r) &&
     (r.giris||'') < cikis && (r.cikis||'') > giris
   );
   if(carpisanRev) return false;
@@ -1546,7 +1548,7 @@ window.talepGonder = async function() {
 
   // Çakışma kontrolü
   const cakısma = _R.find(r =>
-    Number(r.odaNo) === odaNo && r.durum !== 'iptal' &&
+    Number(r.odaNo) === odaNo && rezervasyonOdayiBloklar(r) &&
     (r.giris||'') < cikis && (r.cikis||'') > giris
   );
   if(cakısma) {

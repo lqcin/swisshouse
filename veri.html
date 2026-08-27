@@ -565,7 +565,7 @@ window.kaydKaydet = async function() {
               });
               if(Object.keys(metaGuncelleme).length > 0) {
                 meta2[odaKey2] = { ...meta2[odaKey2], ...metaGuncelleme };
-                await setDoc(doc(db, 'meta', 'odalar'), meta2);
+                await setDoc(doc(db, 'meta', 'odalar'), { [odaKey2]: meta2[odaKey2] }, {merge:true});
               }
             }
           }
@@ -586,7 +586,7 @@ window.kaydKaydet = async function() {
             });
             if(Object.keys(guncellenenSenkAlanlar).length > 0) {
               meta[odaKey] = { ...meta[odaKey], ...guncellenenSenkAlanlar };
-              await setDoc(doc(db, 'meta', 'odalar'), meta);
+              await setDoc(doc(db, 'meta', 'odalar'), { [odaKey]: meta[odaKey] }, {merge:true});
             }
           }
         }
@@ -614,25 +614,37 @@ async function silinenKayitIcinOdaTemizle(kayit) {
     const meta = metaSnap.data();
     const odaKey = 'oda' + odaNo;
     const mevcut = meta[odaKey];
-    if(!mevcut) return;
-    // Sadece odanın güncel kaydı SİLİNEN bu kayıtla aynı konaklamaysa temizle —
-    // farklı/daha yeni bir konaklamayı yanlışlıkla boşaltmamak için.
-    const ayniKonaklama = mevcut.giris === giris && (String(mevcut.gelirDocId||'') === String(kayit._id||'') || String(mevcut.rezervasyonId||'') === String(kayit._id||'') || mevcut.durum === 'dolu');
-    if(!ayniKonaklama) return;
-    meta[odaKey] = {
-      durum:'bos', misafir:'', tc:'', tel:'', email:'', plaka:'',
-      kaynak:'', fiyatTip:1, fiyat:0, odemeTuru:'nakit',
-      giris:'', cikis:'', girisSaati:'', yetiskin:1, cocuk:0, not:'',
-      guncelleme: new Date().toISOString()
+    if(!mevcut || mevcut.durum !== 'dolu') return;
+
+    // Sadece gerçek kimlik eşleşmesiyle odayı boşalt. Eski "VEYA oda dolu" koşulu,
+    // aynı giriş tarihindeki daha yeni bir misafiri de yanlışlıkla çıkarabiliyordu.
+    const kayitId = String(kayit._id || '');
+    const idEslesme = aktifSekme === 'rezervasyonlar'
+      ? String(mevcut.rezervasyonId || '') === kayitId
+      : String(mevcut.gelirDocId || '') === kayitId;
+    const tarihEslesme = String(mevcut.giris || '') === String(giris || '');
+    const legacyEslesme = !mevcut.rezervasyonId && !mevcut.gelirDocId && tarihEslesme &&
+      String(mevcut.misafir||'').trim().toLocaleLowerCase('tr-TR') === String(kayit.misafir||'').trim().toLocaleLowerCase('tr-TR') &&
+      (!mevcut.tc || !kayit.tc || String(mevcut.tc) === String(kayit.tc));
+    if(!(idEslesme && tarihEslesme) && !legacyEslesme) {
+      console.warn('Oda boşaltılmadı: silinen kayıt mevcut konaklamayla kesin eşleşmiyor', {odaNo,kayitId,mevcut});
+      return;
+    }
+
+    const bosKayit = {
+      durum:'bos', misafir:'', tc:'', pasaport:'', tel:'', email:'', plaka:'', kaynak:'',
+      fiyatTip:1, fiyat:0, sozlesmeFiyat:null, odemeTuru:'nakit', odemeDurum:'odenmedi',
+      kismiTutar:null, kismiKalan:null, odemeToplam:0, tahsilEdilen:0, kalanTutar:0,
+      giris:'', cikis:'', girisSaati:'', yetiskin:1, cocuk:0, not:'', refakatciler:[],
+      rezervasyonId:null, gelirDocId:null, konaklamaKey:null, guncelleme:new Date().toISOString()
     };
-    await setDoc(doc(db, 'meta', 'odalar'), meta);
+    await setDoc(doc(db, 'meta', 'odalar'), { [odaKey]: bosKayit }, {merge:true});
     toast('Oda ' + odaNo + ' da boşa alındı ✓', 'success');
   } catch(e) {
     console.warn('Oda temizleme hatası:', e);
     toast('Kayıt silindi ama oda durumu güncellenemedi — Odalar sekmesinden elle kontrol et', 'error');
   }
 }
-
 
 // Rezervasyon kaydı siliniyorsa ona bağlı check-in/gelir kayıtları da temizlenir.
 // Böylece takvimde gelir kaydından kalan hayalet doluluk oluşmaz ve oda aynı gün
