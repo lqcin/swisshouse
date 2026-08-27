@@ -962,7 +962,7 @@ function renderKazancim() {
   const odemeler = _komOdemeTumu.filter(p => araciBenimMi(p.araciAd));
 
   const beklenenler = (_R||[]).filter(r => {
-    if(r.durum === 'iptal') return false;
+    if(r.durum !== 'bekliyor') return false;
     const benimMi = araciBenimMi(r.araciAd) || rKomisyoncuAnahtar(r) === aktifKom.key;
     if(!benimMi) return false;
     const odaMeta = _O?.['oda'+r.odaNo];
@@ -995,7 +995,10 @@ function renderKazancim() {
       : fmt(toplamHakedis) + ' ₺';
   }
   if(elOdenen) elOdenen.textContent = fmt(toplamOdenen) + ' ₺';
-  if(elKalan) { elKalan.textContent = fmt(kalan) + ' ₺'; elKalan.style.color = kalan > 0.5 ? 'var(--primary)' : 'var(--green)'; }
+  if(elKalan) {
+    elKalan.textContent = kalan < -0.5 ? ('Otele mahsup: ' + fmt(Math.abs(kalan)) + ' ₺') : (fmt(kalan) + ' ₺');
+    elKalan.style.color = kalan > 0.5 ? 'var(--primary)' : (kalan < -0.5 ? 'var(--red,#c8102e)' : 'var(--green)');
+  }
 
   // Detay modalı açıksa canlı güncellensin
   if(document.getElementById('kazancimModal')?.classList.contains('aktif')) {
@@ -1047,7 +1050,7 @@ window.kazancimGoster = function() {
   const borclar = _komTumu.filter(k => araciBenimMi(k.araciAd));
   const odemeler = _komOdemeTumu.filter(p => araciBenimMi(p.araciAd));
   const beklenenler = (_R||[]).filter(r => {
-    if(r.durum === 'iptal') return false;
+    if(r.durum !== 'bekliyor') return false;
     const benimMi = araciBenimMi(r.araciAd) || rKomisyoncuAnahtar(r) === aktifKom.key;
     if(!benimMi) return false;
     const odaMeta = _O?.['oda'+r.odaNo];
