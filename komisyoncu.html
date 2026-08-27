@@ -320,20 +320,22 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
           <button class="btn btn-primary" style="padding:7px 14px;font-size:10px" onclick="taleplerDokumanIndir()">⬇ Filtreli PDF / Döküm</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;align-items:end">
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Durum</label><select id="taleplerDurumFiltre" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="hepsi">Tüm Durumlar</option><option value="bekliyor">Bekliyor</option><option value="onaylandi">Onaylandı</option><option value="aktif">Konaklıyor</option><option value="tamamlandi">Tamamlandı</option><option value="kayit_yok">Konaklama Kaydı Yok</option><option value="reddedildi">Reddedildi / İptal</option></select></div>
+          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Tamamlanma Durumu</label><select id="taleplerTamamlanmaFiltre" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="hepsi">Tüm Rezervasyonlar</option><option value="tamamlandi">Tamamlanmış</option><option value="tamamlanmadi">Tamamlanmamış</option><option value="iptal">İptal / No-show</option></select></div>
+          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Detay Durumu</label><select id="taleplerDurumFiltre" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="hepsi">Tüm Alt Durumlar</option><option value="bekliyor">Bekliyor</option><option value="onaylandi">Onaylandı</option><option value="planlandi">Planlandı</option><option value="aktif">Konaklıyor / Check-in Var</option><option value="kayit_yok">Konaklama Kaydı Yok</option></select></div>
           <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Tarih Kriteri</label><select id="taleplerTarihAlani" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option></select></div>
           <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Başlangıç</label><input type="date" id="taleplerTarihBas" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:6px 8px;background:var(--cream)"></div>
           <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Bitiş</label><input type="date" id="taleplerTarihBit" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:6px 8px;background:var(--cream)"></div>
-          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Sırala</label><select id="taleplerSirala" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="durum">Durum</option></select></div>
+          <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Sırala</label><select id="taleplerSirala" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="durum">Talep Durumu</option><option value="tamamlanma">Tamamlanma Durumu</option><option value="konaklamaDurumu">Konaklama Durumu</option></select></div>
           <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Yön</label><select id="taleplerSiralaYon" onchange="taleplerFiltreDegisti()" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"><option value="desc">Yeni → Eski</option><option value="asc">Eski → Yeni</option></select></div>
           <div><label style="display:block;font-size:9px;color:var(--muted);margin-bottom:4px">Ara</label><input type="text" id="taleplerAra" oninput="taleplerFiltreDegisti()" placeholder="Misafir / oda / not" style="width:100%;border:1px solid var(--border);padding:7px 8px;background:var(--cream)"></div>
         </div>
+        <div id="taleplerOzet" style="margin-top:10px;padding:9px 11px;background:var(--cream);border:1px solid var(--border);font-size:10px;color:var(--muted)"></div>
       </div>
       <div style="max-height:520px;overflow-y:auto;overflow-x:auto">
       <table class="talepler-table" style="min-width:1180px">
         <thead style="position:sticky;top:0;background:var(--white);z-index:1">
           <tr>
-            <th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Gece</th><th>Fiyat/Gece</th><th>Talep Durumu</th><th>Konaklama Durumu</th><th>Not</th><th>İşlem</th>
+            <th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Gece</th><th>Fiyat/Gece</th><th>Tamamlanma</th><th>Talep Durumu</th><th>Konaklama Durumu</th><th>Not</th><th>İşlem</th>
           </tr>
         </thead>
         <tbody id="taleplerBody"></tbody>
@@ -1664,9 +1666,13 @@ function talepKonaklamaDurumu(t){
   const d=String(t.durum||'');
   if(['reddedildi','iptal'].includes(d)) return {kod:'iptal',etiket:'❌ İptal / Reddedildi',renk:'var(--red)',r,g,o};
   if(d==='noshow') return {kod:'noshow',etiket:'🚫 No-show',renk:'var(--red)',r,g,o};
-  if(d==='tamamlandi'||r?.durum==='tamamlandi'||g?.checkoutTarih) return {kod:'tamamlandi',etiket:'✅ Konakladı / Tamamlandı',renk:'var(--green)',r,g,o};
-  if(d==='aktif'||r?.durum==='aktif'||o) return {kod:'aktif',etiket:'🟢 Konaklıyor',renk:'var(--green)',r,g,o};
-  if(g && t.cikis && bugun>=t.cikis) return {kod:'tamamlandi',etiket:'✅ Konakladı (check-in kaydı var)',renk:'var(--green)',r,g,o};
+  // Tamamlandı sayılması için gerçek kapanış/checkout kaydı zorunlu.
+  if(d==='tamamlandi'||r?.durum==='tamamlandi'||g?.checkoutTarih||t.checkoutTarih) return {kod:'tamamlandi',etiket:'✅ Konakladı / Check-out Tamamlandı',renk:'var(--green)',r,g,o};
+  if(d==='aktif'||r?.durum==='aktif'||o) {
+    if(t.cikis && bugun>=t.cikis) return {kod:'aktif',etiket:'⚠ Check-out Bekleniyor',renk:'#d97706',r,g,o};
+    return {kod:'aktif',etiket:'🟢 Konaklıyor',renk:'var(--green)',r,g,o};
+  }
+  if(g && t.cikis && bugun>=t.cikis) return {kod:'aktif',etiket:'⚠ Check-out Bekleniyor',renk:'#d97706',r,g,o};
   if(g) return {kod:'aktif',etiket:'🟢 Check-in Kaydı Var / Konaklıyor',renk:'var(--green)',r,g,o};
   if(t.giris && bugun < t.giris) return {kod:'planlandi',etiket:'🗓 Planlandı',renk:'var(--blue)',r,g,o};
   if(t.giris && t.cikis && bugun>=t.giris && bugun<t.cikis) return {kod:'kayit_yok',etiket:'⚠ Check-in Kaydı Yok',renk:'#d97706',r,g,o};
@@ -1674,29 +1680,64 @@ function talepKonaklamaDurumu(t){
   return {kod:'bekliyor',etiket:'Bekliyor',renk:'var(--muted)',r,g,o};
 }
 
+// Ana rapor sınıflandırması: aktif konaklama bir ana filtre değildir.
+// Her komisyoncu talebi yalnızca üç ana gruptan birindedir.
+function talepTamamlanmaGrubu(t,k){
+  k=k||talepKonaklamaDurumu(t);
+  const d=String(t?.durum||'');
+  if(['reddedildi','iptal','noshow'].includes(d) || ['iptal','noshow'].includes(k.kod)){
+    return {kod:'iptal',etiket:'İptal / No-show',renk:'var(--red)'};
+  }
+  if(d==='tamamlandi' || k.kod==='tamamlandi'){
+    return {kod:'tamamlandi',etiket:'Tamamlanmış',renk:'var(--green)'};
+  }
+  return {kod:'tamamlanmadi',etiket:'Tamamlanmamış',renk:'#d97706'};
+}
+
+function taleplerOzetYaz(talepler){
+  const o={toplam:0,tamamlandi:0,tamamlanmadi:0,iptal:0};
+  (talepler||[]).forEach(t=>{const g=talepTamamlanmaGrubu(t);o.toplam++;o[g.kod]=(o[g.kod]||0)+1;});
+  const el=document.getElementById('taleplerOzet');
+  if(el) el.innerHTML=`Toplam <b>${o.toplam}</b> rezervasyon · <span style="color:var(--green)">Tamamlanmış <b>${o.tamamlandi}</b></span> · <span style="color:#d97706">Tamamlanmamış <b>${o.tamamlanmadi}</b></span> · <span style="color:var(--red)">İptal / No-show <b>${o.iptal}</b></span>`;
+}
+
 window.taleplerFiltreDegisti = function() {
   _taleplerDurumFiltre = document.getElementById('taleplerDurumFiltre')?.value||'hepsi';
   _taleplerGosterSayisi = 10;
+  taleplerOzetYaz(_beniimTalepler);
   renderTalepler(_beniimTalepler);
 };
 window.taleplerDahaFazlaGoster = function(){_taleplerGosterSayisi+=10;renderTalepler(_beniimTalepler);};
 window.taleplerAzalt = function(){_taleplerGosterSayisi=10;renderTalepler(_beniimTalepler);document.getElementById('taleplerDurumFiltre')?.scrollIntoView({behavior:'smooth',block:'nearest'});};
 
 function taleplerFiltreleSirala(talepler){
-  const durum=document.getElementById('taleplerDurumFiltre')?.value||'hepsi';
+  const tamamlanma=document.getElementById('taleplerTamamlanmaFiltre')?.value||'hepsi';
+  const detay=document.getElementById('taleplerDurumFiltre')?.value||'hepsi';
   const tarihAlani=document.getElementById('taleplerTarihAlani')?.value||'giris';
   const bas=document.getElementById('taleplerTarihBas')?.value||'', bit=document.getElementById('taleplerTarihBit')?.value||'';
   const sirala=document.getElementById('taleplerSirala')?.value||'giris', yon=document.getElementById('taleplerSiralaYon')?.value||'desc';
   const ara=String(document.getElementById('taleplerAra')?.value||'').trim().toLocaleLowerCase('tr-TR');
-  let list=(talepler||[]).map(t=>({t,k:talepKonaklamaDurumu(t)}));
-  if(durum!=='hepsi'){
-    if(durum==='reddedildi') list=list.filter(x=>['reddedildi','iptal','noshow'].includes(x.t.durum));
-    else if(durum==='kayit_yok') list=list.filter(x=>x.k.kod==='kayit_yok');
-    else list=list.filter(x=>x.t.durum===durum || x.k.kod===durum);
+  let list=(talepler||[]).map(t=>{const k=talepKonaklamaDurumu(t);return {t,k,grup:talepTamamlanmaGrubu(t,k)};});
+
+  // Ana filtre yalnızca rezervasyonun kapanıp kapanmadığını ifade eder.
+  if(tamamlanma!=='hepsi') list=list.filter(x=>x.grup.kod===tamamlanma);
+
+  // Alt durum yalnızca ayrıntılı inceleme içindir; aktif konaklama ana kategori değildir.
+  if(detay!=='hepsi'){
+    if(detay==='bekliyor') list=list.filter(x=>String(x.t.durum||'')==='bekliyor' || x.k.kod==='bekliyor');
+    else if(detay==='onaylandi') list=list.filter(x=>String(x.t.durum||'')==='onaylandi' && x.k.kod!=='aktif' && x.k.kod!=='tamamlandi');
+    else list=list.filter(x=>x.k.kod===detay);
   }
-  if(bas||bit) list=list.filter(x=>{const v=isoGun(x.t[tarihAlani]);return (!bas||v>=bas)&&(!bit||v<=bit);});
-  if(ara) list=list.filter(x=>[x.t.misafir,x.t.odaNo,x.t.not,x.t.giris,x.t.cikis,x.t.kayitTarih,x.k.etiket].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(ara)));
-  const deger=x=> sirala==='odaNo'?Number(x.t.odaNo)||0 : String(x.t[sirala]||x.k?.kod||'').toLocaleLowerCase('tr-TR');
+
+  if(bas||bit) list=list.filter(x=>{const v=isoGun(x.t[tarihAlani]);return v && (!bas||v>=bas)&&(!bit||v<=bit);});
+  if(ara) list=list.filter(x=>[x.t.misafir,x.t.odaNo,x.t.not,x.t.giris,x.t.cikis,x.t.kayitTarih,x.t.durum,x.k.etiket,x.grup.etiket].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(ara)));
+
+  const deger=x=>{
+    if(sirala==='odaNo') return Number(x.t.odaNo)||0;
+    if(sirala==='tamamlanma') return x.grup.kod;
+    if(sirala==='konaklamaDurumu') return x.k.kod;
+    return String(x.t[sirala]||'').toLocaleLowerCase('tr-TR');
+  };
   list.sort((a,b)=>{const av=deger(a),bv=deger(b);const cmp=typeof av==='number'?(av-bv):String(av).localeCompare(String(bv),'tr');return yon==='asc'?cmp:-cmp;});
   return list;
 }
@@ -1706,8 +1747,9 @@ function renderTalepler(talepler) {
   const durumMap={bekliyor:m.durum_bekliyor,onaylandi:m.durum_onaylandi,aktif:'🟢 Konaklıyor',tamamlandi:'✅ Tamamlandı',reddedildi:m.durum_reddedildi,iptal:'❌ İptal',noshow:'🚫 No-show'};
   const durumKls={bekliyor:'durum-bekliyor',onaylandi:'durum-onaylandi',aktif:'durum-onaylandi',tamamlandi:'durum-onaylandi',reddedildi:'durum-reddedildi',iptal:'durum-reddedildi',noshow:'durum-reddedildi'};
   const tbody=document.getElementById('taleplerBody'), altBilgi=document.getElementById('taleplerAltBilgi');
+  taleplerOzetYaz(talepler);
   const filtreli=taleplerFiltreleSirala(talepler); _sonFiltreliTalepler=filtreli;
-  if(!filtreli.length){tbody.innerHTML='<tr><td colspan="10" class="bos-mesaj">Bu kriterlerde kayıt yok</td></tr>';if(altBilgi)altBilgi.innerHTML='';return;}
+  if(!filtreli.length){tbody.innerHTML='<tr><td colspan="11" class="bos-mesaj">Bu kriterlerde kayıt yok</td></tr>';if(altBilgi)altBilgi.innerHTML='';return;}
   const gosterilecek=filtreli.slice(0,_taleplerGosterSayisi);
   tbody.innerHTML=gosterilecek.map(({t,k})=>`<tr>
     <td style="font-weight:600">${komEsc(t.misafir||'—')}</td><td>Oda ${komEsc(t.odaNo||'?')}</td>
@@ -1715,6 +1757,7 @@ function renderTalepler(talepler) {
     <td style="font-size:10px">${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td>
     <td>${t.gece||'?'}</td>
     <td>${t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺${t.fiyat&&Number(t.sozlesmeFiyat)>Number(t.fiyat)?`<br><span style="font-size:9px;color:var(--muted)">net ${fmt(t.fiyat)} · kom. ${fmt(Number(t.sozlesmeFiyat)-Number(t.fiyat))}</span>`:''}`:(t.fiyat?fmt(t.fiyat)+' ₺':'—')}</td>
+    <td style="font-size:10px;font-weight:800;color:${k && talepTamamlanmaGrubu(t,k).renk}">${komEsc(talepTamamlanmaGrubu(t,k).etiket)}</td>
     <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||komEsc(t.durum||'—')}</span></td>
     <td style="font-size:10px;font-weight:700;color:${k.renk}">${k.etiket}</td>
     <td style="font-size:10px;color:var(--muted);max-width:180px;white-space:pre-wrap;word-break:break-word">${komEsc(t.degisiklikNot||t.iptalNot||t.not||'—')}</td>
@@ -1729,16 +1772,17 @@ window.talepDetayGoster=function(id){
   const musteriToplam=(Number(t.sozlesmeFiyat)||0)*gece, otelToplam=(Number(t.fiyat)||0)*gece, komisyon=Number(t.komisyonToplam)||Math.max(0,musteriToplam-otelToplam);
   const sat=(a,b)=>`<div style="display:grid;grid-template-columns:170px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="color:var(--muted)">${a}</b><span>${b}</span></div>`;
   document.getElementById('talepDetayBaslik').textContent=`Oda ${t.odaNo} · ${t.misafir||'Rezervasyon'}`;
-  document.getElementById('talepDetayIcerik').innerHTML=`${sat('Konaklama Durumu',`<b style="color:${k.renk}">${k.etiket}</b>`)}${sat('Talep Durumu',komEsc(t.durum||'—'))}${sat('Talep Gönderme',komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,19)))}${sat('Onay / İşlem',komEsc((t.islemTarih||'—').replace('T',' ').slice(0,19)))}${sat('Konaklama',`${komEsc(t.giris)} → ${komEsc(t.cikis)} · ${gece} gece`)}${sat('Oda','Oda '+komEsc(t.odaNo))}${sat('Misafir',komEsc(t.misafir||'—'))}${sat('Kişi',`${Number(t.yetiskin||1)} yetişkin · ${Number(t.cocuk||0)} çocuk`)}${sat('Müşteri Fiyatı',t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺/gece · ${fmt(musteriToplam)} ₺ toplam`:'—')}${sat('Otel Net',t.fiyat?`${fmt(t.fiyat)} ₺/gece · ${fmt(otelToplam)} ₺ toplam`:'—')}${sat('Komisyon',komisyon?fmt(komisyon)+' ₺':'—')}${sat('Check-in Kaydı',g?.giris||o?.giris?komEsc(g.giris||o.giris):'Yok')}${sat('Check-out Kaydı',komEsc(g?.checkoutTarih||t.checkoutTarih||'Yok'))}${sat('Not',`<span style="white-space:pre-wrap">${komEsc(t.degisiklikNot||t.iptalNot||t.not||'—')}</span>`)} `;
+  const grup=talepTamamlanmaGrubu(t,k);
+  document.getElementById('talepDetayIcerik').innerHTML=`${sat('Tamamlanma Durumu',`<b style="color:${grup.renk}">${grup.etiket}</b>`)}${sat('Konaklama Durumu',`<b style="color:${k.renk}">${k.etiket}</b>`)}${sat('Talep Durumu',komEsc(t.durum||'—'))}${sat('Talep Gönderme',komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,19)))}${sat('Onay / İşlem',komEsc((t.islemTarih||'—').replace('T',' ').slice(0,19)))}${sat('Konaklama',`${komEsc(t.giris)} → ${komEsc(t.cikis)} · ${gece} gece`)}${sat('Oda','Oda '+komEsc(t.odaNo))}${sat('Misafir',komEsc(t.misafir||'—'))}${sat('Kişi',`${Number(t.yetiskin||1)} yetişkin · ${Number(t.cocuk||0)} çocuk`)}${sat('Müşteri Fiyatı',t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺/gece · ${fmt(musteriToplam)} ₺ toplam`:'—')}${sat('Otel Net',t.fiyat?`${fmt(t.fiyat)} ₺/gece · ${fmt(otelToplam)} ₺ toplam`:'—')}${sat('Komisyon',komisyon?fmt(komisyon)+' ₺':'—')}${sat('Check-in Kaydı',g?.giris||o?.giris?komEsc(g.giris||o.giris):'Yok')}${sat('Check-out Kaydı',komEsc(g?.checkoutTarih||t.checkoutTarih||'Yok'))}${sat('Not',`<span style="white-space:pre-wrap">${komEsc(t.degisiklikNot||t.iptalNot||t.not||'—')}</span>`)} `;
   document.getElementById('talepDetayModal').classList.add('aktif');
 };
 
 window.taleplerDokumanIndir=function(){
   const liste=_sonFiltreliTalepler||[];if(!liste.length){alert('Döküm alınacak kayıt yok.');return;}
-  const rows=liste.map(({t,k})=>{const gece=Number(t.gece)||0;const kom=Number(t.komisyonToplam)||Math.max(0,((Number(t.sozlesmeFiyat)||0)-(Number(t.fiyat)||0))*gece);return `<tr><td>${komEsc(t.misafir||'—')}</td><td>${komEsc(t.odaNo||'—')}</td><td>${komEsc(t.giris||'—')} → ${komEsc(t.cikis||'—')}</td><td>${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td><td>${komEsc(t.durum||'—')}</td><td>${komEsc(k.etiket)}</td><td class="num">${t.sozlesmeFiyat?fmt(t.sozlesmeFiyat)+' ₺':'—'}</td><td class="num">${kom?fmt(kom)+' ₺':'—'}</td></tr>`}).join('');
+  const rows=liste.map(({t,k})=>{const gece=Number(t.gece)||0;const kom=Number(t.komisyonToplam)||Math.max(0,((Number(t.sozlesmeFiyat)||0)-(Number(t.fiyat)||0))*gece);return `<tr><td>${komEsc(t.misafir||'—')}</td><td>${komEsc(t.odaNo||'—')}</td><td>${komEsc(t.giris||'—')} → ${komEsc(t.cikis||'—')}</td><td>${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td><td>${komEsc(talepTamamlanmaGrubu(t,k).etiket)}</td><td>${komEsc(t.durum||'—')}</td><td>${komEsc(k.etiket)}</td><td class="num">${t.sozlesmeFiyat?fmt(t.sozlesmeFiyat)+' ₺':'—'}</td><td class="num">${kom?fmt(kom)+' ₺':'—'}</td></tr>`}).join('');
   const ad=aktifKom?.ad||aktifKom?.key||'Acenta';
-  const kriter=`Durum: ${document.getElementById('taleplerDurumFiltre')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tarih kriteri: ${document.getElementById('taleplerTarihAlani')?.selectedOptions?.[0]?.textContent||'—'} · ${document.getElementById('taleplerTarihBas')?.value||'başlangıç yok'} → ${document.getElementById('taleplerTarihBit')?.value||'bitiş yok'} · Sıralama: ${document.getElementById('taleplerSirala')?.selectedOptions?.[0]?.textContent||'—'}`;
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Acenta Rezervasyon Dökümü</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:9px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:9px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Acenta Rezervasyon Dökümü</h1><div><b>Acenta:</b> ${komEsc(ad)} · <b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${komEsc(kriter)}</div></div><table><thead><tr><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Talep Durumu</th><th>Konaklama Durumu</th><th>Fiyat/Gece</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'acenta-rezervasyon-dokumu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
+  const kriter=`Tamamlanma: ${document.getElementById('taleplerTamamlanmaFiltre')?.selectedOptions?.[0]?.textContent||'Tümü'} · Alt durum: ${document.getElementById('taleplerDurumFiltre')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tarih kriteri: ${document.getElementById('taleplerTarihAlani')?.selectedOptions?.[0]?.textContent||'—'} · ${document.getElementById('taleplerTarihBas')?.value||'başlangıç yok'} → ${document.getElementById('taleplerTarihBit')?.value||'bitiş yok'} · Sıralama: ${document.getElementById('taleplerSirala')?.selectedOptions?.[0]?.textContent||'—'}`;
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Acenta Rezervasyon Dökümü</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:9px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:9px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Acenta Rezervasyon Dökümü</h1><div><b>Acenta:</b> ${komEsc(ad)} · <b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${komEsc(kriter)}</div></div><table><thead><tr><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Tamamlanma</th><th>Talep Durumu</th><th>Konaklama Durumu</th><th>Fiyat/Gece</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'acenta-rezervasyon-dokumu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 };
 
