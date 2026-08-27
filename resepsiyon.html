@@ -839,7 +839,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-warning" id="coz_masraf_ekle_btn" onclick="openMasrafModal(currentCheckoutOda)">+ Masraf Ekle</button>
       <button class="btn btn-ghost" id="coz_sozlesme_btn" onclick="printSozlesme(currentCheckoutOda)">📄 Sözleşme Yazdır</button>
       <button class="btn btn-ghost" onclick="printFolioFromOzet()">🖨 Fatura</button>
-      <button class="btn btn-primary" id="coz_checkout_btn" onclick="saveCheckoutFromOzet()" disabled style="opacity:.4;cursor:not-allowed" title="Önce sözleşmeyi yazdırın">✓ Check-out Tamamla</button>
+      <button class="btn btn-primary" id="coz_checkout_btn" onclick="saveCheckoutFromOzet()">✓ Check-out Tamamla</button>
     </div>
   </div>
 </div>
@@ -4183,9 +4183,10 @@ window.openCheckoutMenu = function(no) {
   if(ekleBtn) ekleBtn.onclick = () => openMasrafModal(no);
 
   openModal('checkoutOzetModal');
-  // Checkout butonu sözleşme yazdırılana kadar pasif
+  // Check-out işlemi resepsiyonun kararıdır; sözleşme yazdırma zorunluluğu yoktur.
+  // Oda dolu olduğu sürece buton her zaman aktif kalır; erken/planlı çıkış aynı akışı kullanır.
   const coBtn = document.getElementById('coz_checkout_btn');
-  if(coBtn) { coBtn.disabled = true; coBtn.style.opacity = '.4'; coBtn.style.cursor = 'not-allowed'; coBtn.title = 'Önce sözleşmeyi yazdırın'; }
+  if(coBtn) { coBtn.disabled = false; coBtn.style.opacity = '1'; coBtn.style.cursor = 'pointer'; coBtn.title = ''; }
 };
 
 // Erken çıkış gece değişince toplamı güncelle
@@ -6227,7 +6228,7 @@ function clearRefakatciler(listeId = 'refakatciListesi') {
   document.getElementById(listeId).innerHTML = '';
 }
 
-// Sözleşme yazdır ve checkout butonunu aktif et
+// Sözleşme yazdır (checkout zaten bağımsız olarak aktiftir)
 window.sozlesmeYazdir = function() {
   printSozlesme(currentCheckoutOda);
   setTimeout(() => {
