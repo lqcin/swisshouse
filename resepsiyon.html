@@ -777,10 +777,28 @@ input[type="number"], input[type="date"], input[type="password"] {
       <div id="coz_masraflar"></div>
     </div>
 
-    <!-- Toplam -->
+    <!-- Hesap / tahsilat özeti -->
     <div class="folio-toplam" style="margin-top:12px">
-      <div class="folio-toplam-label">Toplam (Odaya Yansıtılan)</div>
+      <div class="folio-toplam-label">Toplam Hesap</div>
       <div class="folio-toplam-val" id="coz_toplam"></div>
+    </div>
+    <div style="background:var(--parchment);border:1px solid var(--border);padding:12px 16px;margin-top:8px;font-size:13px" id="coz_tahsilat_ozet">
+      <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:7px">
+        <span style="color:var(--muted)">Önceden tahsil edilen:</span>
+        <strong style="color:var(--green)" id="coz_onceki_tahsil">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:7px">
+        <span style="color:var(--muted)">Check-out öncesi kalan:</span>
+        <strong style="color:var(--red)" id="coz_checkout_kalan">—</strong>
+      </div>
+      <div style="display:none;justify-content:space-between;gap:12px;margin-bottom:7px" id="coz_fazla_tahsil_satir">
+        <span style="color:var(--muted)">Fazla tahsil / iade kontrolü:</span>
+        <strong style="color:var(--gold)" id="coz_fazla_tahsil">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:12px;padding-top:8px;border-top:1px solid var(--border)">
+        <span style="font-weight:700">Check-out sonrası kalan:</span>
+        <strong id="coz_son_kalan">—</strong>
+      </div>
     </div>
     <div style="background:var(--parchment);border:1px solid var(--border);padding:10px 16px;margin-top:8px;display:flex;justify-content:space-between;font-size:13px" id="coz_ayri_blok">
       <span style="color:var(--muted)">Daha önce ayrı ödenen masraflar:</span>
@@ -798,23 +816,23 @@ input[type="number"], input[type="date"], input[type="password"] {
         <span style="font-size:12px;color:var(--muted)" id="erken_cikis_fiyat_label"></span>
       </div>
     </div>
-    <div class="form-group">
-      <label>Ödeme Türü (Konaklama + Odaya Yansıtılan Masraflar)</label>
-      <select id="coz_odeme">
-        <option value="nakit">Nakit</option>
-        <option value="kart">Kredi / Banka Kartı</option>
-        <option value="havale">Havale / EFT</option>
-      </select>
+    <div id="coz_tahsilat_form">
+      <div class="form-group">
+        <label>Check-out'ta Ödeme Türü</label>
+        <select id="coz_odeme">
+          <option value="nakit">Nakit</option>
+          <option value="kart">Kredi / Banka Kartı</option>
+          <option value="havale">Havale / EFT</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Check-out'ta Tahsil Edilecek Tutar</label>
+        <input type="number" id="coz_tahsil_tutar" min="0" step="0.01" inputmode="decimal" oninput="cozTahsilatGuncelle()" placeholder="0">
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Bu alan yalnız bu check-out sırasında alınan yeni ödemedir. Ön ödeme tekrar tahsil edilmez.</div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Ödeme Durumu</label>
-      <select id="coz_odeme_durum">
-        <option value="odendi">Ödendi</option>
-        <option value="kismi">Kısmi Ödeme</option>
-        <option value="odenmedi">Ödenmedi</option>
-        <option value="depozito">Depozito Alındı</option>
-      </select>
-    </div>
+    <input type="hidden" id="coz_odeme_durum" value="odendi">
+    <div id="coz_odeme_durum_goster" style="padding:10px 12px;border:1px solid var(--border);background:var(--parchment);font-size:12px;font-weight:700;margin-bottom:8px"></div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('checkoutOzetModal')">Vazgeç</button>
@@ -3992,6 +4010,95 @@ window.checkindenRezervasyon = function(rev) {
   openModal('checkinModal');
 };
 
+// ── CHECK-OUT ÖDEME / MASRAF BAĞLAMA YARDIMCILARI ──
+// Oda masrafı oda numarasına göre değil KONAKLAMAYA göre bağlanır. Aksi halde
+// 302'nin eski misafirinden kalan bir masraf sonraki 302 misafirinin hesabına sızabilir.
+function masrafBuKonaklamayaAit(m, o, no) {
+  if(!m || !o || String(m.odaNo) !== String(no)) return false;
+  if(m.konaklamaKey && o.konaklamaKey) return m.konaklamaKey === o.konaklamaKey;
+  if(m.gelirDocId && o.gelirDocId) return m.gelirDocId === o.gelirDocId;
+  if(m.rezervasyonId && o.rezervasyonId) return m.rezervasyonId === o.rezervasyonId;
+
+  // Eski kayıtlarla geriye uyumluluk: güçlü kimlik + kayıt tarihi birlikte aranır.
+  const kayitGun = String(m.kayitTarih || m.tarih || '').slice(0,10);
+  const tarihUygun = !kayitGun || !o.giris || kayitGun >= o.giris;
+  const tcEslesir = !!(m.tc && o.tc && String(m.tc) === String(o.tc));
+  const adEslesir = !!(m.misafir && o.misafir && String(m.misafir).trim().toLocaleLowerCase('tr-TR') === String(o.misafir).trim().toLocaleLowerCase('tr-TR'));
+  return tarihUygun && (tcEslesir || adEslesir);
+}
+
+function checkoutHesapDurumu(no, geceOverride=null) {
+  const o = window._O?.['oda'+no];
+  if(!o) return null;
+  const gece = geceOverride != null ? Number(geceOverride) : geceSayisi(o.giris,o.cikis);
+  const gecelik = Number(o.sozlesmeFiyat || o.fiyat || 0);
+  const konaklama = Math.max(0, gece * gecelik);
+  const tumMasraflar = (window._M||[]).filter(m => masrafBuKonaklamayaAit(m,o,no));
+  const yansitilan = tumMasraflar.filter(m => m.odemeDurumu === 'odaya_yansitildi');
+  const ayriOdenen = tumMasraflar.filter(m => m.odemeDurumu === 'ayri_odendi');
+  const yansitilanT = yansitilan.reduce((a,b)=>a+Math.max(0,Number(b.tutar)||0),0);
+  const ayriT = ayriOdenen.reduce((a,b)=>a+Math.max(0,Number(b.tutar)||0),0);
+  const oncekiTahsil = Math.max(0, Number(o.tahsilEdilen != null ? o.tahsilEdilen : o.kismiTutar) || 0);
+  const hesapToplam = konaklama + yansitilanT;
+  const checkoutKalan = Math.max(0, hesapToplam - oncekiTahsil);
+  const fazlaTahsil = Math.max(0, oncekiTahsil - hesapToplam);
+  return {o,no,gece,gecelik,konaklama,tumMasraflar,yansitilan,ayriOdenen,yansitilanT,ayriT,oncekiTahsil,hesapToplam,checkoutKalan,fazlaTahsil};
+}
+
+function checkoutTahsilatOzetYaz(state, tahsilSimdi=null) {
+  if(!state) return;
+  const form = document.getElementById('coz_tahsilat_form');
+  const input = document.getElementById('coz_tahsil_tutar');
+  const durumHidden = document.getElementById('coz_odeme_durum');
+  const durumGoster = document.getElementById('coz_odeme_durum_goster');
+  const fazlaSatir = document.getElementById('coz_fazla_tahsil_satir');
+
+  if(tahsilSimdi == null) tahsilSimdi = state.checkoutKalan;
+  tahsilSimdi = Math.max(0, Math.min(Number(tahsilSimdi)||0, state.checkoutKalan));
+  const sonKalan = Math.max(0, state.checkoutKalan - tahsilSimdi);
+  const durum = state.checkoutKalan <= 0.009 ? 'odendi' : (tahsilSimdi <= 0.009 ? 'odenmedi' : (sonKalan <= 0.009 ? 'odendi' : 'kismi'));
+
+  document.getElementById('coz_onceki_tahsil').textContent = fmt(state.oncekiTahsil);
+  document.getElementById('coz_checkout_kalan').textContent = fmt(state.checkoutKalan);
+  document.getElementById('coz_son_kalan').textContent = fmt(sonKalan);
+  document.getElementById('coz_son_kalan').style.color = sonKalan > 0.009 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('coz_fazla_tahsil').textContent = state.fazlaTahsil > 0 ? fmt(state.fazlaTahsil) : '—';
+  if(fazlaSatir) fazlaSatir.style.display = state.fazlaTahsil > 0.009 ? 'flex' : 'none';
+  if(durumHidden) durumHidden.value = durum;
+
+  if(state.checkoutKalan <= 0.009) {
+    if(form) form.style.display = 'none';
+    if(input) input.value = '0';
+    if(durumGoster) {
+      durumGoster.textContent = state.fazlaTahsil > 0.009
+        ? `⚠ Hesap kapalı; ${fmt(state.fazlaTahsil)} fazla tahsil/iade kontrolü var.`
+        : '✅ Hesap daha önce tamamen ödendi. Check-out sırasında yeni tahsilat yapılmayacak.';
+      durumGoster.style.color = state.fazlaTahsil > 0.009 ? 'var(--gold)' : 'var(--green)';
+    }
+  } else {
+    if(form) form.style.display = 'block';
+    if(input && document.activeElement !== input) input.value = String(Math.round(tahsilSimdi*100)/100);
+    if(durumGoster) {
+      durumGoster.textContent = sonKalan <= 0.009
+        ? `✅ Bu işlemle hesap kapanacak. Tahsilat: ${fmt(tahsilSimdi)}`
+        : (tahsilSimdi > 0 ? `⚠ Kısmi tahsilat. Check-out sonrası alacak: ${fmt(sonKalan)}` : `❌ Tahsilat yapılmadan check-out. Açık alacak: ${fmt(sonKalan)}`);
+      durumGoster.style.color = sonKalan <= 0.009 ? 'var(--green)' : 'var(--red)';
+    }
+  }
+  window._checkoutHesapState = {...state,tahsilSimdi,sonKalan,durum};
+}
+
+window.cozTahsilatGuncelle = function() {
+  const no = currentCheckoutOda;
+  const o = window._O?.['oda'+no];
+  if(!o) return;
+  const geceEl = document.getElementById('coz_fatura_gece');
+  const gece = (geceEl && Number(geceEl.value)>0) ? Number(geceEl.value) : geceSayisi(o.giris,o.cikis);
+  const state = checkoutHesapDurumu(no,gece);
+  const raw = Number(document.getElementById('coz_tahsil_tutar')?.value)||0;
+  checkoutTahsilatOzetYaz(state,raw);
+};
+
 // ── CHECK-OUT MENÜSÜ ──
 window.openCheckoutMenu = function(no) {
   const o = window._O['oda'+no];
@@ -4007,12 +4114,13 @@ window.openCheckoutMenu = function(no) {
   }
 
   const checkoutGecelik = Number(o.sozlesmeFiyat || o.fiyat || 0);
-  const konaklama = faturaGece * checkoutGecelik;
-  const tumMasraflar = window._M.filter(m => String(m.odaNo) === String(no));
-  const yansitilan  = tumMasraflar.filter(m => m.odemeDurumu === 'odaya_yansitildi');
-  const ayriOdenen  = tumMasraflar.filter(m => m.odemeDurumu === 'ayri_odendi');
-  const yansitilanT = yansitilan.reduce((a,b)=>a+Number(b.tutar||0), 0);
-  const ayriT       = ayriOdenen.reduce((a,b)=>a+Number(b.tutar||0), 0);
+  const state0 = checkoutHesapDurumu(no, faturaGece);
+  const konaklama = state0.konaklama;
+  const tumMasraflar = state0.tumMasraflar;
+  const yansitilan  = state0.yansitilan;
+  const ayriOdenen  = state0.ayriOdenen;
+  const yansitilanT = state0.yansitilanT;
+  const ayriT       = state0.ayriT;
 
   currentCheckoutOda = no;
   const odaAdi = oz.ad ? `Oda ${no} — ${oz.ad}` : `Oda ${no}`;
@@ -4068,8 +4176,9 @@ window.openCheckoutMenu = function(no) {
     masrafBlok.innerHTML = html;
   }
 
-  document.getElementById('coz_toplam').textContent = fmt(konaklama + yansitilanT);
+  document.getElementById('coz_toplam').textContent = fmt(state0.hesapToplam);
   document.getElementById('coz_ayri_toplam').textContent = ayriT > 0 ? fmt(ayriT) : '—';
+  checkoutTahsilatOzetYaz(state0, state0.checkoutKalan);
   const ekleBtn = document.getElementById('coz_masraf_ekle_btn');
   if(ekleBtn) ekleBtn.onclick = () => openMasrafModal(no);
 
@@ -4086,9 +4195,8 @@ window.cozGeceGuncelle = function() {
   if(!o) return;
   const gece = parseInt(document.getElementById('coz_fatura_gece').value) || 1;
   const checkoutGecelik = Number(o.sozlesmeFiyat || o.fiyat || 0);
-  const konaklama = gece * checkoutGecelik;
-  const yansitilan = window._M.filter(m=>String(m.odaNo)===String(no)&&m.odemeDurumu==='odaya_yansitildi');
-  const yansitilanT = yansitilan.reduce((a,b)=>a+Number(b.tutar||0),0);
+  const state = checkoutHesapDurumu(no,gece);
+  const konaklama = state.konaklama;
 
   const adEl = document.getElementById('coz_konaklama_ad');
   const tutarEl = document.getElementById('coz_konaklama_tutar');
@@ -4096,7 +4204,8 @@ window.cozGeceGuncelle = function() {
   if(adEl) adEl.innerHTML = `${gece} Gece Konaklama <span class="badge badge-gold" style="font-size:9px">Erken Çıkış</span>`;
   if(tutarEl) tutarEl.textContent = fmt(konaklama);
   if(labelEl) labelEl.textContent = `× ${checkoutGecelik.toLocaleString('tr-TR')} ₺ = ${fmt(konaklama)}`;
-  document.getElementById('coz_toplam').textContent = fmt(konaklama + yansitilanT);
+  document.getElementById('coz_toplam').textContent = fmt(state.hesapToplam);
+  checkoutTahsilatOzetYaz(state, state.checkoutKalan);
 };
 
 window.saveCheckoutFromOzet = async function() {
@@ -4107,33 +4216,64 @@ window.saveCheckoutFromOzet = async function() {
   window._checkoutKaydediliyor = true;
   try {
   const oz = window._OZ?.['oda'+no] || {};
-  const odeme = document.getElementById('coz_odeme').value;
-  const odemeDurum = document.getElementById('coz_odeme_durum')?.value || 'odendi';
+  const odeme = document.getElementById('coz_odeme')?.value || o.odemeTuru || 'nakit';
   // Erken çıkış: kullanıcının girdiği gece sayısını kullan
   const faturaGeceEl = document.getElementById('coz_fatura_gece');
   const gece = (faturaGeceEl && parseInt(faturaGeceEl.value) > 0)
     ? parseInt(faturaGeceEl.value)
     : geceSayisi(o.giris, o.cikis);
   const now  = nowISO();
+  const state = checkoutHesapDurumu(no,gece);
+  if(!state) throw new Error('CHECKOUT_HESAP_YOK');
 
-  // Sadece odaya yansıtılan masrafları checkout_odendi yap
-  const yansitilan = window._M.filter(m => String(m.odaNo)===String(no) && m.odemeDurumu==='odaya_yansitildi');
-  const yansitilanT = yansitilan.reduce((a,b)=>a+Number(b.tutar||0), 0);
-  const checkoutGecelik = Number(o.sozlesmeFiyat || o.fiyat || 0);
-  const konaklama = gece * checkoutGecelik; // misafirin sözleşme toplamı
+  let tahsilSimdi = state.checkoutKalan <= 0.009 ? 0 : (Number(document.getElementById('coz_tahsil_tutar')?.value)||0);
+  if(tahsilSimdi < 0) { toast('Tahsilat tutarı negatif olamaz.','error'); return; }
+  if(tahsilSimdi > state.checkoutKalan + 0.009) {
+    toast(`Check-out tahsilatı kalan borçtan (${fmt(state.checkoutKalan)}) fazla olamaz.`,'error'); return;
+  }
+  tahsilSimdi = Math.round(tahsilSimdi*100)/100;
+  const sonKalan = Math.max(0, Math.round((state.checkoutKalan-tahsilSimdi)*100)/100);
+  const odemeDurum = sonKalan <= 0.009 ? 'odendi' : (tahsilSimdi > 0 ? 'kismi' : 'odenmedi');
+
+  const yansitilan = state.yansitilan;
+  const yansitilanT = state.yansitilanT;
+  const konaklama = state.konaklama; // misafirin sözleşme toplamı
+  const checkoutGecelik = state.gecelik;
   const otelKonaklamaGeliri = gece * Number(o.fiyat || 0); // komisyon öncesi/otel baz fiyatı
-  const toplam = konaklama + yansitilanT;
+  const toplam = state.hesapToplam;
   const odaAdi = oz.ad ? `Oda ${no} (${oz.ad})` : `Oda ${no}`;
 
+  // Yeni tahsilatı önce konaklama borcuna, sonra oda masraflarına dağıt.
+  // Erken çıkış nedeniyle önceden konaklamaya fazla ödeme oluşmuşsa bu kredi de
+  // odaya yansıtılan masrafları kapatabilir.
+  const oncekiKonaklamaTahsil = Math.max(0, state.oncekiTahsil);
+  const konaklamaKalanOnceki = Math.max(0, konaklama - oncekiKonaklamaTahsil);
+  const konaklamaTahsilSimdi = Math.min(tahsilSimdi, konaklamaKalanOnceki);
+  const konaklamaTahsilToplam = Math.min(konaklama, oncekiKonaklamaTahsil + konaklamaTahsilSimdi);
+  const oncekiFazlaKredi = Math.max(0, oncekiKonaklamaTahsil - konaklama);
+  let masrafTahsilButce = Math.max(0, oncekiFazlaKredi + tahsilSimdi - konaklamaTahsilSimdi);
+
   for(const m of yansitilan) {
-    await updateDoc(doc(db,'odaMasraflari',m.id), {odemeDurumu:'checkout_odendi', checkoutTarih:now});
+    const masrafTutar = Math.max(0,Number(m.tutar)||0);
+    const masrafTahsil = Math.min(masrafTutar, masrafTahsilButce);
+    masrafTahsilButce = Math.max(0,masrafTahsilButce-masrafTahsil);
+    const masrafKalan = Math.max(0,masrafTutar-masrafTahsil);
+    const masrafDurum = masrafKalan <= 0.009 ? 'checkout_odendi' : (masrafTahsil > 0 ? 'checkout_kismi' : 'checkout_borc');
+    const gelirOdemeDurum = masrafKalan <= 0.009 ? 'odendi' : (masrafTahsil > 0 ? 'kismi' : 'odenmedi');
+    await updateDoc(doc(db,'odaMasraflari',m.id), {
+      odemeDurumu:masrafDurum, checkoutTarih:now,
+      checkoutTahsilEdilen:masrafTahsil, checkoutKalan:masrafKalan,
+      checkoutOdemeTuru:masrafTahsil>0 ? odeme : ''
+    });
     await setDoc(doc(db,'gelirler',`oda_masrafi_${m.id}`), {
-      masrafId:m.id, tarih: today(), tutar: Number(m.tutar),
-      odaNo: String(no), odemeTuru: odeme, odemeDurum,
-      misafir: o.misafir, tc: o.tc||'',
+      masrafId:m.id, tarih: today(), tutar: masrafTutar,
+      odaNo: String(no), odemeTuru: masrafTahsil>0 ? odeme : '', odemeDurum:gelirOdemeDurum,
+      tahsilEdilen:masrafTahsil, kalanTahsilat:masrafKalan,
+      misafir: o.misafir, tc: o.tc||'', konaklamaKey:o.konaklamaKey||null,
+      gelirDocId:o.gelirDocId||null, rezervasyonId:o.rezervasyonId||null,
       kaynak: 'oda-masrafi',
       aciklama: `${odaAdi} · Masraf · ${m.aciklama}`,
-      kayitTarih: now, guncelleme:now
+      kayitTarih: m.kayitTarih||now, guncelleme:now
     },{merge:true});
   }
 
@@ -4147,16 +4287,17 @@ window.saveCheckoutFromOzet = async function() {
   if(konaklama > 0) {
     const gelirId = o.gelirDocId || konaklamaGelirId(no,o.giris,o.tc,o.misafir,o.rezervasyonId||'');
     const konaklamaKey = o.konaklamaKey || `${no}|${temizAnahtar(o.tc||o.misafir)}|${o.giris}`;
-    const sozlesmeToplam = (o.sozlesmeFiyat||o.fiyat||0)*gece;
-    const oncekiAlinan = Number(o.tahsilEdilen != null ? o.tahsilEdilen : o.kismiTutar)||0;
-    const alinanTutar = odemeAlinanTutar(odemeDurum,sozlesmeToplam,oncekiAlinan);
+    const sozlesmeToplam = konaklama;
+    const konaklamaOdemeDurum = konaklamaTahsilToplam >= sozlesmeToplam-0.009
+      ? 'odendi' : (konaklamaTahsilToplam > 0 ? 'kismi' : 'odenmedi');
     const checkoutHareketleri = Array.isArray(o.odemeHareketleri) ? [...o.odemeHareketleri] : [];
-    if(odemeDurum === 'odendi' && sozlesmeToplam > oncekiAlinan) checkoutHareketleri.push({tutar:sozlesmeToplam-oncekiAlinan,tur:odeme,tarih:now,asama:'checkout'});
+    if(konaklamaTahsilSimdi > 0) checkoutHareketleri.push({tutar:konaklamaTahsilSimdi,tur:odeme,tarih:now,asama:'checkout'});
     await setDoc(doc(db,'gelirler',gelirId), {
       kayitTip:'konaklama', konaklamaKey, giris:o.giris, cikis:gercekCikis, checkoutTarih:today(),
       tarih: o.giris||today(), tutar: otelKonaklamaGeliri,
-      odaNo: String(no), odemeTuru: odeme, odemeDurum,
-      tahsilEdilen:alinanTutar, kalanTahsilat:Math.max(0,sozlesmeToplam-alinanTutar),
+      odaNo: String(no), odemeTuru: konaklamaTahsilSimdi>0 ? odeme : (o.odemeTuru||odeme), odemeDurum:konaklamaOdemeDurum,
+      odemeToplam:sozlesmeToplam,
+      tahsilEdilen:konaklamaTahsilToplam, kalanTahsilat:Math.max(0,sozlesmeToplam-konaklamaTahsilToplam),
       odemeHareketleri: checkoutHareketleri,
       misafir: o.misafir, tc: o.tc||'', kaynak: o.kaynak||'walk-in',
       fiyatTip: o.fiyatTip||1, fiyatTipAd: getTipAd(o.fiyatTip||1),
@@ -4203,9 +4344,9 @@ window.saveCheckoutFromOzet = async function() {
 
   renderOdalar();
   closeModal('checkoutOzetModal');
-  vardiyaIstatistikGuncelle('checkout', toplam);
-  await logAktivite('checkout', `${o.misafir||'?'} · ${gece} gece · Toplam ${fmt(toplam)}${komSonuc?' · Komisyon: '+komSonuc.eski+'→'+komSonuc.yeni:''}`, no);
-  let coMesaj = `${odaAdi} — Check-out tamamlandı ✓ · ${fmt(toplam)}`;
+  vardiyaIstatistikGuncelle('checkout', tahsilSimdi);
+  await logAktivite('checkout', `${o.misafir||'?'} · ${gece} gece · Hesap ${fmt(toplam)} · Önceki tahsil ${fmt(state.oncekiTahsil)} · Check-out tahsil ${fmt(tahsilSimdi)} · Kalan ${fmt(sonKalan)}${komSonuc?' · Komisyon: '+komSonuc.eski+'→'+komSonuc.yeni:''}`, no);
+  let coMesaj = `${odaAdi} — Check-out tamamlandı ✓ · Hesap ${fmt(toplam)} · Şimdi tahsil ${fmt(tahsilSimdi)}${sonKalan>0.009?' · Açık alacak '+fmt(sonKalan):' · Hesap kapalı'}`;
   if(komSonuc) {
     coMesaj += komSonuc.silindi
       ? ` · Komisyon hakedişi kaldırıldı (${komSonuc.eski.toLocaleString('tr-TR')} ₺ → 0 ₺)`
@@ -4314,6 +4455,10 @@ window.saveMasraf = async function() {
     odaAdi: oz.ad || '',
     misafir: o?.misafir || '—',
     tc: o?.tc || '',
+    konaklamaKey: o?.konaklamaKey || null,
+    gelirDocId: o?.gelirDocId || null,
+    rezervasyonId: o?.rezervasyonId || null,
+    giris: o?.giris || null,
     tutar,
     aciklama,
     kategori,
@@ -4351,8 +4496,9 @@ window.printFolio = function() {
   const gece = (faturaGeceEl && parseInt(faturaGeceEl.value) > 0)
     ? parseInt(faturaGeceEl.value)
     : geceSayisi(o.giris, o.cikis);
-  const konaklama = gece * (o.fiyat||0);
-  const tumMasraflar = window._M.filter(m=>String(m.odaNo)===String(no));
+  const faturaGecelik = Number(o.sozlesmeFiyat || o.fiyat || 0);
+  const konaklama = gece * faturaGecelik;
+  const tumMasraflar = (window._M||[]).filter(m=>masrafBuKonaklamayaAit(m,o,no));
   const yansitilan = tumMasraflar.filter(m=>m.odemeDurumu==='odaya_yansitildi');
   const masrafToplam = yansitilan.reduce((a,b)=>a+Number(b.tutar||0),0);
   const genel = konaklama + masrafToplam;
@@ -4438,9 +4584,9 @@ window.printFolio = function() {
           <tr>
             <td style="padding:12px 0;border-bottom:1px solid #e8e4dc">
               <div style="font-weight:600">${gece} Gece Konaklama</div>
-              <div style="font-size:11px;color:#9a8a7a;margin-top:3px">${getTipAd(o.fiyatTip||1)} · ${(o.fiyat||0).toLocaleString('tr-TR')} ₺/gece</div>
+              <div style="font-size:11px;color:#9a8a7a;margin-top:3px">${getTipAd(o.fiyatTip||1)} · ${faturaGecelik.toLocaleString('tr-TR')} ₺/gece</div>
             </td>
-            <td style="padding:12px 0;text-align:center;color:#888;border-bottom:1px solid #e8e4dc">${gece} × ${(o.fiyat||0).toLocaleString('tr-TR')} ₺</td>
+            <td style="padding:12px 0;text-align:center;color:#888;border-bottom:1px solid #e8e4dc">${gece} × ${faturaGecelik.toLocaleString('tr-TR')} ₺</td>
             <td style="padding:12px 0;font-weight:600;text-align:right;border-bottom:1px solid #e8e4dc">${fmt(konaklama)}</td>
           </tr>
           ${masrafSatir}
@@ -5059,10 +5205,12 @@ window.renderMasraflar = function() {
   }
 
   // Özet kartları güncelle
-  const acik = window._M.filter(m => m.odemeDurumu === 'odaya_yansitildi' || m.odemeDurumu === 'acik');
+  const acikDurumlar = new Set(['odaya_yansitildi','acik','checkout_kismi','checkout_borc']);
+  const acik = window._M.filter(m => acikDurumlar.has(m.odemeDurumu));
   const yansi = window._M.filter(m => m.odemeDurumu === 'odaya_yansitildi');
   const ayri  = window._M.filter(m => m.odemeDurumu === 'ayri_odendi');
-  document.getElementById('masraf-acik-toplam').textContent  = fmt(acik.reduce((a,b)=>a+Number(b.tutar||0),0));
+  const masrafAcikTutar = m => (m.checkoutKalan != null ? Math.max(0,Number(m.checkoutKalan)||0) : Math.max(0,Number(m.tutar)||0));
+  document.getElementById('masraf-acik-toplam').textContent  = fmt(acik.reduce((a,b)=>a+masrafAcikTutar(b),0));
   document.getElementById('masraf-yansi-toplam').textContent = fmt(yansi.reduce((a,b)=>a+Number(b.tutar||0),0));
   document.getElementById('masraf-ayri-toplam').textContent  = fmt(ayri.reduce((a,b)=>a+Number(b.tutar||0),0));
 
@@ -5071,6 +5219,8 @@ window.renderMasraflar = function() {
       'odaya_yansitildi': ['badge-orange','Odaya Yansıtıldı'],
       'ayri_odendi':      ['badge-green', 'Ayrı Ödendi'],
       'checkout_odendi':  ['badge-blue',  'Check-out\'ta Ödendi'],
+      'checkout_kismi':   ['badge-orange','Check-out Kısmi'],
+      'checkout_borc':    ['badge-red',   'Check-out Borcu'],
       'acik':             ['badge-red',   'Açık'],
     };
     const [cls, lbl] = map[m.odemeDurumu] || map[m.durum] || ['badge-gray','—'];
@@ -5090,8 +5240,8 @@ window.renderMasraflar = function() {
       <td>${durumBadge(m)}</td>
       <td style="font-size:11px;color:var(--muted)">${m.kimGirdi||'—'}</td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
-        ${(m.odemeDurumu==='odaya_yansitildi'||m.odemeDurumu==='acik')
-          ?`<button class="btn btn-success btn-sm" onclick="masrafAyriOde('${m.id}')">Ayrı Öde</button>`:''}
+        ${(['odaya_yansitildi','acik','checkout_kismi','checkout_borc'].includes(m.odemeDurumu))
+          ?`<button class="btn btn-success btn-sm" onclick="masrafAyriOde('${m.id}')">Kalanı Tahsil Et</button>`:''}
         <button class="btn btn-danger btn-sm" onclick="deleteMasraf('${m.id}')">Sil</button>
       </td>
     </tr>`;
@@ -5107,16 +5257,25 @@ window.masrafAyriOde = async function(id) {
   const odeme = prompt('Ödeme türü: nakit / kart / havale', 'nakit');
   if(!odeme) return;
   const now = nowISO();
-  await updateDoc(doc(db,'odaMasraflari',id), {odemeDurumu:'ayri_odendi', odemeTuru:odeme, odemeZamani:now});
+  const toplamMasraf = Math.max(0,Number(m.tutar)||0);
+  const oncekiTahsil = Math.max(0,Number(m.checkoutTahsilEdilen)||0);
+  const kalan = m.checkoutKalan != null ? Math.max(0,Number(m.checkoutKalan)||0) : Math.max(0,toplamMasraf-oncekiTahsil);
+  if(kalan <= 0.009) { toast('Bu masrafın açık bakiyesi yok.','info'); return; }
+  await updateDoc(doc(db,'odaMasraflari',id), {
+    odemeDurumu:'ayri_odendi', odemeTuru:odeme, odemeZamani:now,
+    checkoutTahsilEdilen:Math.min(toplamMasraf,oncekiTahsil+kalan), checkoutKalan:0
+  });
   await setDoc(doc(db,'gelirler',`oda_masrafi_${id}`), {
-    masrafId:id, tarih: today(), tutar: Number(m.tutar),
-    odaNo: m.odaNo, odemeTuru: odeme,
-    misafir: m.misafir, tc: m.tc||'',
+    masrafId:id, tarih: today(), tutar: toplamMasraf,
+    odaNo: m.odaNo, odemeTuru: odeme, odemeDurum:'odendi',
+    tahsilEdilen:toplamMasraf, kalanTahsilat:0,
+    misafir: m.misafir, tc: m.tc||'', konaklamaKey:m.konaklamaKey||null,
+    gelirDocId:m.gelirDocId||null, rezervasyonId:m.rezervasyonId||null,
     kaynak: 'oda-masrafi',
     aciklama: `Oda ${m.odaNo} · Masraf · ${m.aciklama}`,
-    kayitTarih: now, guncelleme:now
+    kayitTarih: m.kayitTarih||now, guncelleme:now
   },{merge:true});
-  toast('Masraf ayrı ödendi olarak işaretlendi ✓','success');
+  toast(`Masrafın kalan ${fmt(kalan)} tutarı tahsil edildi ✓`,'success');
 };
 
 window.deleteMasraf = async function(id) {
