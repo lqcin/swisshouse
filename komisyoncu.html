@@ -228,7 +228,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
           <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Beklenen Hakediş</div>
           <div id="kazancim_beklenen" style="font-size:20px;font-weight:700;color:var(--gold2)">—</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:4px">Henüz check-in olmamış rezervasyonlar · cari bakiyeye dahil değil</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">Giriş tarihi ileri rezervasyonlar · cari bakiyeye henüz dahil değil</div>
         </div>
         <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
           <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Bana Ödenen</div>
@@ -1063,106 +1063,44 @@ function araciBenimMi(kayitliAd) {
 // komisyoncunun "Kazancım" bakiyesine de giremez.
 function komisyonKaydiCariUygun(k) {
   if(!k) return false;
-  if(k.cariDahil === false || String(k.mutabakatDurum||'').startsWith('cari_disi')) return false;
-  const r=(_R||[]).find(x=>k.rezervasyonId && x.id===k.rezervasyonId)||null;
-  const g=(_G||[]).find(x=>k.gelirDocId && x.id===k.gelirDocId)||null;
-  if(k.gelirDocId) {
-    const aynilar=(_komTumu||[]).filter(x=>String(x.gelirDocId||'')===String(k.gelirDocId));
-    if(aynilar.length>1 && k.id!=='komisyon_'+k.gelirDocId) return false;
-  }
-  const rDurum=String(r?.durum||'').toLowerCase();
-  const noShowGeliri=String(k.kaynak||'').includes('no-show') || String(g?.kaynak||'').includes('no-show') || Number(k.gelirlesenTutar)>0;
-  if(['iptal','reddedildi'].includes(rDurum) && !noShowGeliri) return false;
-  const gece=Math.max(0,Number(k.gece)||Number(g?.gece)||0);
-  const otel=Math.max(0,Number(k.gercekFiyat ?? g?.fiyat ?? r?.fiyat)||0);
-  const musteri=Math.max(0,Number(k.sozlesmeFiyat ?? g?.sozlesmeFiyat ?? r?.sozlesmeFiyat)||0);
-  const toplam=Number(k.toplamKomisyon)||0;
-  if(toplam< -0.009) return false;
-  if(musteri>0 && otel>0 && musteri+0.009<otel) return false;
-  if((musteri<=0 || otel<=0) && toplam>0 && !noShowGeliri) {
-    const tip=String(k.komisyonTipSnapshot||''); const deger=Number(k.komisyonDegerSnapshot)||0;
-    if(!(['sabit','oran'].includes(tip) && deger>0)) return false;
-  }
-  if(musteri>0 && otel>0 && musteri>=otel && gece>0 && !noShowGeliri && (String(k.komisyonKaynak||'').includes('fiyat') || musteri>otel)) {
-    const beklenen=Math.round((musteri-otel)*gece*100)/100;
-    if(Math.abs(toplam-beklenen)>0.02) return false;
-  }
-  return true;
+  if(k.cariDahil===false||String(k.mutabakatDurum||'').startsWith('cari_disi')) return false;
+  const r=(_R||[]).find(x=>k.rezervasyonId&&x.id===k.rezervasyonId)||null;
+  if(r&&komisyonRezIptalMi(r)) return false;
+  if(k.gelirDocId){const aynilar=(_komTumu||[]).filter(x=>String(x.gelirDocId||'')===String(k.gelirDocId));if(aynilar.length>1&&k.id!=='komisyon_'+k.gelirDocId)return false;}
+  if(Number(k.toplamKomisyon)<-0.009)return false;
+  if(r){const h=rezervasyonKomisyonum(r);return !!h && Math.abs((Number(k.toplamKomisyon)||0)-h.tutar)<=0.02;}
+  const tip=String(k.komisyonTipSnapshot||'').toLowerCase(),deger=Number(k.komisyonDegerSnapshot)||0,gece=Math.max(0,Number(k.gece)||0),musteri=Number(k.sozlesmeFiyat)||0,otel=Number(k.gercekFiyat)||0;
+  let bek=0;if(tip==='sabit'&&deger>0)bek=deger*gece;else if(tip==='oran'&&deger>0&&musteri>0)bek=musteri*gece*Math.min(deger,100)/100;else if(tip==='manuel'&&musteri>otel&&otel>0)bek=(musteri-otel)*gece;
+  return bek>0&&Math.abs((Number(k.toplamKomisyon)||0)-bek)<=0.02;
 }
 
-function beklenenKomisyonlarim() {
-  return (_R||[]).filter(r => {
-    if(r.durum !== 'bekliyor') return false;
-    if(!kayitBenimMi(r)) return false;
-    const odaMeta = _O?.['oda'+r.odaNo];
-    // Aynı rezervasyon check-in olduysa, rezervasyon durumu güncellenmeden önceki kısa
-    // senkronizasyon aralığında beklenen + kesin komisyonun iki kez sayılmasını engelle.
-    const checkinOlmus = odaMeta && odaMeta.durum === 'dolu' && (
-      (r.id && odaMeta.rezervasyonId === r.id) || odaMeta.giris === r.giris
-    );
-    if(checkinOlmus) return false;
-    const kesinVar = (_komTumu||[]).some(k =>
-      (k.rezervasyonId && r.id && k.rezervasyonId === r.id) ||
-      (String(k.odaNo||'') === String(r.odaNo||'') && String(k.tarih||'') === String(r.giris||'') && kayitBenimMi(k))
-    );
-    return !kesinVar;
-  }).map(r => {
-    const fiyat = Number(r.fiyat) || 0;
-    const sozlesme = Number(r.sozlesmeFiyat) || 0;
-    const gece = r.giris && r.cikis ? Math.max(1, Math.round((new Date(r.cikis) - new Date(r.giris)) / 864e5)) : 0;
-    let tutar = (sozlesme && fiyat && sozlesme>fiyat && gece) ? (sozlesme-fiyat)*gece : 0;
-    if(tutar === 0 && gece) {
-      // Beklenen hakedişte rezervasyon anındaki snapshot kullanılır. Eski rezervasyonun
-      // komisyonunu bugünkü ayarla değiştirmeyiz.
-      const tip=String(r.komisyonTipSnapshot||r.komisyonTip||'');
-      const deger=Math.max(0,Number(r.komisyonDegerSnapshot??r.komisyonDeger)||0);
-      if((tip==='sabit'||tip==='oran') && deger>0) {
-        const baz=sozlesme||fiyat;
-        let gecelik=tip==='sabit'?Math.min(baz,deger):baz*Math.min(deger,100)/100;
-        tutar=Math.round(gecelik*gece*100)/100;
-      }
-    }
-    return { r, gece, tutar };
-  }).filter(x => x.tutar > 0);
+function sozlesmeKomisyonlarim() {
+  const kesin=[], beklenen=[];
+  (_R||[]).forEach(r=>{ const h=rezervasyonKomisyonum(r); if(!h)return; (h.beklenen?beklenen:kesin).push(h); });
+  return {kesin,beklenen};
 }
+function beklenenKomisyonlarim() { return sozlesmeKomisyonlarim().beklenen; }
 
 // Kazancım panelini ve detay dökümünü günceller — bu komisyoncunun kendi adına
 // (ve giriş yaptığı kullanıcı adının KOMISYONCULAR'daki görünen adına) eşleşen
 // komisyon (hakediş) ve ödeme kayıtlarını toplar. Resepsiyon tarafındaki Cari Hesap'la
-// tutarlı olsun diye, henüz check-in yapılmamış ama onaylı rezervasyonlardan beklenen
-// komisyon da (varsa) hesaba katılır — ikisi de aynı toplamı göstermeli.
+// tutarlı olsun diye, giriş tarihi ileri rezervasyonlar beklenen; bugün/geçmiş rezervasyonlar kesin hakediştir.
 function renderKazancim() {
   if(!aktifKom) return;
-
-  const borclar = _komTumu.filter(k => kayitBenimMi(k) && komisyonKaydiCariUygun(k));
-  const kontrolDisi = _komTumu.filter(k => kayitBenimMi(k) && !komisyonKaydiCariUygun(k));
-  const odemeler = _komOdemeTumu.filter(p => kayitBenimMi(p));
-
-  const beklenenler = beklenenKomisyonlarim();
-
-  const toplamBeklenen = beklenenler.reduce((a,b)=>a+b.tutar, 0);
-  const toplamKesin = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
-  const toplamOdenen = odemeler.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
-  // Beklenen hakediş finansal cari alacak değildir. Net bakiye yalnız KESİN - ÖDENEN.
-  const kalan = toplamKesin - toplamOdenen;
-
-  const elToplam = document.getElementById('kazancim_toplam');
-  const elBeklenen = document.getElementById('kazancim_beklenen');
-  const elOdenen = document.getElementById('kazancim_odenen');
-  const elKalan = document.getElementById('kazancim_kalan');
-  if(elToplam) elToplam.textContent = fmt(toplamKesin) + ' ₺';
-  if(elBeklenen) elBeklenen.textContent = fmt(toplamBeklenen) + ' ₺';
-  if(elOdenen) elOdenen.textContent = fmt(toplamOdenen) + ' ₺';
-  if(elKalan) {
-    const temel = kalan < -0.5 ? ('Komisyoncu borçlu / mahsup: ' + fmt(Math.abs(kalan)) + ' ₺') : (fmt(kalan) + ' ₺');
-    elKalan.textContent = temel + (kontrolDisi.length ? ` · ⚠ ${kontrolDisi.length} kayıt mutabakat bekliyor` : '');
-    elKalan.style.color = kalan > 0.5 ? 'var(--primary)' : (kalan < -0.5 ? 'var(--red,#c8102e)' : 'var(--green)');
-  }
-
-  // Detay modalı açıksa canlı güncellensin
-  if(document.getElementById('kazancimModal')?.classList.contains('aktif')) {
-    kazancimDetayDoldur(borclar, odemeler, beklenenler);
-  }
+  const {kesin,beklenen}=sozlesmeKomisyonlarim();
+  const hesaplananIds=new Set([...kesin,...beklenen].map(x=>x.r?.id).filter(Boolean));
+  // Otomatik sözleşme hesabına bağlanmayan doğrulanmış manuel/legacy kayıtları koru.
+  const legacy=_komTumu.filter(kk=>kayitBenimMi(kk)&&komisyonKaydiCariUygun(kk)&&!(kk.rezervasyonId&&hesaplananIds.has(kk.rezervasyonId)));
+  const kontrolDisi=_komTumu.filter(kk=>kayitBenimMi(kk)&&!komisyonKaydiCariUygun(kk)&&!(kk.rezervasyonId&&hesaplananIds.has(kk.rezervasyonId)));
+  const odemeler=_komOdemeTumu.filter(p=>kayitBenimMi(p));
+  const toplamKesin=kesin.reduce((a,b)=>a+b.tutar,0)+legacy.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0),0);
+  const toplamBeklenen=beklenen.reduce((a,b)=>a+b.tutar,0);
+  const toplamOdenen=odemeler.reduce((a,b)=>a+(Number(b.tutar)||0),0);
+  const kalan=toplamKesin-toplamOdenen;
+  const elToplam=document.getElementById('kazancim_toplam'),elBeklenen=document.getElementById('kazancim_beklenen'),elOdenen=document.getElementById('kazancim_odenen'),elKalan=document.getElementById('kazancim_kalan');
+  if(elToplam)elToplam.textContent=fmt(toplamKesin)+' ₺'; if(elBeklenen)elBeklenen.textContent=fmt(toplamBeklenen)+' ₺'; if(elOdenen)elOdenen.textContent=fmt(toplamOdenen)+' ₺';
+  if(elKalan){const temel=kalan<-.5?('Komisyoncu borçlu / mahsup: '+fmt(Math.abs(kalan))+' ₺'):(fmt(kalan)+' ₺');elKalan.textContent=temel+(kontrolDisi.length?` · ⚠ ${kontrolDisi.length} legacy kayıt mutabakat bekliyor`:'');elKalan.style.color=kalan>.5?'var(--primary)':(kalan<-.5?'var(--red,#c8102e)':'var(--green)');}
+  if(document.getElementById('kazancimModal')?.classList.contains('aktif')) kazancimDetayDoldur(kesin,legacy,odemeler,beklenen);
 }
 
 function komisyonHareketleriniAc(k) {
@@ -1184,29 +1122,16 @@ function komisyonHareketleriniAc(k) {
   return [{ tarih:k.tarih||k.kayitTarih||'', tip:'borc', aciklama:`Oda ${k.odaNo||'—'} · ${k.misafir||'—'} · ${k.gece||'—'} gece`, tutar:Number(k.toplamKomisyon)||0 }].filter(h=>h.tutar>0);
 }
 
-function kazancimDetayDoldur(borclar, odemeler, beklenenler) {
-  const hareketler = [
-    ...borclar.flatMap(komisyonHareketleriniAc),
-    ...(beklenenler||[]).map(b => ({ tarih: b.r.giris||'', tip:'beklenen',
-      aciklama: `⏳ Oda ${b.r.odaNo||'—'} · ${b.r.misafir||'—'} · ${b.gece} gece · henüz check-in yapılmadı`, tutar: b.tutar })),
-    ...odemeler.map(p => ({ tarih: p.tarih||p.kayitTarih||'', tip:'odeme',
-      aciklama: p.not ? `Ödeme alındı · ${p.not}` : 'Ödeme alındı', tutar: Number(p.tutar)||0 }))
-  ].sort((a,b) => String(a.tarih).localeCompare(String(b.tarih)));
-  window._kazancPdfHareketler = hareketler;
-
-  let bakiye = 0;
-  const satirlar = hareketler.map(h => {
-    bakiye += h.tip==='borc' ? h.tutar : ((h.tip==='odeme'||h.tip==='mahsup') ? -h.tutar : 0);
-    const borcRengi = h.tip==='beklenen' ? 'color:var(--gold2);font-style:italic' : '';
-    return `<tr>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;${borcRengi}">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar):'—'}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${(h.tip==='odeme'||h.tip==='mahsup')?fmt(h.tutar):'—'}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('kazancimDetayBody').innerHTML = satirlar || '<tr class="empty-row"><td colspan="5">Henüz hareket yok</td></tr>';
+function kazancimDetayDoldur(kesin, legacy, odemeler, beklenenler) {
+  const hareketler=[
+    ...(kesin||[]).map(b=>({tarih:b.r.giris||b.r.kayitTarih||'',tip:'borc',aciklama:`Oda ${b.r.odaNo||'—'} · ${b.r.misafir||'—'} · ${b.gece} gece · ${b.tip==='sabit'?fmt(b.deger)+' ₺/gece':b.tip==='oran'?'%'+b.deger+' toplam bedel':'manuel/fiyat farkı'}`,tutar:b.tutar})),
+    ...(legacy||[]).flatMap(komisyonHareketleriniAc),
+    ...(beklenenler||[]).map(b=>({tarih:b.r.giris||'',tip:'beklenen',aciklama:`⏳ Oda ${b.r.odaNo||'—'} · ${b.r.misafir||'—'} · ${b.gece} gece · rezervasyon hakedişi (cariye dahil değil)`,tutar:b.tutar})),
+    ...odemeler.map(p=>({tarih:p.tarih||p.kayitTarih||'',tip:'odeme',aciklama:p.not?`Ödeme alındı · ${p.not}`:'Ödeme alındı',tutar:Number(p.tutar)||0}))
+  ].sort((a,b)=>String(a.tarih).localeCompare(String(b.tarih)));
+  window._kazancPdfHareketler=hareketler; let bakiye=0;
+  const satirlar=hareketler.map(h=>{bakiye+=h.tip==='borc'?h.tutar:((h.tip==='odeme'||h.tip==='mahsup')?-h.tutar:0);const renk=h.tip==='beklenen'?'color:var(--gold2);font-style:italic':'';return `<tr><td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.aciklama}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;${renk}">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar):'—'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;color:var(--green)">${(h.tip==='odeme'||h.tip==='mahsup')?fmt(h.tutar):'—'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-weight:600">${fmt(bakiye)}</td></tr>`;}).join('');
+  document.getElementById('kazancimDetayBody').innerHTML=satirlar||'<tr class="empty-row"><td colspan="5">Henüz hareket yok</td></tr>';
 }
 
 window.kazancimPdfIndir = function() {
@@ -1224,13 +1149,12 @@ window.kazancimPdfIndir = function() {
 
 window.kazancimGoster = function() {
   if(!aktifKom) return;
-  const borclar = _komTumu.filter(k => kayitBenimMi(k));
-  const odemeler = _komOdemeTumu.filter(p => kayitBenimMi(p));
-  const beklenenler = beklenenKomisyonlarim();
-
-  document.getElementById('kazancimAltBaslik').textContent =
-    `${aktifKom.ad} — tüm zamanlar, en eskiden en yeniye doğru hareket dökümü`;
-  kazancimDetayDoldur(borclar, odemeler, beklenenler);
+  const {kesin,beklenen}=sozlesmeKomisyonlarim();
+  const ids=new Set([...kesin,...beklenen].map(x=>x.r?.id).filter(Boolean));
+  const legacy=_komTumu.filter(kk=>kayitBenimMi(kk)&&komisyonKaydiCariUygun(kk)&&!(kk.rezervasyonId&&ids.has(kk.rezervasyonId)));
+  const odemeler=_komOdemeTumu.filter(p=>kayitBenimMi(p));
+  document.getElementById('kazancimAltBaslik').textContent=`${aktifKom.ad} — rezervasyon anlaşmasına göre hareket dökümü`;
+  kazancimDetayDoldur(kesin,legacy,odemeler,beklenen);
   document.getElementById('kazancimModal').classList.add('aktif');
 };
 
@@ -1541,15 +1465,38 @@ window.odemeSecildi = function() {
   hesaplaOzet();
 };
 
-function komisyonHesapla(sozlesmeFiyat) {
+function komisyonHesapla(sozlesmeFiyat, gece=1) {
   const fiyat = Math.max(0, Number(sozlesmeFiyat)||0);
-  const tip = aktifKomAyar?.tip || 'manuel';
+  const nGece = Math.max(0, Number(gece)||0);
+  const tip = String(aktifKomAyar?.tip || 'manuel').toLowerCase();
   const deger = Math.max(0, Number(aktifKomAyar?.deger)||0);
-  let komisyon = 0;
-  if(tip === 'oran' && deger > 0) komisyon = fiyat * Math.min(deger,100) / 100;
-  if(tip === 'sabit' && deger > 0) komisyon = Math.min(fiyat, deger);
-  komisyon = Math.round(komisyon * 100) / 100;
-  return { tip, deger, komisyon, otelFiyat: Math.max(0, Math.round((fiyat-komisyon)*100)/100) };
+  let gecelik = 0, toplam = 0;
+  if(tip === 'sabit' && deger > 0) { gecelik=deger; toplam=deger*nGece; }
+  if(tip === 'oran' && deger > 0 && fiyat > 0) { gecelik=fiyat*Math.min(deger,100)/100; toplam=fiyat*nGece*Math.min(deger,100)/100; }
+  gecelik=Math.round(gecelik*100)/100; toplam=Math.round(toplam*100)/100;
+  return {tip,deger,komisyon:gecelik,gecelik,toplam,otelFiyat:null};
+}
+
+function komisyonRezIptalMi(r) {
+  const d=String(r?.durum||'').trim().toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[ıİ]/g,'i').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  return new Set(['iptal','iptal_edildi','reddedildi','red','silindi','void','cancelled','canceled']).has(d);
+}
+function rezervasyonKomisyonum(r) {
+  if(!r || !kayitBenimMi(r) || komisyonRezIptalMi(r)) return null;
+  const gece=r.giris&&r.cikis?Math.max(0,Math.round((new Date(r.cikis)-new Date(r.giris))/864e5)):Math.max(0,Number(r.gece)||0);
+  if(!gece) return null;
+  const tip=String(r.komisyonTipSnapshot||aktifKomAyar?.tip||'manuel').toLowerCase();
+  const deger=Math.max(0,Number(r.komisyonTipSnapshot?r.komisyonDegerSnapshot:aktifKomAyar?.deger)||0);
+  const musteri=Number(r.sozlesmeFiyat)||0, otel=Number(r.fiyat)||0;
+  let toplam=0,gecelik=0;
+  if(tip==='sabit'&&deger>0){gecelik=deger;toplam=deger*gece;}
+  else if(tip==='oran'&&deger>0&&musteri>0){gecelik=musteri*Math.min(deger,100)/100;toplam=gecelik*gece;}
+  else if(tip==='manuel'&&musteri>0&&otel>0&&musteri>otel){gecelik=musteri-otel;toplam=gecelik*gece;}
+  else if(tip==='manuel'&&Number(r.komisyonToplam)>0){toplam=Number(r.komisyonToplam)||0;gecelik=toplam/gece;}
+  toplam=Math.round(Math.max(0,toplam)*100)/100;gecelik=Math.round(Math.max(0,gecelik)*100)/100;
+  if(toplam<=0)return null;
+  const giris=String(r.giris||'').slice(0,10), beklenen=!!giris&&giris>komBugunStr();
+  return {r,gece,tutar:toplam,toplam,gecelik,tip,deger,beklenen};
 }
 
 window.hesaplaOzet = function() {
@@ -1566,13 +1513,13 @@ window.hesaplaOzet = function() {
   document.getElementById('oz_giris').textContent = formatTarih(giris);
   document.getElementById('oz_cikis').textContent = formatTarih(cikis);
   document.getElementById('oz_toplam').textContent = fiyat > 0 ? `${fmt(fiyat*gece)} ₺ (${gece} gece × ${fmt(fiyat)} ₺)` : '—';
-  const kom = komisyonHesapla(fiyat);
+  const kom = komisyonHesapla(fiyat, gece);
   const otomatikKomisyon = fiyat > 0 && kom.tip !== 'manuel' && kom.komisyon > 0;
   document.getElementById('oz_komisyon_satir').style.display = otomatikKomisyon ? 'flex' : 'none';
   document.getElementById('oz_otel_satir').style.display = otomatikKomisyon ? 'flex' : 'none';
   if(otomatikKomisyon) {
-    document.getElementById('oz_komisyon').textContent = `${fmt(kom.komisyon*gece)} ₺ (${kom.tip==='oran'?'%'+kom.deger:fmt(kom.deger)+' ₺/gece'})`;
-    document.getElementById('oz_otel').textContent = `${fmt(kom.otelFiyat*gece)} ₺`;
+    document.getElementById('oz_komisyon').textContent = `${fmt(kom.toplam)} ₺ (${kom.tip==='oran'?('toplam × %'+kom.deger):(fmt(kom.deger)+' ₺ × '+gece+' gece')})`;
+    document.getElementById('oz_otel').textContent = 'Resepsiyon / otel fiyat kaydı ayrı tutulur';
   }
   ozetKutu.style.display = 'block';
 
@@ -1736,15 +1683,16 @@ window.talepGonder = async function() {
 
   try {
     await authHazirBekle();
-    const kom = komisyonHesapla(fiyat);
+    const kom = komisyonHesapla(fiyat, gece);
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
-      fiyat: kom.tip === 'manuel' ? null : kom.otelFiyat,
+      fiyat: null, // Otel neti komisyon anlaşmasından türetilmez.
       sozlesmeFiyat: fiyat,  // komisyoncunun girdiği = sözleşme/komisyon dahil fiyat
       komisyonTip: kom.tip, komisyonDeger: kom.deger,
-      komisyonTutarGecelik: kom.komisyon,
-      komisyonToplam: Math.round(kom.komisyon * gece * 100) / 100,
+      komisyonTipSnapshot: kom.tip, komisyonDegerSnapshot: kom.deger,
+      komisyonTutarGecelik: kom.gecelik,
+      komisyonToplam: kom.toplam,
       musaitlikKontrolGerekli: !_veriDurumu.rezervasyon,
       yetiskin, cocuk,
       odemeDurum, odemeTuru,
