@@ -2361,14 +2361,54 @@ function takvimIsoTarih(v){
   const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
   return m ? m[1] : '';
 }
+function takvimDurumAnahtar(v){
+  return String(v||'')
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/ı/g,'i')
+    .replace(/[^a-z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,'');
+}
+function takvimTerminalDurum(v){
+  const d=takvimDurumAnahtar(v);
+  if(!d) return false;
+  return d==='iptal' || d.startsWith('iptal_') || d.includes('redded') || d==='red' ||
+         d.includes('noshow') || d.includes('no_show') || d.includes('no_show') ||
+         d.includes('cancel') || d.includes('void') || d.includes('silindi') ||
+         d==='tamamlandi' || d.startsWith('tamamlandi_') || d==='completed';
+}
+function takvimAktifRezervasyonDurumu(v){
+  const d=takvimDurumAnahtar(v || 'bekliyor');
+  const aktif=new Set([
+    'bekliyor','beklemede','pending',
+    'onaylandi','onayli','approved',
+    'planlandi','planli','planned',
+    'karar_bekliyor','checkin_karari_bekliyor',
+    'gecikmis','late',
+    'aktif','active'
+  ]);
+  return aktif.has(d);
+}
 function rezervasyonTakvimdeGorunur(r){
   if(!r) return false;
-  const durum=String(r.durum || r._durum || 'bekliyor').trim().toLocaleLowerCase('tr-TR');
-  // Takvim görünürlüğü bir durum whitelist'i değildir. Eski sürümlerde onaylandi,
-  // planlandi, karar_bekliyor gibi farklı durum adları yazıldı. Yalnız açıkça
-  // terminal/iptal kayıtları takvimden çıkarılır; diğer geçerli tarihli rezervasyonlar görünür.
-  const terminal=new Set(['iptal','iptal_edildi','reddedildi','red','noshow','no-show','no_show']);
-  if(terminal.has(durum)) return false;
+  if(takvimTerminalDurum(r.durum || r._durum)) return false;
+  if(!takvimAktifRezervasyonDurumu(r.durum || r._durum || 'bekliyor')) return false;
+
+  // Bağlı komisyoncu talebi iptal/reddedilmişse rezervasyon kaydı eski durumda kalsa bile
+  // iptal kararı üstündür. Legacy kayıtlarda oda+tarih+misafir ile güvenli eşleşme yapılır.
+  const talepler = window._TALEP || [];
+  const bagliTalep = talepler.find(t =>
+    (r.kaynakTalepId && t.id===r.kaynakTalepId) ||
+    (t.rezervasyonId && r.id && t.rezervasyonId===r.id) ||
+    (!r.kaynakTalepId && !t.rezervasyonId &&
+      Number(t.odaNo)===Number(r.odaNo) &&
+      takvimIsoTarih(t.giris)===takvimIsoTarih(r.giris) &&
+      takvimIsoTarih(t.cikis)===takvimIsoTarih(r.cikis) &&
+      String(t.misafir||'').trim().toLocaleLowerCase('tr-TR')===String(r.misafir||'').trim().toLocaleLowerCase('tr-TR'))
+  );
+  if(bagliTalep && takvimTerminalDurum(bagliTalep.durum)) return false;
+
   const giris=takvimIsoTarih(r.giris), cikis=takvimIsoTarih(r.cikis);
   return !!giris && !!cikis && cikis>giris;
 }
@@ -2388,11 +2428,22 @@ function takvimRezervasyonBul(odaNo, gun, liste){
 function takvimOnayliTalepBul(odaNo, gun){
   const g=takvimIsoTarih(gun);
   if(!g) return null;
-  const aday=(window._TALEP||[]).filter(t =>
-    String(t.durum||'').toLocaleLowerCase('tr-TR')==='onaylandi' &&
-    Number(t.odaNo)===Number(odaNo) &&
-    takvimIsoTarih(t.giris)<=g && takvimIsoTarih(t.cikis)>g
-  );
+  const aday=(window._TALEP||[]).filter(t => {
+    const td=takvimDurumAnahtar(t.durum);
+    if(!['onaylandi','onayli','approved'].includes(td)) return false;
+    if(takvimTerminalDurum(t.durum)) return false;
+    if(Number(t.odaNo)!==Number(odaNo) || !(takvimIsoTarih(t.giris)<=g && takvimIsoTarih(t.cikis)>g)) return false;
+    // Talebe bağlı rezervasyon sonradan iptal/no-show/tamamlandı ise eski onaylı talep
+    // takvime rezervasyonu geri getiremez.
+    const bagli=(window._R||[]).find(r =>
+      (t.rezervasyonId && r.id===t.rezervasyonId) ||
+      (r.kaynakTalepId && r.kaynakTalepId===t.id) ||
+      (!t.rezervasyonId && !r.kaynakTalepId && Number(r.odaNo)===Number(t.odaNo) &&
+       takvimIsoTarih(r.giris)===takvimIsoTarih(t.giris) && takvimIsoTarih(r.cikis)===takvimIsoTarih(t.cikis) &&
+       String(r.misafir||'').trim().toLocaleLowerCase('tr-TR')===String(t.misafir||'').trim().toLocaleLowerCase('tr-TR'))
+    );
+    return !bagli || !takvimTerminalDurum(bagli.durum || bagli._durum);
+  });
   aday.sort((a,b)=>String(b.islemTarih||b.guncelleme||b.kayitTarih||'').localeCompare(String(a.islemTarih||a.guncelleme||a.kayitTarih||'')));
   const t=aday[0];
   return t ? {...t,_takvimTalep:true,_durum:'onaylandi',kaynak:t.kaynak||'komisyoncu-talep'} : null;
