@@ -552,6 +552,16 @@ function rezervasyonOdayiBloklar(r){
   return true;
 }
 
+
+// Takvim görünürlüğü oda blokajından bağımsızdır. Check-in günü gelmiş bir rezervasyon
+// yeni kaydı teknik olarak engellemese bile planlanan tarihleri boyunca takvimde görünür.
+function rezervasyonTakvimdeGorunur(r){
+  if(!r) return false;
+  const durum=String(r.durum||'bekliyor').toLocaleLowerCase('tr-TR');
+  if(['iptal','noshow','no-show','reddedildi'].includes(durum)) return false;
+  return ['bekliyor','aktif','gecikmis','tamamlandi'].includes(durum);
+}
+
 // ── KOMİSYONCU LİSTESİ ──
 // Artık koddan değil Firestore'dan (meta/komisyoncular) okunuyor — resepsiyon tarafındaki
 // Rapor > Komisyoncu Yönetimi panelinden eklenip düzenleniyor. Anonim giriş tamamlanır
@@ -1224,18 +1234,20 @@ function takvimTablosuCiz(gunList, today) {
         Number(r.odaNo) === odaNo &&
         (r.giris||'') <= iso &&
         (r.cikis||'') > iso &&
-        rezervasyonOdayiBloklar(r)
+        rezervasyonTakvimdeGorunur(r)
       );
       const benimRev = !!(rev && kayitBenimMi(rev));
       // Bu rezervasyon (henüz check-in olmamış) herhangi bir komisyoncu tarafından mı yapıldı?
       const revKomisyoncuKaynakli = !!(rev && (rev.komisyoncu || rev.araciAd));
 
       // Gelir (check-in yapılmış konaklama) var mı?
-      const gelir = _G.find(g =>
-        Number(g.odaNo) === odaNo &&
-        (g.giris||'') <= iso &&
-        (g.cikis||'') > iso
-      );
+      const gelir = _G.find(g => {
+        const kaynak=String(g.kaynak||'').toLocaleLowerCase('tr-TR');
+        return Number(g.odaNo) === odaNo &&
+          kaynak !== 'oda-masrafi' && kaynak !== 'no-show' && kaynak !== 'noshow' &&
+          (g.giris||'') <= iso &&
+          (g.cikis||'') > iso;
+      });
 
       // Oda meta durumu
       const odaMeta = _O['oda'+odaNo] || {durum:'bos'};
