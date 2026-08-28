@@ -537,8 +537,20 @@ function authHazirBekle() {
 authHazirBekle(); // sayfa açılır açılmaz girişi başlat, portal beklemeden hazırlansın
 
 const HOTEL_ODALAR = [101,102,103,201,202,203,301,302,303,401,402,403];
-const REZ_ODA_BLOKLAYAN_DURUMLAR = new Set(['bekliyor','aktif','gecikmis']);
-function rezervasyonOdayiBloklar(r){ return !!r && REZ_ODA_BLOKLAYAN_DURUMLAR.has(String(r.durum || 'bekliyor')); }
+const REZ_ODA_BLOKLAYAN_DURUMLAR = new Set(['bekliyor','aktif','gecikmis','karar_bekliyor']);
+function komYerelBugun(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function rezervasyonOdayiBloklar(r){
+  if(!r) return false;
+  const durum=String(r.durum||'bekliyor');
+  if(!REZ_ODA_BLOKLAYAN_DURUMLAR.has(durum)) return false;
+  if(durum==='aktif') return true;
+  // Giriş günü gelmiş fakat check-in yapılmamış rezervasyon artık odayı kilitlemez.
+  if(r.giris && r.giris<=komYerelBugun()) return false;
+  return true;
+}
 
 // ── KOMİSYONCU LİSTESİ ──
 // Artık koddan değil Firestore'dan (meta/komisyoncular) okunuyor — resepsiyon tarafındaki
@@ -1664,8 +1676,10 @@ function talepKonaklamaDurumu(t){
   if(g && t.cikis && bugun>=t.cikis) return {kod:'aktif',etiket:'⚠ Check-out Bekleniyor',renk:'#d97706',r,g,o};
   if(g) return {kod:'aktif',etiket:'🟢 Check-in Kaydı Var / Konaklıyor',renk:'var(--green)',r,g,o};
   if(t.giris && bugun < t.giris) return {kod:'planlandi',etiket:'🗓 Planlandı',renk:'var(--blue)',r,g,o};
-  if(t.giris && t.cikis && bugun>=t.giris && bugun<t.cikis) return {kod:'kayit_yok',etiket:'⚠ Check-in Kaydı Yok',renk:'#d97706',r,g,o};
-  if(t.cikis && bugun>=t.cikis) return {kod:'kayit_yok',etiket:'⚠ Konaklama Kaydı Bulunamadı',renk:'var(--red)',r,g,o};
+  if(r?.durum==='karar_bekliyor' || (t.giris && bugun>=t.giris && !g && !o)) {
+    return {kod:'karar_bekliyor',etiket:'⚠ Check-in Kararı Bekliyor',renk:'#d97706',r,g,o};
+  }
+  if(t.cikis && bugun>=t.cikis && !g && !o) return {kod:'karar_bekliyor',etiket:'⚠ Geçmiş Rezervasyon · Karar Bekliyor',renk:'#d97706',r,g,o};
   return {kod:'bekliyor',etiket:'Bekliyor',renk:'var(--muted)',r,g,o};
 }
 
