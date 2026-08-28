@@ -3441,9 +3441,10 @@ async function initOdalar() {
     window._odaCanliUnsub = onSnapshot(doc(db,'meta','odalar'), snap => {
       if(!snap.exists()) return;
       window._O = snap.data() || {};
+      window._raporKomBaseCache=null;
       renderOdalar();
       renderHatirlatma();
-      if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
+      if(document.getElementById('page-takvim')?.classList.contains('active')) takvimRenderPlanla();
       if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
       syncStatus(true);
     }, () => syncStatus(false));
@@ -3707,8 +3708,9 @@ function gunlukKontrolKur() {
 
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
+  window._raporKomBaseCache=null;
   renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true);
-  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
+  if(document.getElementById('page-takvim')?.classList.contains('active')) takvimRenderPlanla();
   if(document.getElementById('page-rapor')?.classList.contains('active')) { renderKomisyonCari(); renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 }, () => syncStatus(false));
 
@@ -3719,7 +3721,8 @@ onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), 
 
 onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
   window._G = gelirleriTekillestir(s.docs.map(d=>({id:d.id,...d.data()})));
-  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
+  window._raporKomBaseCache=null;
+  if(document.getElementById('page-takvim')?.classList.contains('active')) takvimRenderPlanla();
   if(document.getElementById('page-rapor')?.classList.contains('active')) { renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 });
 
@@ -3742,9 +3745,10 @@ let _talepIlkYukleme = true;
 onSnapshot(query(collection(db,'rezervasyon_talepleri'), orderBy('kayitTarih','desc')), s => {
   const oncekiBekleyenSayisi = (window._TALEP||[]).filter(t => t.durum==='bekliyor').length;
   window._TALEP = s.docs.map(d=>({id:d.id,...d.data()}));
+  window._raporKomBaseCache=null;
   const yeniBekleyenSayisi = window._TALEP.filter(t => t.durum==='bekliyor').length;
   renderInstagramTalepleri();
-  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
+  if(document.getElementById('page-takvim')?.classList.contains('active')) takvimRenderPlanla();
   if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
   // Sayfa ilk açıldığında ses çalma — sadece sonradan yeni talep gelirse çal
   if(!_talepIlkYukleme && yeniBekleyenSayisi > oncekiBekleyenSayisi) {
@@ -4102,7 +4106,7 @@ window.openOdaDetay = function(no) {
         <div>
           <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Rezervasyon</div>
           <div style="font-size:13px;font-weight:600;color:var(--dark)">${aktifRev.giris} → ${aktifRev.cikis}</div>
-          <div style="font-size:11px;color:var(--muted)">${gece} gece · ${aktifRev.fiyat ? aktifRev.fiyat.toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
+          <div style="font-size:11px;color:var(--muted)">${gece} gece · ${takvimMusteriGecelik(aktifRev) ? takvimMusteriGecelik(aktifRev).toLocaleString('tr-TR') + ' ₺/gece' : '—'}</div>
         </div>
       </div>
     </div>`;
@@ -4172,7 +4176,7 @@ window.openOdaDetay = function(no) {
       rezHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--parchment);border:1px solid var(--border);border-left:3px solid ${renk}">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--dark)">${r.aracirez?'🤝 ':''}${r.misafir||'—'}${r.aracirez?' <span style="font-size:9px;color:var(--gold2);font-weight:700">ARACI</span>':''}</div>
-          <div style="font-size:11px;color:var(--muted)">${r.giris} → ${r.cikis}${r.fiyat?' · '+r.fiyat.toLocaleString('tr-TR')+' ₺/gece':''}</div>
+          <div style="font-size:11px;color:var(--muted)">${r.giris} → ${r.cikis}${takvimMusteriGecelik(r)?' · '+takvimMusteriGecelik(r).toLocaleString('tr-TR')+' ₺/gece':''}</div>
         </div>
         <span class="badge ${badgeCls}">${badgeTxt}</span>
       </div>`;
@@ -7139,6 +7143,7 @@ function raporKomSatir(t){
   return {t,k,grup,r,g,o,giris,cikis,gece,musteriGecelik,otelGecelik,musteriToplam:Math.max(0,musteriToplam),otelToplam:Math.max(0,otelToplam),komisyon:Math.max(0,komisyon),finansUyari,araciAd,araciKey,misafir:t.misafir||r.misafir||g.misafir||o.misafir||'—',odaNo:t.odaNo||r.odaNo||g.odaNo||o.odaNo||'—',kayitTarih,talepDurum:t.durum||r.durum||'—',kaynakTip:t._kaynakTip||'talep'};
 }
 function raporKomTumSatirlar(){
+  if(Array.isArray(window._raporKomBaseCache)) return window._raporKomBaseCache;
   const satirlar=[], kullanilanR=new Set(), kullanilanG=new Set();
   const guvenliEkle=(t,etiket)=>{
     try {
@@ -7161,6 +7166,7 @@ function raporKomTumSatirlar(){
     const t={...g,id:'gelir:'+g.id,_kaynakTip:'konaklama',_gelirId:g.id,kaynak:'komisyoncu',komisyoncuAd:g.komisyoncuAd||g.araciAd||g.komisyoncu||'',durum:g.checkoutTarih?'tamamlandi':'aktif',kayitTarih:g.rezervasyonKayitTarih||g.kayitTarih||g.giris||''};
     guvenliEkle(t,'konaklama');
   });
+  window._raporKomBaseCache=satirlar;
   return satirlar;
 }
 function raporKomAraciSecenekleriniDoldur(list){
@@ -7195,8 +7201,8 @@ function raporKomKarsilastir(a,b,kriter){
   if(av.tip==='num') return av.v-bv.v;
   return String(av.v).localeCompare(String(bv.v),'tr',{numeric:true,sensitivity:'base'});
 }
-function raporKomFiltrele(){
-  let list=raporKomTumSatirlar();
+function raporKomFiltrele(baseList=null){
+  let list=baseList ? [...baseList] : raporKomTumSatirlar();
   raporKomAraciSecenekleriniDoldur(list);
   const araci=document.getElementById('rapor-kom-araci')?.value||'hepsi';
   const tamam=document.getElementById('rapor-kom-tamamlanma')?.value||'hepsi';
@@ -7238,7 +7244,7 @@ window.renderRaporKomisyonRez=function(){
   const body=document.getElementById('rapor-kom-body'); if(!body) return;
   try {
   const tum=raporKomTumSatirlar();
-  const liste=raporKomFiltrele(); window._raporKomListe=liste;
+  const liste=raporKomFiltrele(tum); window._raporKomListe=liste;
   const toplamlar={tamamlandi:0,tamamlanmadi:0,iptal:0}; tum.forEach(x=>toplamlar[x.grup.kod]=(toplamlar[x.grup.kod]||0)+1);
   const aracSayisi=new Set(tum.map(x=>x.araciKey).filter(Boolean)).size;
   const tanimliSayisi=Object.keys(window.KOMISYONCULAR||{}).length;
@@ -7269,18 +7275,31 @@ window.renderRaporKomisyonRez=function(){
   }
 };
 window.raporKomTalepDetayAc=function(i){
-  const x=(window._raporKomListe||[])[i]; if(!x) return;
-  const t=x.t, r=x.r||{}, g=x.g||{}, o=x.o||{};
+  const x=(window._raporKomListe||[])[i]; if(!x) { toast('Detay kaydı bulunamadı','error'); return; }
+  const t=x.t||{}, r=x.r||{}, g=x.g||{}, o=x.o||{};
   const row=(k,v)=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:180px 1fr;gap:12px"><b style="color:var(--muted)">${k}</b><span>${v}</span></div>`;
-  const tc=t.tc||r.tc||g.tc||o.tc||'—', tel=t.tel||r.tel||g.tel||o.tel||'—';
+  const sec=(...vals)=>{for(const v of vals){if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;}return '—';};
+  const tc=sec(t.tc,t.pasaport,r.tc,r.pasaport,g.tc,g.pasaport,o.tc,o.pasaport);
+  const tel=sec(t.tel,t.telefon,r.tel,r.telefon,g.tel,g.telefon,o.tel,o.telefon);
+  const email=sec(t.email,r.email,g.email,o.email);
+  const plaka=sec(t.plaka,r.plaka,g.plaka,o.plaka);
+  const yetiskin=Number(sec(t.yetiskin,r.yetiskin,g.yetiskin,o.yetiskin))||0;
+  const cocuk=Number(sec(t.cocuk,r.cocuk,g.cocuk,o.cocuk))||0;
+  const tahsil=Number(sec(g.tahsilEdilen,r.tahsilEdilen,t.tahsilEdilen,r.kismiTutar,t.kismiTutar))||0;
+  const kalan=Number(sec(g.kalanTahsilat,r.kalanTahsilat,t.kalanTahsilat))||0;
+  const odemeDurum=sec(g.odemeDurum,r.odemeDurum,t.odemeDurum,o.odemeDurum);
+  const komTip=String(r.komisyonTipSnapshot||t.komisyonTipSnapshot||r.komisyonTip||t.komisyonTip||'').toLowerCase();
+  const komDeg=Number(r.komisyonDegerSnapshot??t.komisyonDegerSnapshot??r.komisyonDeger??t.komisyonDeger)||0;
+  const komKural=komTip==='sabit'?`${fmt(komDeg)} ₺ / gece`:komTip==='oran'?`%${komDeg}`:komTip==='manuel'?'Manuel / fiyat farkı':'—';
+  const kaynakMetni=x.kaynakTip==='talep'?'Komisyoncu portalı talebi':x.kaynakTip==='rezervasyon'?'Rezervasyon kaydı':'Geçmiş konaklama kaydı';
   document.getElementById('raporKayitDetayBaslik').textContent=`${x.araciAd} · Oda ${x.odaNo} · ${x.misafir}`;
   document.getElementById('raporKayitDetayIcerik').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-      <div>${row('Komisyoncu',shEsc(x.araciAd))}${row('Misafir',shEsc(x.misafir))}${row('TC / Pasaport',shEsc(tc))}${row('Telefon',shEsc(tel))}${row('Oda','Oda '+shEsc(x.odaNo))}${row('Konaklama',`${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')} · ${x.gece} gece`)}</div>
-      <div>${row('Kayıt Kaynağı',x.kaynakTip==='talep'?'Komisyoncu portalı talebi':x.kaynakTip==='rezervasyon'?'Eski/manuel rezervasyon kaydı':'Geçmiş konaklama kaydı')}${row('Tamamlanma',`<b style="color:${x.grup.renk}">${shEsc(x.grup.etiket)}</b>`)}${row('Gerçek Konaklama',`<b style="color:${x.k.renk}">${shEsc(x.k.etiket)}</b>`)}${row('Talep / Rezervasyon Durumu',shEsc(x.talepDurum||'—'))}${row('Talep / Kayıt Tarihi',shEsc(raporKomTarihMetni(x.kayitTarih)))}${row('Onay / İşlem',shEsc(raporKomTarihMetni(t.islemTarih||t.guncelleme)))}${row('Check-in / Check-out',`${shEsc(g.giris||o.giris||'Yok')} / ${shEsc(g.checkoutTarih||t.checkoutTarih||'Yok')}`)}</div>
+      <div>${row('Komisyoncu',shEsc(x.araciAd))}${row('Misafir',shEsc(x.misafir))}${row('TC / Pasaport',shEsc(tc))}${row('Telefon',shEsc(tel))}${row('E-posta',shEsc(email))}${row('Plaka',shEsc(plaka))}${row('Kişi',`${yetiskin||'—'} yetişkin${cocuk?` · ${cocuk} çocuk`:''}`)}${row('Oda','Oda '+shEsc(x.odaNo))}${row('Konaklama',`${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')} · ${x.gece} gece`)}</div>
+      <div>${row('Kayıt Kaynağı',kaynakMetni)}${row('Tamamlanma',`<b style="color:${x.grup.renk}">${shEsc(x.grup.etiket)}</b>`)}${row('Gerçek Konaklama',`<b style="color:${x.k.renk}">${shEsc(x.k.etiket)}</b>`)}${row('Talep / Rezervasyon Durumu',shEsc(x.talepDurum||'—'))}${row('Talep / Kayıt Tarihi',shEsc(raporKomTarihMetni(x.kayitTarih)))}${row('Onay / İşlem',shEsc(raporKomTarihMetni(t.islemTarih||t.guncelleme||r.guncelleme)))}${row('Check-in / Check-out',`${shEsc(g.giris||o.giris||r.checkinTarih||'Yok')} / ${shEsc(g.checkoutTarih||r.checkoutTarih||t.checkoutTarih||'Yok')}`)}${row('Ödeme Durumu',shEsc(odemeDurum))}${row('Tahsil / Kalan',`${fmt(tahsil)} / ${fmt(kalan)}`)}</div>
     </div>
-    <div style="margin-top:16px;background:var(--parchment);border:1px solid var(--border);padding:12px 14px">${row('Müşteri Gecelik',x.musteriGecelik?fmt(x.musteriGecelik):'—')}${row('Otel Net Gecelik',x.otelGecelik?fmt(x.otelGecelik):'—')}${row('Müşteri Toplam',x.musteriToplam?fmt(x.musteriToplam):'—')}${row('Otel Net Toplam',x.otelToplam?fmt(x.otelToplam):'—')}${row('Komisyon',x.komisyon?fmt(x.komisyon):'—')}</div>${x.finansUyari?`<div style="margin-top:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px"><b>⚠ Finans Kontrolü:</b> ${shEsc(x.finansUyari)}</div>`:''}
-    <div style="margin-top:16px">${row('Rezervasyon Kaydı',r.id?'Bağlı rezervasyon bulundu':'Bağlı rezervasyon yok')}${row('Konaklama / Gelir Kaydı',g.id?'Check-in/gelir kaydı bulundu':'Kayıt yok')}${row('Not',`<span style="white-space:pre-wrap">${shEsc(t.degisiklikNot||t.iptalNot||t.not||r.not||g.not||'—')}</span>`)}</div>`;
+    <div style="margin-top:16px;background:var(--parchment);border:1px solid var(--border);padding:12px 14px">${row('Müşteri Gecelik',x.musteriGecelik?fmt(x.musteriGecelik):'—')}${row('Müşteri Toplam',x.musteriToplam?fmt(x.musteriToplam):'—')}${row('Otel Net Gecelik',x.otelGecelik?fmt(x.otelGecelik):'—')}${row('Otel Net Toplam',x.otelToplam?fmt(x.otelToplam):'—')}${row('Komisyon Kuralı',shEsc(komKural))}${row('Komisyon',x.komisyon?fmt(x.komisyon):'—')}</div>${x.finansUyari?`<div style="margin-top:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px"><b>⚠ Finans Kontrolü:</b> ${shEsc(x.finansUyari)}</div>`:''}
+    <div style="margin-top:16px">${row('Talep Bağı',t.id&&!String(t.id).startsWith('rev:')&&!String(t.id).startsWith('gelir:')?'Talep kaydı bulundu':'Ayrı talep kaydı yok')}${row('Rezervasyon Kaydı',r.id?'Bağlı rezervasyon bulundu':'Bağlı rezervasyon yok')}${row('Konaklama / Gelir Kaydı',g.id?'Check-in/gelir kaydı bulundu':'Kayıt yok')}${row('Not',`<span style="white-space:pre-wrap">${shEsc(sec(t.degisiklikNot,t.iptalNot,t.not,r.not,g.not))}</span>`)}</div>`;
   openModal('raporKayitDetayModal');
 };
 window.raporKomisyonRezPdf=function(){
@@ -7651,6 +7670,95 @@ window.takvimMod = function(mod) {
   renderTakvim();
 };
 
+// Takvimde müşteriye gösterilecek fiyat TEK noktadan belirlenir.
+// Komisyoncu/acenteli rezervasyonda `fiyat` otel neti olabilir; müşteriye her zaman
+// sözleşme/müşteri fiyatı gösterilir. Sözleşme fiyatı yoksa normal oda fiyatına düşer.
+function takvimMusteriGecelik(kayit){
+  if(!kayit) return 0;
+  const soz=Number(kayit.sozlesmeFiyat);
+  if(Number.isFinite(soz) && soz>0) return soz;
+  const musteri=Number(kayit.musteriGecelik);
+  if(Number.isFinite(musteri) && musteri>0) return musteri;
+  const fiyat=Number(kayit.fiyat);
+  return Number.isFinite(fiyat) && fiyat>0 ? fiyat : 0;
+}
+
+// Aylık/haftalık takvimde her hücre için Firestore dizilerini tekrar tekrar taramak çok pahalıydı.
+// Bir render boyunca rezervasyon, talep ve gerçek konaklama bir kez indekslenir; hücreler O(1) okur.
+function takvimRezOncelikDegeri(r){
+  const d=takvimDurumAnahtar(r?.durum||r?._durum||'bekliyor');
+  const p={aktif:0,gecikmis:1,karar_bekliyor:2,checkin_karari_bekliyor:2,onaylandi:3,onayli:3,approved:3,planlandi:3,planli:3,planned:3,bekliyor:4,beklemede:4,pending:4};
+  return p[d] ?? 5;
+}
+function takvimRezDahaOncelikli(yeni,eski){
+  if(!eski) return true;
+  const py=takvimRezOncelikDegeri(yeni), pe=takvimRezOncelikDegeri(eski);
+  if(py!==pe) return py<pe;
+  return String(yeni?.guncelleme||yeni?.islemTarih||yeni?.kayitTarih||'') > String(eski?.guncelleme||eski?.islemTarih||eski?.kayitTarih||'');
+}
+function takvimGorunumCacheOlustur(gunler){
+  const rezMap=new Map(), talepMap=new Map(), gelirMap=new Map();
+  if(!gunler?.length) return {rezMap,talepMap,gelirMap};
+  const minGun=gunler[0], maxGun=gunler[gunler.length-1];
+  const talepler=window._TALEP||[], rezervasyonlar=window._R||[], gelirler=window._G||[];
+
+  // Talep→rezervasyon bağı yalnız bir kez çözülür. Eski kayıt eşleştirmesi burada pahalı olabilir,
+  // ama artık 12 oda × 31 gün × birkaç kez tekrarlanmıyor.
+  const bagliByTalep=new Map(), terminalRezIds=new Set();
+  for(const t of talepler){
+    let bagli=null;
+    try { bagli=takvimTalepBagliRezervasyonBul(t); } catch(_) { bagli=null; }
+    if(t?.id) bagliByTalep.set(String(t.id),bagli||null);
+    if(bagli?.id && takvimTerminalDurum(t?.durum)) terminalRezIds.add(String(bagli.id));
+  }
+
+  for(const r of rezervasyonlar){
+    if(!r || takvimTerminalDurum(r.durum||r._durum)) continue;
+    if(!takvimAktifRezervasyonDurumu(r.durum||r._durum||'bekliyor')) continue;
+    if(r.id && terminalRezIds.has(String(r.id))) continue;
+    const giris=takvimIsoTarih(r.giris), cikis=takvimIsoTarih(r.cikis);
+    if(!giris||!cikis||cikis<=giris||cikis<=minGun||giris>maxGun) continue;
+    for(const g of gunler){
+      if(g<giris || g>=cikis) continue;
+      const key=String(r.odaNo)+'|'+g, eski=rezMap.get(key);
+      if(takvimRezDahaOncelikli(r,eski)) rezMap.set(key,r);
+    }
+  }
+
+  for(const t of talepler){
+    const td=takvimDurumAnahtar(t?.durum);
+    if(!['onaylandi','onayli','approved'].includes(td) || takvimTerminalDurum(t?.durum)) continue;
+    if(t?.id && bagliByTalep.get(String(t.id))) continue; // rezervasyona dönüştüyse ikinci blok çizme
+    const giris=takvimIsoTarih(t.giris), cikis=takvimIsoTarih(t.cikis);
+    if(!giris||!cikis||cikis<=giris||cikis<=minGun||giris>maxGun) continue;
+    const kopya={...t,_takvimTalep:true,_durum:'onaylandi',kaynak:t.kaynak||'komisyoncu-talep'};
+    for(const g of gunler){
+      if(g<giris || g>=cikis) continue;
+      const key=String(t.odaNo)+'|'+g;
+      if(!rezMap.has(key) && !talepMap.has(key)) talepMap.set(key,kopya);
+    }
+  }
+
+  for(const g of gelirler){
+    if(!g) continue;
+    const kaynak=String(g.kaynak||'').toLocaleLowerCase('tr-TR');
+    if(kaynak==='oda-masrafi'||kaynak==='no-show'||kaynak==='noshow') continue;
+    const giris=takvimIsoTarih(g.giris), cikis=takvimIsoTarih(g.cikis);
+    if(!giris||!cikis||cikis<=giris||cikis<=minGun||giris>maxGun) continue;
+    for(const gun of gunler){
+      if(gun<giris || gun>=cikis) continue;
+      const key=String(g.odaNo)+'|'+gun, eski=gelirMap.get(key);
+      if(!eski || String(g.guncelleme||g.kayitTarih||g.tarih||'')>String(eski.guncelleme||eski.kayitTarih||eski.tarih||'')) gelirMap.set(key,g);
+    }
+  }
+  return {rezMap,talepMap,gelirMap};
+}
+
+function takvimRenderPlanla(ms=35){
+  clearTimeout(window._takvimRenderTimer);
+  window._takvimRenderTimer=setTimeout(()=>{ window._takvimRenderTimer=null; renderTakvim(); },ms);
+}
+
 window.renderTakvim = function() {
   const grid = document.getElementById('takvimGrid'); if(!grid) return;
   const todayStr = today();
@@ -7681,6 +7789,7 @@ function renderTakvimAyHafta(grid, todayStr) {
     baslik = `${gunler[0]} – ${gunler[6]}`;
   }
   document.getElementById('takvimBaslik').textContent = baslik;
+  const gorunumCache = takvimGorunumCacheOlustur(gunler);
 
   let html = `<table class="takvim-table"><thead><tr><th class="oda-col">Oda</th>`;
   gunler.forEach(g => {
@@ -7697,8 +7806,9 @@ function renderTakvimAyHafta(grid, todayStr) {
     html += `<tr><td class="oda-label">Oda ${i}</td>`;
     gunler.forEach((g, gIdx) => {
       const isToday = g === todayStr;
-      const rev = takvimRezervasyonBul(i, g, window._R) || takvimOnayliTalepBul(i, g);
-      const gelir = takvimGercekKonaklamaBul(i, g);
+      const cacheKey=String(i)+'|'+g;
+      const rev = gorunumCache.rezMap.get(cacheKey) || gorunumCache.talepMap.get(cacheKey) || null;
+      const gelir = gorunumCache.gelirMap.get(cacheKey) || null;
       const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=g && oda.cikis>g;
       // Güvenlik ağı: durum dolu ama giriş/çıkış eksik VEYA giriş bugünden ileri (veri tutarsızlığı) — bugün için göster
       const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris || !oda.cikis || oda.giris > todayStr);
@@ -7712,7 +7822,7 @@ function renderTakvimAyHafta(grid, todayStr) {
         const anahtarGelir=(gelir.id||gelir.gelirDocId||'')+'|'+(gelir.misafir||'')+'|'+(gelir.giris||'')+'|'+i;
         bgStyle = `background:${takvimRenkTonu(anahtarGelir, 'dolu')};`;
         tooltip=`title="${(gelir.misafir||'').replace(/"/g,"'")} · ${gelir.giris||'—'}→${gelir.cikis||'—'} · Gerçek konaklama"`;
-        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:gelir.misafir,giris:gelir.giris,cikis:gelir.cikis,odaNo:i,gece:geceSayisi(gelir.giris,gelir.cikis),fiyat:gelir.fiyat,kaynak:gelir.kaynak,odemeDurum:gelir.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:gelir.misafir,giris:gelir.giris,cikis:gelir.cikis,odaNo:i,gece:geceSayisi(gelir.giris,gelir.cikis),fiyat:takvimMusteriGecelik(gelir),kaynak:gelir.kaynak,odemeDurum:gelir.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(rev) {
         cls='t-rezerve';
@@ -7723,7 +7833,7 @@ function renderTakvimAyHafta(grid, todayStr) {
         const tamamenGecmis = g < todayStr && (rev.cikis||'') <= todayStr;
         bgStyle = `background:${takvimRenkTonu(anahtarRev, tamamenGecmis ? 'gecmis' : 'rezerve')};`;
         tooltip=`title="${(rev.misafir||'').replace(/"/g,"'")} · ${rev.giris}→${rev.cikis}${kararBekliyor?' · Check-in kararı bekliyor':tamamenGecmis?' · Geçmiş rezervasyon':''}"`;
-        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',rezervasyonId:rev.id||null,misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:rev.fiyat,kaynak:(rev.komisyoncu||rev.araciAd||rev.komisyoncuAd)?'Komisyoncu':rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',rezervasyonId:rev.id||null,misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:takvimMusteriGecelik(rev),kaynak:(rev.komisyoncu||rev.araciAd||rev.komisyoncuAd)?'Komisyoncu':rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(fiiliDolu||bugunDolu) {
         cls='t-dolu';
@@ -7732,7 +7842,7 @@ function renderTakvimAyHafta(grid, todayStr) {
         // Bu gün ve oda artık dolu değilse (check-out yapılmış, geçmişte kaldı) — tamamlanmış/geçmiş olarak işaretle
         const tamamenGecmis = g < todayStr && oda.durum !== 'dolu';
         bgStyle = `background:${takvimRenkTonu(anahtarDolu, tamamenGecmis ? 'gecmis' : 'dolu')};`;
-        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:oda.misafir,giris:oda.giris,cikis:oda.cikis,odaNo:i,gece:geceSayisi(oda.giris,oda.cikis),fiyat:oda.fiyat,kaynak:oda.kaynak,odemeDurum:oda.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'dolu',misafir:oda.misafir,giris:oda.giris,cikis:oda.cikis,odaNo:i,gece:geceSayisi(oda.giris,oda.cikis),fiyat:takvimMusteriGecelik(oda),kaynak:oda.kaynak,odemeDurum:oda.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(temizlik) { cls='t-temizlik'; label='Temizlik'; }
       else if(oda.durum==='arizali') {
@@ -7748,8 +7858,9 @@ function renderTakvimAyHafta(grid, todayStr) {
 
       if(label) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
-        const prevRev = prevG ? (takvimRezervasyonBul(i, prevG, window._R) || takvimOnayliTalepBul(i, prevG)) : null;
-        const prevGelir = prevG ? takvimGercekKonaklamaBul(i, prevG) : null;
+        const prevKey=prevG ? String(i)+'|'+prevG : '';
+        const prevRev = prevG ? (gorunumCache.rezMap.get(prevKey) || gorunumCache.talepMap.get(prevKey) || null) : null;
+        const prevGelir = prevG ? (gorunumCache.gelirMap.get(prevKey) || null) : null;
         const prevDolu = prevG && oda.durum==='dolu' && oda.giris && oda.giris<=prevG && oda.cikis>prevG;
         const arizaBas2 = oda.arizaBaslangic || todayStr;
         const arizaBit2 = oda.arizaBitis || null;
@@ -7776,12 +7887,14 @@ function renderTakvimGunluk(grid, todayStr) {
   const isToday = gunStr === todayStr;
   const gunAd = d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   document.getElementById('takvimBaslik').textContent = gunAd;
+  const gorunumCache = takvimGorunumCacheOlustur([gunStr]);
 
   let html = `<table class="takvim-table"><thead><tr><th class="oda-col">Oda</th><th>Durum</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Kaynak</th><th>Fiyat Tipi</th><th>Gecelik</th></tr></thead><tbody>`;
   for(const i of HOTEL_ODALAR) {
     const oda = window._O['oda'+i] || {durum:'bos'};
-    const rev = takvimRezervasyonBul(i, gunStr, window._R) || takvimOnayliTalepBul(i, gunStr);
-    const gelir = takvimGercekKonaklamaBul(i, gunStr);
+    const cacheKey=String(i)+'|'+gunStr;
+    const rev = gorunumCache.rezMap.get(cacheKey) || gorunumCache.talepMap.get(cacheKey) || null;
+    const gelir = gorunumCache.gelirMap.get(cacheKey) || null;
     const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=gunStr && oda.cikis>gunStr;
     const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris || !oda.cikis || oda.giris > todayStr);
 
@@ -7791,17 +7904,17 @@ function renderTakvimGunluk(grid, todayStr) {
       durumBadge = '<span class="badge badge-red">Dolu / Konakladı</span>';
       misafir = gelir.misafir||'—'; giris=gelir.giris||'—'; cikis=gelir.cikis||'—';
       kaynak=gelir.kaynak||'—'; fiyatTipAd=getTipAd(gelir.fiyatTip||1);
-      gecelik=gelir.fiyat?(Number(gelir.fiyat).toLocaleString('tr-TR')+' ₺'):'—';
+      { const mf=takvimMusteriGecelik(gelir); gecelik=mf?(mf.toLocaleString('tr-TR')+' ₺'):'—'; }
     } else if(oda.durum==='dolu' && (fiiliDolu||bugunDolu)) {
       durumBadge = '<span class="badge badge-red">Dolu</span>';
       misafir = oda.misafir||'—'; giris=oda.giris||'—'; cikis=oda.cikis||'—';
       kaynak=oda.kaynak||'—'; fiyatTipAd=getTipAd(oda.fiyatTip||1);
-      gecelik=oda.fiyat?(oda.fiyat.toLocaleString('tr-TR')+' ₺'):'—';
+      { const mf=takvimMusteriGecelik(oda); gecelik=mf?(mf.toLocaleString('tr-TR')+' ₺'):'—'; }
     } else if(rev) {
       durumBadge = '<span class="badge badge-blue">Rezerveli</span>';
       misafir=rev.misafir||'—'; giris=rev.giris||'—'; cikis=rev.cikis||'—';
       kaynak=rev.kaynak||'—'; fiyatTipAd=getTipAd(rev.fiyatTip||1);
-      gecelik=rev.fiyat?(rev.fiyat.toLocaleString('tr-TR')+' ₺'):'—';
+      { const mf=takvimMusteriGecelik(rev); gecelik=mf?(mf.toLocaleString('tr-TR')+' ₺'):'—'; }
     } else if(oda.durum==='temizlik') {
       durumBadge = '<span class="badge badge-gold">Temizlik</span>';
     } else if(oda.durum==='arizali') {
@@ -8292,10 +8405,10 @@ window.takvimDetay = function(data) {
     ['Giriş',   data.giris||'—'],
     ['Çıkış',   data.cikis||'—'],
     ['Gece',    (data.gece||'—') + (data.gece ? ' gece' : '')],
-    ['Gecelik', data.fiyat ? data.fiyat.toLocaleString('tr-TR') + ' ₺' : '—'],
+    ['Gecelik (Müşteri)', data.fiyat ? data.fiyat.toLocaleString('tr-TR') + ' ₺' : '—'],
     ['Kaynak',  data.kaynak||'—'],
     ['Ödeme',   odDurumMap[data.odemeDurum||''] || '—'],
-    ['Toplam',  (data.fiyat && data.gece) ? (data.fiyat * data.gece).toLocaleString('tr-TR') + ' ₺' : '—'],
+    ['Toplam (Müşteri)',  (data.fiyat && data.gece) ? (data.fiyat * data.gece).toLocaleString('tr-TR') + ' ₺' : '—'],
   ];
 
   document.getElementById('td_grid').innerHTML = satırlar.map(([k,v]) => `
