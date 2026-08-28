@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v27-calendar-performance-price-detail'; // takvim performansı + müşteri fiyatı + rapor detay düzeltmesi
+const CACHE_ADI = 'swisshouse-v28-noon-portal-ledger-sync'; // 12:00 check-in/out + resepsiyon cari = komisyoncu portalı hesabı
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',
