@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v14-komisyon-rapor-siralama'; // sürüm artırıldı — cihazlardaki eski/yarım önbellek otomatik temizlenir
+const CACHE_ADI = 'swisshouse-v15-komisyon-core-fix'; // sürüm artırıldı — cihazlardaki eski/yarım önbellek otomatik temizlenir
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',

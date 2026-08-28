@@ -222,8 +222,13 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
         <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
-          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Toplam Hakediş</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Kesin Hakediş</div>
           <div id="kazancim_toplam" style="font-size:20px;font-weight:700;color:var(--dark)">—</div>
+        </div>
+        <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Beklenen Hakediş</div>
+          <div id="kazancim_beklenen" style="font-size:20px;font-weight:700;color:var(--gold2)">—</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">Henüz check-in olmamış rezervasyonlar · cari bakiyeye dahil değil</div>
         </div>
         <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px">
           <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Bana Ödenen</div>
@@ -1015,18 +1020,16 @@ function renderKazancim() {
 
   const toplamBeklenen = beklenenler.reduce((a,b)=>a+b.tutar, 0);
   const toplamKesin = borclar.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0), 0);
-  const toplamHakedis = toplamKesin + toplamBeklenen;
   const toplamOdenen = odemeler.reduce((a,b)=>a+(Number(b.tutar)||0), 0);
-  const kalan = toplamHakedis - toplamOdenen;
+  // Beklenen hakediş finansal cari alacak değildir. Net bakiye yalnız KESİN - ÖDENEN.
+  const kalan = toplamKesin - toplamOdenen;
 
   const elToplam = document.getElementById('kazancim_toplam');
+  const elBeklenen = document.getElementById('kazancim_beklenen');
   const elOdenen = document.getElementById('kazancim_odenen');
   const elKalan = document.getElementById('kazancim_kalan');
-  if(elToplam) {
-    elToplam.innerHTML = toplamBeklenen > 0
-      ? `${fmt(toplamHakedis)} ₺<br><span style="font-size:10px;color:var(--muted);font-weight:400">(${fmt(toplamKesin)} kesin + ${fmt(toplamBeklenen)} beklenen)</span>`
-      : fmt(toplamHakedis) + ' ₺';
-  }
+  if(elToplam) elToplam.textContent = fmt(toplamKesin) + ' ₺';
+  if(elBeklenen) elBeklenen.textContent = fmt(toplamBeklenen) + ' ₺';
   if(elOdenen) elOdenen.textContent = fmt(toplamOdenen) + ' ₺';
   if(elKalan) {
     elKalan.textContent = kalan < -0.5 ? ('Komisyoncu borçlu / mahsup: ' + fmt(Math.abs(kalan)) + ' ₺') : (fmt(kalan) + ' ₺');
@@ -1070,7 +1073,7 @@ function kazancimDetayDoldur(borclar, odemeler, beklenenler) {
 
   let bakiye = 0;
   const satirlar = hareketler.map(h => {
-    bakiye += (h.tip==='borc' || h.tip==='beklenen') ? h.tutar : -h.tutar;
+    bakiye += h.tip==='borc' ? h.tutar : ((h.tip==='odeme'||h.tip==='mahsup') ? -h.tutar : 0);
     const borcRengi = h.tip==='beklenen' ? 'color:var(--gold2);font-style:italic' : '';
     return `<tr>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">${h.tarih||'—'}</td>
@@ -1088,7 +1091,7 @@ window.kazancimPdfIndir = function() {
   const hareketler = window._kazancPdfHareketler || [];
   let bakiye=0;
   const satirlar=hareketler.map(h=>{
-    bakiye+=(h.tip==='borc'||h.tip==='beklenen')?h.tutar:-h.tutar;
+    bakiye+=h.tip==='borc'?h.tutar:((h.tip==='odeme'||h.tip==='mahsup')?-h.tutar:0);
     return `<tr><td>${h.tarih||'—'}</td><td>${h.aciklama}</td><td class="num">${(h.tip==='borc'||h.tip==='beklenen')?fmt(h.tutar)+' ₺':'—'}</td><td class="num">${(h.tip==='odeme'||h.tip==='mahsup')?fmt(h.tutar)+' ₺':'—'}</td><td class="num"><b>${fmt(bakiye)} ₺</b></td></tr>`;
   }).join('');
   const ad=aktifKom.ad||aktifKom.key;
