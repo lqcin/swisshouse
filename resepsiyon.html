@@ -2356,11 +2356,46 @@ function rezervasyonOdayiBloklar(r) {
 // Giriş günü gelmiş ve henüz check-in yapılmamış rezervasyon yeni girişe teknik olarak
 // engel olmaz; fakat planlanan tarihleri boyunca takvimden KAYBOLMAZ ve karar bekleyen
 // kayıt olarak görünür. İptal / no-show kayıtları takvimde oda tutulu gibi çizilmez.
-function rezervasyonTakvimdeGorunur(r) {
+function takvimIsoTarih(v){
+  const s=String(v||'').trim();
+  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
+}
+function rezervasyonTakvimdeGorunur(r){
   if(!r) return false;
-  const durum=String(r.durum || r._durum || 'bekliyor').toLocaleLowerCase('tr-TR');
-  if(['iptal','noshow','no-show','reddedildi'].includes(durum)) return false;
-  return ['bekliyor','aktif','gecikmis','tamamlandi'].includes(durum);
+  const durum=String(r.durum || r._durum || 'bekliyor').trim().toLocaleLowerCase('tr-TR');
+  // Takvim görünürlüğü bir durum whitelist'i değildir. Eski sürümlerde onaylandi,
+  // planlandi, karar_bekliyor gibi farklı durum adları yazıldı. Yalnız açıkça
+  // terminal/iptal kayıtları takvimden çıkarılır; diğer geçerli tarihli rezervasyonlar görünür.
+  const terminal=new Set(['iptal','iptal_edildi','reddedildi','red','noshow','no-show','no_show']);
+  if(terminal.has(durum)) return false;
+  const giris=takvimIsoTarih(r.giris), cikis=takvimIsoTarih(r.cikis);
+  return !!giris && !!cikis && cikis>giris;
+}
+function takvimRezervasyonBul(odaNo, gun, liste){
+  const g=takvimIsoTarih(gun);
+  if(!g) return null;
+  const aday=(liste||[]).filter(r => Number(r.odaNo)===Number(odaNo) && rezervasyonTakvimdeGorunur(r) && takvimIsoTarih(r.giris)<=g && takvimIsoTarih(r.cikis)>g);
+  // Aynı oda/günde legacy çift kayıt varsa gerçek/aktif kayıt önce; sonra en yeni kayıt.
+  const oncelik={aktif:0,gecikmis:1,karar_bekliyor:2,onaylandi:3,planlandi:3,bekliyor:4,tamamlandi:8};
+  aday.sort((a,b)=>{
+    const da=String(a.durum||a._durum||'bekliyor').toLocaleLowerCase('tr-TR');
+    const db=String(b.durum||b._durum||'bekliyor').toLocaleLowerCase('tr-TR');
+    return (oncelik[da]??5)-(oncelik[db]??5) || String(b.guncelleme||b.kayitTarih||'').localeCompare(String(a.guncelleme||a.kayitTarih||''));
+  });
+  return aday[0]||null;
+}
+function takvimOnayliTalepBul(odaNo, gun){
+  const g=takvimIsoTarih(gun);
+  if(!g) return null;
+  const aday=(window._TALEP||[]).filter(t =>
+    String(t.durum||'').toLocaleLowerCase('tr-TR')==='onaylandi' &&
+    Number(t.odaNo)===Number(odaNo) &&
+    takvimIsoTarih(t.giris)<=g && takvimIsoTarih(t.cikis)>g
+  );
+  aday.sort((a,b)=>String(b.islemTarih||b.guncelleme||b.kayitTarih||'').localeCompare(String(a.islemTarih||a.guncelleme||a.kayitTarih||'')));
+  const t=aday[0];
+  return t ? {...t,_takvimTalep:true,_durum:'onaylandi',kaynak:t.kaynak||'komisyoncu-talep'} : null;
 }
 
 // Gerçekleşmiş check-in/konaklama geçmişinin kaynağı oda meta değil gelir kaydıdır.
@@ -3237,6 +3272,7 @@ async function initOdalar() {
       window._O = snap.data() || {};
       renderOdalar();
       renderHatirlatma();
+      if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
       if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
       syncStatus(true);
     }, () => syncStatus(false));
@@ -3501,6 +3537,7 @@ function gunlukKontrolKur() {
 onSnapshot(query(collection(db,'rezervasyonlar'), orderBy('giris','asc')), s => {
   window._R = s.docs.map(d=>({id:d.id,...d.data()}));
   renderRezervasyonlar(); renderOdalar(); renderHatirlatma(); syncStatus(true);
+  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
   if(document.getElementById('page-rapor')?.classList.contains('active')) { renderKomisyonCari(); renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 }, () => syncStatus(false));
 
@@ -3511,6 +3548,7 @@ onSnapshot(query(collection(db,'odaMasraflari'), orderBy('kayitTarih','desc')), 
 
 onSnapshot(query(collection(db,'gelirler'), orderBy('tarih','desc')), s => {
   window._G = gelirleriTekillestir(s.docs.map(d=>({id:d.id,...d.data()})));
+  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
   if(document.getElementById('page-rapor')?.classList.contains('active')) { renderRaporKomisyonRez(); renderRaporTarihDetay(); }
 });
 
@@ -3535,6 +3573,7 @@ onSnapshot(query(collection(db,'rezervasyon_talepleri'), orderBy('kayitTarih','d
   window._TALEP = s.docs.map(d=>({id:d.id,...d.data()}));
   const yeniBekleyenSayisi = window._TALEP.filter(t => t.durum==='bekliyor').length;
   renderInstagramTalepleri();
+  if(document.getElementById('page-takvim')?.classList.contains('active')) renderTakvim();
   if(document.getElementById('page-rapor')?.classList.contains('active')) renderRaporKomisyonRez();
   // Sayfa ilk açıldığında ses çalma — sadece sonradan yeni talep gelirse çal
   if(!_talepIlkYukleme && yeniBekleyenSayisi > oncekiBekleyenSayisi) {
@@ -7494,7 +7533,7 @@ function renderTakvimAyHafta(grid, todayStr) {
     html += `<tr><td class="oda-label">Oda ${i}</td>`;
     gunler.forEach((g, gIdx) => {
       const isToday = g === todayStr;
-      const rev = window._R.find(r => Number(r.odaNo)===i && (r.giris||'')<=g && (r.cikis||'')>g && rezervasyonTakvimdeGorunur(r));
+      const rev = takvimRezervasyonBul(i, g, window._R) || takvimOnayliTalepBul(i, g);
       const gelir = takvimGercekKonaklamaBul(i, g);
       const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=g && oda.cikis>g;
       // Güvenlik ağı: durum dolu ama giriş/çıkış eksik VEYA giriş bugünden ileri (veri tutarsızlığı) — bugün için göster
@@ -7545,7 +7584,7 @@ function renderTakvimAyHafta(grid, todayStr) {
 
       if(label) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
-        const prevRev = prevG ? window._R.find(r=>Number(r.odaNo)===i&&(r.giris||'')<=prevG&&(r.cikis||'')>prevG&&rezervasyonTakvimdeGorunur(r)) : null;
+        const prevRev = prevG ? (takvimRezervasyonBul(i, prevG, window._R) || takvimOnayliTalepBul(i, prevG)) : null;
         const prevGelir = prevG ? takvimGercekKonaklamaBul(i, prevG) : null;
         const prevDolu = prevG && oda.durum==='dolu' && oda.giris && oda.giris<=prevG && oda.cikis>prevG;
         const arizaBas2 = oda.arizaBaslangic || todayStr;
@@ -7577,7 +7616,7 @@ function renderTakvimGunluk(grid, todayStr) {
   let html = `<table class="takvim-table"><thead><tr><th class="oda-col">Oda</th><th>Durum</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Kaynak</th><th>Fiyat Tipi</th><th>Gecelik</th></tr></thead><tbody>`;
   for(const i of HOTEL_ODALAR) {
     const oda = window._O['oda'+i] || {durum:'bos'};
-    const rev = window._R.find(r=>Number(r.odaNo)===i && (r.giris||'')<=gunStr && (r.cikis||'')>gunStr && rezervasyonTakvimdeGorunur(r));
+    const rev = takvimRezervasyonBul(i, gunStr, window._R) || takvimOnayliTalepBul(i, gunStr);
     const gelir = takvimGercekKonaklamaBul(i, gunStr);
     const fiiliDolu = oda.durum==='dolu' && oda.giris && oda.cikis && oda.giris<=gunStr && oda.cikis>gunStr;
     const bugunDolu = oda.durum==='dolu' && isToday && (!oda.giris || !oda.cikis || oda.giris > todayStr);

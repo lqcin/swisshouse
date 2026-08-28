@@ -555,11 +555,34 @@ function rezervasyonOdayiBloklar(r){
 
 // Takvim görünürlüğü oda blokajından bağımsızdır. Check-in günü gelmiş bir rezervasyon
 // yeni kaydı teknik olarak engellemese bile planlanan tarihleri boyunca takvimde görünür.
+function takvimIsoTarih(v){
+  const s=String(v||'').trim();
+  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
+}
 function rezervasyonTakvimdeGorunur(r){
   if(!r) return false;
-  const durum=String(r.durum||'bekliyor').toLocaleLowerCase('tr-TR');
-  if(['iptal','noshow','no-show','reddedildi'].includes(durum)) return false;
-  return ['bekliyor','aktif','gecikmis','tamamlandi'].includes(durum);
+  const durum=String(r.durum || r._durum || 'bekliyor').trim().toLocaleLowerCase('tr-TR');
+  // Takvim görünürlüğü bir durum whitelist'i değildir. Eski sürümlerde onaylandi,
+  // planlandi, karar_bekliyor gibi farklı durum adları yazıldı. Yalnız açıkça
+  // terminal/iptal kayıtları takvimden çıkarılır; diğer geçerli tarihli rezervasyonlar görünür.
+  const terminal=new Set(['iptal','iptal_edildi','reddedildi','red','noshow','no-show','no_show']);
+  if(terminal.has(durum)) return false;
+  const giris=takvimIsoTarih(r.giris), cikis=takvimIsoTarih(r.cikis);
+  return !!giris && !!cikis && cikis>giris;
+}
+function takvimRezervasyonBul(odaNo, gun, liste){
+  const g=takvimIsoTarih(gun);
+  if(!g) return null;
+  const aday=(liste||[]).filter(r => Number(r.odaNo)===Number(odaNo) && rezervasyonTakvimdeGorunur(r) && takvimIsoTarih(r.giris)<=g && takvimIsoTarih(r.cikis)>g);
+  // Aynı oda/günde legacy çift kayıt varsa gerçek/aktif kayıt önce; sonra en yeni kayıt.
+  const oncelik={aktif:0,gecikmis:1,karar_bekliyor:2,onaylandi:3,planlandi:3,bekliyor:4,tamamlandi:8};
+  aday.sort((a,b)=>{
+    const da=String(a.durum||a._durum||'bekliyor').toLocaleLowerCase('tr-TR');
+    const db=String(b.durum||b._durum||'bekliyor').toLocaleLowerCase('tr-TR');
+    return (oncelik[da]??5)-(oncelik[db]??5) || String(b.guncelleme||b.kayitTarih||'').localeCompare(String(a.guncelleme||a.kayitTarih||''));
+  });
+  return aday[0]||null;
 }
 
 // ── KOMİSYONCU LİSTESİ ──
@@ -1230,15 +1253,13 @@ function takvimTablosuCiz(gunList, today) {
 
       // Rezervasyon var mı? Onaylanmış kayıt talep koleksiyonunda görünmese bile
       // rezervasyon üzerindeki komisyoncu bilgisiyle kendi rezervasyonunu ayırt et.
-      const rev = _R.find(r =>
-        Number(r.odaNo) === odaNo &&
-        (r.giris||'') <= iso &&
-        (r.cikis||'') > iso &&
-        rezervasyonTakvimdeGorunur(r)
-      );
-      const benimRev = !!(rev && kayitBenimMi(rev));
+      const rev = takvimRezervasyonBul(odaNo, iso, _R);
+      // Onaylanmış talep ile rezervasyon belgesinin oluşması/yenilenmesi arasında kısa bir
+      // senkronizasyon boşluğu olabilir. Kendi onaylı talebimizi bu sürede takvimden düşürme.
+      const takvimRev = rev || (beniimTalep ? {...beniimTalep, kaynak:beniimTalep.kaynak||'komisyoncu-talep', komisyoncu:aktifKom?.key||beniimTalep.komisyoncu||null, araciAd:aktifKom?.ad||beniimTalep.komisyoncuAd||null} : null);
+      const benimRev = !!(takvimRev && (beniimTalep || kayitBenimMi(takvimRev)));
       // Bu rezervasyon (henüz check-in olmamış) herhangi bir komisyoncu tarafından mı yapıldı?
-      const revKomisyoncuKaynakli = !!(rev && (rev.komisyoncu || rev.araciAd));
+      const revKomisyoncuKaynakli = !!(takvimRev && (takvimRev.komisyoncu || takvimRev.araciAd || beniimTalep));
 
       // Gelir (check-in yapılmış konaklama) var mı?
       const gelir = _G.find(g => {
@@ -1265,7 +1286,7 @@ function takvimTablosuCiz(gunList, today) {
       // Komisyoncu yalnız KENDİ rezervasyon/konaklamasının misafir detayını görebilir.
       // Diğer komisyoncu veya resepsiyon rezervasyonlarında takvim doluluğu görünür,
       // fakat isim/telefon/tarih gibi kişisel bilgiler portalda açılmaz.
-      const misafirBilgi = benimKonaklama ? (gelir || (fiiliDolu || bugunDolu ? odaMeta : null) || rev || null) : null;
+      const misafirBilgi = benimKonaklama ? (gelir || (fiiliDolu || bugunDolu ? odaMeta : null) || takvimRev || null) : null;
       const misafirOzet = misafirBilgi ? {
         misafir: misafirBilgi.misafir || '—',
         giris: misafirBilgi.giris || iso,
@@ -1287,7 +1308,7 @@ function takvimTablosuCiz(gunList, today) {
         cls = doluKomisyoncuKaynakli ? 't-komisyoncu' : 't-resepsiyon';
         if((beniimTalep || benimRev) && doluKomisyoncuKaynakli) cls += ' benim-isaret';
         onclick = misafirOnclick;
-      } else if(rev) {
+      } else if(takvimRev) {
         cls = revKomisyoncuKaynakli ? 't-komisyoncu' : 't-resepsiyon';
         if((beniimTalep || benimRev) && revKomisyoncuKaynakli) cls += ' benim-isaret';
         onclick = misafirOnclick;
