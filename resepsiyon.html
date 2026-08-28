@@ -185,6 +185,40 @@ input[type=radio]{-webkit-appearance:radio;appearance:radio;border-radius:50%;}
 .amount-pos{color:var(--green);font-weight:600;}
 .amount-neg{color:var(--red);font-weight:600;}
 
+
+/* ── RAPOR SAYFASI: bilgi hiyerarşisi ── */
+.report-page{--report-accent:var(--gold2);}
+.report-topbar{position:sticky;top:108px;z-index:18;background:rgba(250,248,244,.96);backdrop-filter:blur(10px);border:1px solid var(--border);box-shadow:0 8px 22px rgba(36,30,24,.08);padding:10px 12px;margin:-4px 0 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.report-topbar-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-right:4px;}
+.report-jump{border:1px solid var(--border);background:var(--white);color:var(--dark);padding:7px 11px;font:600 10px 'Jost',sans-serif;letter-spacing:.55px;cursor:pointer;transition:.18s;white-space:nowrap;}
+.report-jump:hover{border-color:var(--gold2);color:var(--gold2);background:#fffaf0;transform:translateY(-1px);}
+.report-section-anchor{scroll-margin-top:168px;}
+.report-section-banner{display:flex;align-items:center;gap:12px;margin:26px 0 12px;padding:11px 14px;background:linear-gradient(90deg,var(--parchment),rgba(255,255,255,.4));border:1px solid var(--border);border-left:4px solid var(--section-color,var(--gold2));}
+.report-section-no{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;background:var(--section-color,var(--gold2));color:#fff;font-family:'Big Shoulders Display',sans-serif;font-size:15px;letter-spacing:1px;}
+.report-section-copy{min-width:0;}
+.report-section-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--dark);line-height:1.1;}
+.report-section-desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.45;}
+.report-card{border-radius:3px;box-shadow:0 5px 18px rgba(35,29,23,.055);}
+.report-filter-panel{background:var(--cream);border:1px solid var(--border);padding:12px;margin-bottom:12px;}
+.report-filter-groups{display:grid;grid-template-columns:1.05fr 1fr 1fr 1.25fr;gap:10px;align-items:stretch;}
+.report-filter-group{background:var(--white);border:1px solid var(--border);padding:10px;min-width:0;}
+.report-filter-group-title{font-size:9px;font-weight:700;letter-spacing:1.25px;text-transform:uppercase;color:var(--gold2);padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+.report-filter-group-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-items:end;}
+.report-filter-group-grid.one{grid-template-columns:1fr;}
+.report-filter-group .form-group label{font-size:8px;letter-spacing:.8px;}
+.report-filter-group .form-group input,.report-filter-group .form-group select{font-size:10px;padding:7px 8px;min-width:0;}
+.report-filter-actions{display:flex;gap:7px;align-items:end;margin-top:8px;flex-wrap:wrap;}
+.report-filter-actions .report-search{flex:1;min-width:190px;}
+.report-kpi-note{font-size:10px;color:var(--muted);padding:8px 10px;background:var(--cream);border-left:3px solid var(--gold2);margin-bottom:10px;}
+.report-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;align-items:start;}
+.report-table-scroll{overflow:auto;max-height:430px;}
+#page-rapor .table-card{padding:15px 16px;}
+#page-rapor .table-card table{margin-top:2px;}
+#page-rapor .table-card thead th{background:var(--cream);}
+#page-rapor .total-row{margin:10px -16px -15px;padding:10px 16px;}
+@media(max-width:1180px){.report-filter-groups{grid-template-columns:1fr 1fr}.report-two-col{grid-template-columns:1fr}}
+@media(max-width:720px){.report-topbar{position:static}.report-filter-groups{grid-template-columns:1fr}.report-filter-group-grid{grid-template-columns:1fr}.report-jump{flex:1;text-align:center}.report-two-col{grid-template-columns:1fr}}
+
 /* ── ODALAR SAYFASI ── */
 .odalar-layout{display:flex;gap:16px;align-items:stretch;height:calc(100vh - 200px);}
 
@@ -1076,10 +1110,12 @@ input[type="number"], input[type="date"], input[type="password"] {
     <input type="hidden" id="ns_id">
     <input type="hidden" id="ns_fiyat">
     <input type="hidden" id="ns_oda">
-    <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px;margin-bottom:20px">
+    <div style="background:var(--parchment);border:1px solid var(--border);padding:14px 16px;margin-bottom:14px">
       <div style="font-size:13px;font-weight:600;color:var(--dark)" id="ns_misafir_ad"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">Gelmedi olarak işaretlenecek</div>
+      <div id="ns_finans_ozet" style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:11px;line-height:1.65;color:var(--muted)"></div>
     </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px;padding:8px 10px;border-left:3px solid var(--gold2);background:#fffaf0">Komisyon yalnız otelde kesinleşen / iade edilmeyen gelir üzerinden oluşur. Check-in yapılmamış olması tek başına komisyonu sıfırlamaz.</div>
     <div style="display:grid;gap:10px">
       <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px 18px;text-align:left;height:auto;flex-direction:column;align-items:flex-start;gap:4px" onclick="saveNoShow('iptal')">
         <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Ücretsiz İptal</span>
@@ -1088,6 +1124,10 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-warning" style="justify-content:flex-start;padding:14px 18px;text-align:left;height:auto;flex-direction:column;align-items:flex-start;gap:4px" onclick="saveNoShow('ucret')">
         <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase" id="ns_ucret_lbl">1 Gecelik Ücret Kes</span>
         <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">İptal ücreti olarak gelir kaydı yazılır</span>
+      </button>
+      <button id="ns_tahsil_btn" class="btn btn-success" style="display:none;justify-content:flex-start;padding:14px 18px;text-align:left;height:auto;flex-direction:column;align-items:flex-start;gap:4px" onclick="saveNoShow('tahsil')">
+        <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase" id="ns_tahsil_lbl">Alınmış Ödemeyi Gelirleştir</span>
+        <span style="font-size:11px;color:inherit;opacity:.8;font-weight:400;text-transform:none;letter-spacing:0">İade edilmeyecek tahsilat gelirleşir; komisyon bu tutar oranında kesinleşir.</span>
       </button>
     </div>
     <div class="modal-actions" style="margin-top:16px">
@@ -1753,7 +1793,7 @@ input[type="number"], input[type="date"], input[type="password"] {
 </div>
 
 <!-- RAPOR SAYFASI -->
-<div class="page" id="page-rapor">
+<div class="page report-page" id="page-rapor">
   <div class="section-head">
     <h2>Aylık <em>Rapor</em></h2>
     <div style="display:flex;gap:8px;align-items:center">
@@ -1763,6 +1803,17 @@ input[type="number"], input[type="date"], input[type="password"] {
       <button class="btn btn-ghost" onclick="renderRapor()">Yenile</button>
     </div>
   </div>
+
+  <div class="report-topbar" aria-label="Rapor bölümleri">
+    <span class="report-topbar-label">Rapor Haritası</span>
+    <button class="report-jump" onclick="raporBolumeGit('rapor-bolum-genel')">01 · Genel Bakış</button>
+    <button class="report-jump" onclick="raporBolumeGit('rapor-bolum-konaklama')">02 · Konaklama & Rezervasyon</button>
+    <button class="report-jump" onclick="raporBolumeGit('rapor-bolum-komisyoncu')">03 · Komisyoncu</button>
+    <button class="report-jump" onclick="raporBolumeGit('rapor-bolum-aylik')">04 · Aylık Performans</button>
+    <button class="report-jump" onclick="raporBolumeGit('rapor-bolum-cari')">05 · Cari & Ödemeler</button>
+  </div>
+
+  <div id="rapor-bolum-genel" class="report-section-anchor"></div>
 
   <!-- Özet kartlar -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="rapor-ozet-kartlar">
@@ -1786,8 +1837,11 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 
 
+  <div id="rapor-bolum-konaklama" class="report-section-anchor report-section-banner" style="--section-color:var(--blue)">
+    <div class="report-section-no">02</div><div class="report-section-copy"><div class="report-section-title">Konaklama & Rezervasyon İncelemesi</div><div class="report-section-desc">Belirli bir günün misafir, rezervasyon, ödeme ve konaklama ayrıntılarına buradan inin.</div></div>
+  </div>
   <!-- Tarih bazlı rezervasyon / konaklama inceleme -->
-  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--blue)">
+  <div class="table-card report-card" style="margin-bottom:20px;border-left:4px solid var(--blue)">
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Tarih Bazlı <em style="color:var(--blue);font-style:normal">Konaklama / Rezervasyon Detayı</em></div>
@@ -1823,8 +1877,11 @@ input[type="number"], input[type="date"], input[type="password"] {
 
 
 
+  <div id="rapor-bolum-komisyoncu" class="report-section-anchor report-section-banner" style="--section-color:var(--gold2)">
+    <div class="report-section-no">03</div><div class="report-section-copy"><div class="report-section-title">Komisyoncu Rezervasyonları & Tanımları</div><div class="report-section-desc">Komisyoncudan gelen rezervasyonları filtreleyin; gerçekleşme durumunu, tanımları ve fiyat/komisyon kurallarını aynı bölümde yönetin.</div></div>
+  </div>
   <!-- Komisyoncu kaynaklı rezervasyonların tamamlanma / gerçekleşme raporu -->
-  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
+  <div class="table-card report-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Rezervasyon Raporu</em></div>
@@ -1832,19 +1889,43 @@ input[type="number"], input[type="date"], input[type="password"] {
       </div>
       <button class="btn btn-ghost" onclick="raporKomisyonRezPdf()">PDF / Döküm</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;align-items:end;margin-bottom:10px">
-      <div class="form-group" style="margin:0"><label>Komisyoncu</label><select id="rapor-kom-araci" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Komisyoncular</option></select></div>
-      <div class="form-group" style="margin:0"><label>Tamamlanma Durumu</label><select id="rapor-kom-tamamlanma" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tümü</option><option value="tamamlandi">Tamamlanmış</option><option value="tamamlanmadi">Tamamlanmamış</option><option value="iptal">İptal / No-show</option></select></div>
-      <div class="form-group" style="margin:0"><label>Konaklama Durumu</label><select id="rapor-kom-konaklama" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Durumlar</option><option value="planlandi">Planlandı</option><option value="aktif">Konaklıyor / Check-in Var</option><option value="checkout_bekliyor">Check-out Bekleniyor</option><option value="kayit_yok">Konaklama Kaydı Yok</option><option value="tamamlandi">Konakladı / Tamamlandı</option></select></div>
-      <div class="form-group" style="margin:0"><label>Konaklama Başlangıç</label><input type="date" id="rapor-kom-kon-bas" onchange="renderRaporKomisyonRez()"></div>
-      <div class="form-group" style="margin:0"><label>Konaklama Bitiş</label><input type="date" id="rapor-kom-kon-bit" onchange="renderRaporKomisyonRez()"></div>
-      <div class="form-group" style="margin:0"><label>Talep Tarihi Başlangıç</label><input type="date" id="rapor-kom-talep-bas" onchange="renderRaporKomisyonRez()"></div>
-      <div class="form-group" style="margin:0"><label>Talep Tarihi Bitiş</label><input type="date" id="rapor-kom-talep-bit" onchange="renderRaporKomisyonRez()"></div>
-      <div class="form-group" style="margin:0"><label>1. Sıralama</label><select id="rapor-kom-sirala" onchange="renderRaporKomisyonRez()"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="cikis">Çıkış Tarihi</option><option value="komisyoncu">Komisyoncu</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="tamamlanma">Tamamlanma Durumu</option></select></div>
-      <div class="form-group" style="margin:0"><label>2. Sıralama</label><select id="rapor-kom-sirala2" onchange="renderRaporKomisyonRez()"><option value="yok">Yok</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="giris">Konaklama Tarihi</option><option value="cikis">Çıkış Tarihi</option><option value="komisyoncu">Komisyoncu</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="tamamlanma">Tamamlanma Durumu</option></select></div>
-      <div class="form-group" style="margin:0"><label>Yön</label><select id="rapor-kom-yon" onchange="renderRaporKomisyonRez()"><option value="desc">Azalan / Yeni → Eski</option><option value="asc">Artan / Eski → Yeni</option></select></div>
-      <div class="form-group" style="margin:0"><label>Ara</label><input type="text" id="rapor-kom-ara" placeholder="Misafir, oda, komisyoncu..." oninput="renderRaporKomisyonRez()"></div>
-      <button class="btn btn-ghost" style="height:40px" onclick="raporKomFiltreTemizle()">Filtreleri Temizle</button>
+    <div class="report-filter-panel">
+      <div class="report-filter-groups">
+        <div class="report-filter-group">
+          <div class="report-filter-group-title">Kapsam</div>
+          <div class="report-filter-group-grid one">
+            <div class="form-group" style="margin:0"><label>Komisyoncu</label><select id="rapor-kom-araci" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Komisyoncular</option></select></div>
+            <div class="form-group" style="margin:0"><label>Tamamlanma Durumu</label><select id="rapor-kom-tamamlanma" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tümü</option><option value="tamamlandi">Tamamlanmış</option><option value="tamamlanmadi">Tamamlanmamış</option><option value="iptal">İptal / No-show</option></select></div>
+            <div class="form-group" style="margin:0"><label>Konaklama Durumu</label><select id="rapor-kom-konaklama" onchange="renderRaporKomisyonRez()"><option value="hepsi">Tüm Durumlar</option><option value="planlandi">Planlandı</option><option value="aktif">Konaklıyor / Check-in Var</option><option value="checkout_bekliyor">Check-out Bekleniyor</option><option value="kayit_yok">Konaklama Kaydı Yok</option><option value="tamamlandi">Konakladı / Tamamlandı</option></select></div>
+          </div>
+        </div>
+        <div class="report-filter-group">
+          <div class="report-filter-group-title">Konaklama Tarihi</div>
+          <div class="report-filter-group-grid one">
+            <div class="form-group" style="margin:0"><label>Başlangıç</label><input type="date" id="rapor-kom-kon-bas" onchange="renderRaporKomisyonRez()"></div>
+            <div class="form-group" style="margin:0"><label>Bitiş</label><input type="date" id="rapor-kom-kon-bit" onchange="renderRaporKomisyonRez()"></div>
+          </div>
+        </div>
+        <div class="report-filter-group">
+          <div class="report-filter-group-title">Talep Gönderme Tarihi</div>
+          <div class="report-filter-group-grid one">
+            <div class="form-group" style="margin:0"><label>Başlangıç</label><input type="date" id="rapor-kom-talep-bas" onchange="renderRaporKomisyonRez()"></div>
+            <div class="form-group" style="margin:0"><label>Bitiş</label><input type="date" id="rapor-kom-talep-bit" onchange="renderRaporKomisyonRez()"></div>
+          </div>
+        </div>
+        <div class="report-filter-group">
+          <div class="report-filter-group-title">Sıralama & Arama</div>
+          <div class="report-filter-group-grid">
+            <div class="form-group" style="margin:0"><label>1. Sıralama</label><select id="rapor-kom-sirala" onchange="renderRaporKomisyonRez()"><option value="giris">Konaklama Tarihi</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="cikis">Çıkış Tarihi</option><option value="komisyoncu">Komisyoncu</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="tamamlanma">Tamamlanma Durumu</option></select></div>
+            <div class="form-group" style="margin:0"><label>2. Sıralama</label><select id="rapor-kom-sirala2" onchange="renderRaporKomisyonRez()"><option value="yok">Yok</option><option value="kayitTarih">Talep Gönderme Tarihi</option><option value="giris">Konaklama Tarihi</option><option value="cikis">Çıkış Tarihi</option><option value="komisyoncu">Komisyoncu</option><option value="odaNo">Oda</option><option value="misafir">Misafir</option><option value="tamamlanma">Tamamlanma Durumu</option></select></div>
+            <div class="form-group" style="margin:0"><label>Yön</label><select id="rapor-kom-yon" onchange="renderRaporKomisyonRez()"><option value="desc">Azalan / Yeni → Eski</option><option value="asc">Artan / Eski → Yeni</option></select></div>
+          </div>
+          <div class="report-filter-actions">
+            <div class="form-group report-search" style="margin:0"><label>Ara</label><input type="text" id="rapor-kom-ara" placeholder="Misafir, oda, komisyoncu..." oninput="renderRaporKomisyonRez()"></div>
+            <button class="btn btn-ghost btn-sm" onclick="raporKomFiltreTemizle()">Temizle</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div id="rapor-kom-ozet" style="margin-bottom:10px;padding:9px 11px;background:var(--cream);border:1px solid var(--border);font-size:11px;color:var(--muted)"></div>
     <div style="overflow:auto;max-height:520px">
@@ -1869,7 +1950,7 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 
   <!-- Komisyoncu Yönetimi — giriş bilgisi tanımlama/düzenleme/silme, artık kod değiştirmeye gerek yok -->
-  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
+  <div class="table-card report-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Yönetimi</em></div>
@@ -1933,7 +2014,7 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 
   <!-- Komisyoncu sabit oran / tutar ayarları -->
-  <div class="table-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
+  <div class="table-card report-card" style="margin-bottom:20px;border-left:4px solid var(--gold2)">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu Ayarları</div>
@@ -1963,9 +2044,12 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div id="kom_ayar_ornek" style="margin-top:10px;font-size:11px;color:var(--gold2);font-weight:600"></div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+  <div id="rapor-bolum-aylik" class="report-section-anchor report-section-banner" style="--section-color:var(--green)">
+    <div class="report-section-no">04</div><div class="report-section-copy"><div class="report-section-title">Aylık Performans</div><div class="report-section-desc">Oda bazlı doluluk, kesinleşmiş komisyon ve seçilen aya ait operasyon sonuçlarını birlikte değerlendirin.</div></div>
+  </div>
+  <div class="report-two-col">
     <!-- Aylık doluluk tablosu -->
-    <div class="table-card">
+    <div class="table-card report-card">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Oda Bazlı Doluluk</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
@@ -1981,8 +2065,8 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
 
     <!-- Komisyon tablosu — gerçekleşmiş (check-in/gelir) -->
-    <div class="table-card">
-      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--green)">— Gerçekleşen (Check-in Yapılmış)</span></div>
+    <div class="table-card report-card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--green)">— Kesinleşen (Check-in veya Gelirleşmiş No-show)</span></div>
       <!-- Kayıt sayısı arttıkça sayfa değil, sadece bu kutu uzasın diye sabit yükseklik + iç kaydırma -->
       <div style="max-height:420px;overflow-y:auto;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -2006,8 +2090,11 @@ input[type="number"], input[type="date"], input[type="password"] {
     </div>
   </div>
 
+  <div id="rapor-bolum-cari" class="report-section-anchor report-section-banner" style="--section-color:var(--red)">
+    <div class="report-section-no">05</div><div class="report-section-copy"><div class="report-section-title">Cari & Ödemeler</div><div class="report-section-desc">Kesin hakediş, beklenen hakediş, komisyoncuya yapılan ödemeler ve kalan bakiyeyi burada takip edin.</div></div>
+  </div>
   <!-- Komisyoncu Cari Hesap — komisyoncunun hakettiği komisyon / tarafımızdan yapılan ödeme / bize kalan borç -->
-  <div class="table-card" style="margin-top:24px">
+  <div class="table-card report-card" style="margin-top:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu <em style="color:var(--gold2);font-style:normal">Cari Hesap</em>
         <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Tüm zamanlar — komisyoncunun hakettiği komisyon, otel olarak yaptığımız ödemeler ve komisyoncuya kalan borcumuz</span>
@@ -2118,7 +2205,7 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 
   <!-- Tüm Komisyoncu Ödemeleri — kronolojik, en yeniden en eskiye, "kime ne zaman ne kadar ödedik" -->
-  <div class="table-card" style="margin-top:24px">
+  <div class="table-card report-card" style="margin-top:18px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Tüm Komisyoncu <em style="color:var(--gold2);font-style:normal">Ödeme Geçmişi</em>
         <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);display:block;margin-top:3px">Hangi komisyoncuya, ne zaman, ne kadar ödeme yapıldığı — en yeniden en eskiye</span>
@@ -2144,8 +2231,8 @@ input[type="number"], input[type="date"], input[type="password"] {
   </div>
 
   <!-- Komisyon tablosu — yaklaşan rezervasyonlar (henüz check-in yapılmamış) -->
-  <div class="table-card" style="margin-bottom:20px">
-    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold2)">— Yaklaşan Rezervasyonlar (Henüz Check-in Yapılmadı)</span></div>
+  <div class="table-card report-card" style="margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Komisyon Takibi <span style="font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--gold2)">— Beklenen / Henüz Kesinleşmemiş</span></div>
     <div style="max-height:420px;overflow-y:auto;overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead style="position:sticky;top:0;background:var(--white);z-index:1">
@@ -2504,6 +2591,38 @@ function komisyonToplamHesapla({otelFiyat=0, sozlesmeFiyat=0, gece=0, araciAd=''
   gecelik = Math.round(Math.max(0,gecelik)*100)/100;
   const toplam = Math.round(gecelik*nGece*100)/100;
   return {gecelik, toplam, kaynak, araciAd:ad||null, komisyoncu:key||null};
+}
+
+
+// Rezervasyonda check-in öncesinde alınmış gerçek ödeme. Eski kayıt alanlarını da okur.
+function rezervasyonTahsilEdilenTutar(r) {
+  if(!r) return 0;
+  const gece = geceSayisi(r.giris,r.cikis);
+  const musteriGecelik = Math.max(0, Number(r.sozlesmeFiyat||r.fiyat)||0);
+  const toplam = Math.max(0, musteriGecelik*gece);
+  if(r.tahsilEdilen != null) return Math.min(toplam || Infinity, Math.max(0,Number(r.tahsilEdilen)||0));
+  if(r.odemeDurum === 'odendi') return toplam;
+  if(['kismi','depozito'].includes(r.odemeDurum)) return Math.min(toplam || Infinity, Math.max(0,Number(r.kismiTutar)||0));
+  return 0;
+}
+
+// Check-in olmadan gelirleşen (iade edilmeyen) rezervasyon tutarının komisyon karşılığı.
+// Tam sözleşme komisyonunu, otelde kalan müşteri bedeli oranında kesinleştirir.
+function gelirlesenRezervasyonKomisyonu(r, gelirlesenTutar) {
+  if(!r) return {toplam:0,gecelik:0,oran:0,esdegerGece:0,kaynak:'yok'};
+  const gece = geceSayisi(r.giris,r.cikis);
+  const musteriGecelik = Math.max(0,Number(r.sozlesmeFiyat||r.fiyat)||0);
+  const musteriToplam = Math.max(0,musteriGecelik*gece);
+  const tam = komisyonToplamHesapla({
+    otelFiyat:r.fiyat, sozlesmeFiyat:r.sozlesmeFiyat, gece,
+    araciAd:r.araciAd||r.komisyoncuAd||'', komisyoncuKey:r.komisyoncu||''
+  });
+  if(tam.toplam<=0 || musteriToplam<=0) return {...tam,toplam:0,oran:0,esdegerGece:0,musteriToplam};
+  const kesinTutar = Math.min(musteriToplam, Math.max(0,Number(gelirlesenTutar)||0));
+  const oran = Math.min(1, kesinTutar/musteriToplam);
+  const toplam = Math.round(tam.toplam*oran*100)/100;
+  const esdegerGece = musteriGecelik>0 ? Math.round((kesinTutar/musteriGecelik)*100)/100 : 0;
+  return {...tam,toplam,oran,esdegerGece,musteriToplam,gelirlesenTutar:kesinTutar,kaynak:'gelirlesen_'+tam.kaynak};
 }
 
 function rezervasyonCheckinOlmus(r) {
@@ -5441,43 +5560,100 @@ window.renderRezervasyonlar = function() {
 };
 
 window.noShowModal = function(id, misafir, fiyat, odaNo) {
+  const rev = (window._R||[]).find(r=>r.id===id) || {};
+  const gece = geceSayisi(rev.giris,rev.cikis);
+  const musteriGecelik = Math.max(0,Number(rev.sozlesmeFiyat||rev.fiyat||fiyat)||0);
+  const toplam = Math.max(0,musteriGecelik*gece);
+  const tahsil = rezervasyonTahsilEdilenTutar(rev);
+  const birGece = Math.min(toplam, musteriGecelik);
+  const tamKom = komisyonToplamHesapla({otelFiyat:rev.fiyat,sozlesmeFiyat:rev.sozlesmeFiyat,gece,araciAd:rev.araciAd||rev.komisyoncuAd||'',komisyoncuKey:rev.komisyoncu||''});
   document.getElementById('ns_id').value = id;
-  document.getElementById('ns_fiyat').value = fiyat;
+  document.getElementById('ns_fiyat').value = Number(rev.fiyat||fiyat)||0;
   document.getElementById('ns_oda').value = odaNo;
-  document.getElementById('ns_misafir_ad').textContent = misafir || 'Misafir';
-  document.getElementById('ns_ucret_lbl').textContent = `1 Gecelik Ücret Kes (${Number(fiyat).toLocaleString('tr-TR')} ₺)`;
+  document.getElementById('ns_misafir_ad').textContent = misafir || rev.misafir || 'Misafir';
+  document.getElementById('ns_ucret_lbl').textContent = `1 Gecelik Bedeli Gelirleştir (${birGece.toLocaleString('tr-TR')} ₺)`;
+  const tahsilBtn=document.getElementById('ns_tahsil_btn');
+  if(tahsilBtn) tahsilBtn.style.display = tahsil>0.009 ? 'flex' : 'none';
+  const tahsilLbl=document.getElementById('ns_tahsil_lbl');
+  if(tahsilLbl) tahsilLbl.textContent = `Alınmış Ödemeyi Gelirleştir (${tahsil.toLocaleString('tr-TR')} ₺)`;
+  const ozet=document.getElementById('ns_finans_ozet');
+  if(ozet) ozet.innerHTML = `Sözleşme: <b style="color:var(--dark)">${toplam.toLocaleString('tr-TR')} ₺</b> · Alınmış ödeme: <b style="color:${tahsil>0?'var(--green)':'var(--muted)'}">${tahsil.toLocaleString('tr-TR')} ₺</b><br>Tam rezervasyon komisyonu: <b style="color:var(--gold2)">${Number(tamKom.toplam||0).toLocaleString('tr-TR')} ₺</b>`;
   openModal('noShowModal');
 };
 
 window.saveNoShow = async function(tip) {
   const id    = document.getElementById('ns_id').value;
-  const fiyat = Number(document.getElementById('ns_fiyat').value);
   const odaNo = document.getElementById('ns_oda').value;
-  const rev   = window._R.find(r => r.id === id);
+  const rev   = (window._R||[]).find(r => r.id === id);
+  if(!rev) { toast('Rezervasyon bulunamadı','error'); return; }
   const now   = nowISO();
+  const gece = geceSayisi(rev.giris,rev.cikis);
+  const musteriGecelik = Math.max(0,Number(rev.sozlesmeFiyat||rev.fiyat)||0);
+  const musteriToplam = Math.max(0,musteriGecelik*gece);
+  const tahsil = rezervasyonTahsilEdilenTutar(rev);
 
-  // Rezervasyonu no-show olarak işaretle
-  await updateDoc(doc(db,'rezervasyonlar',id), {durum:'noshow', noShowTarih:now, noShowTip:tip});
+  // Ne kadarı gerçekten otelde kalacak? Ücretsiz iptal=0, bir gece=1 gecelik sözleşme bedeli,
+  // tahsil=check-in öncesi alınmış ödemenin iade edilmeyen tamamı.
+  let gelirlesen = 0;
+  if(tip==='ucret') gelirlesen = Math.min(musteriToplam, musteriGecelik);
+  if(tip==='tahsil') gelirlesen = Math.min(musteriToplam, tahsil);
+  gelirlesen = Math.round(Math.max(0,gelirlesen)*100)/100;
+  const tahsilMahsup = Math.min(tahsil, gelirlesen);
+  const kalanAlacak = Math.max(0,Math.round((gelirlesen-tahsilMahsup)*100)/100);
+  const iadeBekleyen = Math.max(0,Math.round((tahsil-gelirlesen)*100)/100);
+  const kom = gelirlesenRezervasyonKomisyonu(rev, gelirlesen);
 
-  if(tip === 'ucret' && fiyat > 0) {
-    await setDoc(doc(db,'gelirler',`noshow_${id}`), {
-      rezervasyonId:id, tarih: today(), tutar: fiyat,
-      odaNo: String(odaNo),
-      odemeTuru: 'nakit',
-      misafir: rev?.misafir || '—',
-      tc: rev?.tc || '',
-      kaynak: 'no-show',
-      aciklama: `No-show iptal ücreti — Oda ${odaNo} · ${rev?.misafir||'—'}`,
-      kayitTarih: now, guncelleme:now
+  await updateDoc(doc(db,'rezervasyonlar',id), {
+    durum:'noshow', noShowTarih:now, noShowTip:tip,
+    noShowGelirlesenTutar:gelirlesen, noShowTahsilEdilen:tahsilMahsup,
+    noShowKalanAlacak:kalanAlacak, iadeBekleyen,
+    noShowKomisyon:Number(kom.toplam)||0, guncelleme:now
+  });
+
+  const gelirId=`noshow_${id}`;
+  if(gelirlesen > 0.009) {
+    await setDoc(doc(db,'gelirler',gelirId), {
+      rezervasyonId:id, tarih:today(), tutar:gelirlesen,
+      odaNo:String(odaNo), giris:rev.giris||'', cikis:rev.cikis||'', gece:0,
+      fiyat:Number(rev.fiyat)||0, sozlesmeFiyat:Number(rev.sozlesmeFiyat)||0,
+      odemeTuru:rev.odemeTuru||'—',
+      odemeDurum:kalanAlacak<=0.009?'odendi':'kismi',
+      tahsilEdilen:tahsilMahsup, kalanTahsilat:kalanAlacak, iadeBekleyen,
+      misafir:rev.misafir||'—', tc:rev.tc||'', kaynak:'no-show',
+      araciAd:araciKanonikAd(rev.araciAd||rev.komisyoncuAd||'')||null,
+      komisyoncu:kom.komisyoncu||rev.komisyoncu||null,
+      komisyoncuAd:kom.araciAd||rev.komisyoncuAd||null,
+      komisyonFark:Number(kom.toplam)||0,
+      aciklama:`No-show gelirleşen bedel — Oda ${odaNo} · ${rev.misafir||'—'}`,
+      kayitTarih:now, guncelleme:now
     },{merge:true});
+  } else {
+    try { await deleteDoc(doc(db,'gelirler',gelirId)); } catch(_) {}
   }
 
-  // Bağlı komisyoncu talebini güncelle
-  await talepIptalGuncelle(rev, 'noshow', 'No-show olarak işaretlendi');
+  const komId='komisyon_'+gelirId;
+  if(gelirlesen>0.009 && Number(kom.toplam)>0.009) {
+    await setDoc(doc(db,'komisyonlar',komId), {
+      gelirDocId:gelirId, rezervasyonId:id, tarih:today(), odaNo:String(odaNo),
+      misafir:rev.misafir||'—', kaynak:'no-show-gelirlesmis',
+      gece:kom.esdegerGece, gercekFiyat:Number(rev.fiyat)||0, sozlesmeFiyat:Number(rev.sozlesmeFiyat)||0,
+      gecelikKomisyon:Number(kom.gecelik)||0, komisyonKaynak:kom.kaynak,
+      komisyonFark:Number(kom.toplam)||0, toplamKomisyon:Number(kom.toplam)||0,
+      gelirlesenTutar:gelirlesen, gelirlesmeOrani:Number(kom.oran)||0,
+      araciAd:kom.araciAd||araciKanonikAd(rev.araciAd||rev.komisyoncuAd||'')||null,
+      komisyoncu:kom.komisyoncu||rev.komisyoncu||null,
+      komisyoncuAd:kom.araciAd||rev.komisyoncuAd||null,
+      komisyonHareketleri:[{tarih:now,tutar:Number(kom.toplam)||0,tip:'hakedis',aciklama:`No-show gelirleşen ödeme hakedişi · Oda ${odaNo} · ${fmt(gelirlesen)}`}],
+      kayitTarih:now,guncelleme:now
+    },{merge:true});
+  } else {
+    try { await deleteDoc(doc(db,'komisyonlar',komId)); } catch(_) {}
+  }
 
-  await logAktivite('no_show', `${rev?.misafir||'?'} · Oda ${odaNo} · ${tip==='ucret'?fiyat.toLocaleString('tr-TR')+' ₺ ücret kesildi':'ücretsiz iptal'}`, odaNo);
+  await talepIptalGuncelle(rev,'noshow',gelirlesen>0?`No-show · ${fmt(gelirlesen)} gelirleşti`:'No-show · ücretsiz iptal');
+  await logAktivite('no_show', `${rev.misafir||'?'} · Oda ${odaNo} · gelirleşen ${fmt(gelirlesen)} · komisyon ${fmt(kom.toplam||0)}${iadeBekleyen>0?' · iade bekleyen '+fmt(iadeBekleyen):''}`, odaNo);
   closeModal('noShowModal');
-  toast(`No-show işlendi${tip==='ucret'?' — '+Number(fiyat).toLocaleString('tr-TR')+' ₺ gelir kaydedildi':''}`, 'success');
+  toast(`No-show işlendi · Gelirleşen ${fmt(gelirlesen)}${Number(kom.toplam)>0?' · Kesin komisyon '+fmt(kom.toplam):''}${iadeBekleyen>0?' · İade bekleyen '+fmt(iadeBekleyen):''}`, 'success');
 };
 
 window.iptalRezervasyon = async function(id) {
@@ -5686,6 +5862,11 @@ window.showPage = function(id, tab) {
 
 // ── RAPOR ──
 
+window.raporBolumeGit = function(id) {
+  const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+};
+
 function fillRaporAy() {
   const sel = document.getElementById('rapor-ay');
   if(!sel || sel.children.length > 1) return;
@@ -5725,10 +5906,10 @@ window.renderRapor = function() {
   // Ay içindeki tüm gelirler ve gerçek konaklamalar ayrı tutulur.
   // Oda masrafları toplam gelire dahildir; check-in sayısını ve komisyonu şişirmez.
   const ayTumGelirler = (window._G||[]).filter(g => (g.tarih||'').startsWith(ay));
-  const ayGelirler = ayTumGelirler.filter(g => g.kaynak !== 'oda-masrafi');
+  const ayGelirler = ayTumGelirler.filter(g => g.kaynak !== 'oda-masrafi' && g.kaynak !== 'no-show');
   const toplamGelir = ayTumGelirler.reduce((a,b)=>a+Number(b.tutar||0), 0);
 
-  // Check-in sayısı yalnızca konaklama kayıtlarından hesaplanır.
+  // No-show geliri toplam gelire dahildir ama fiziksel check-in değildir.
   const checkinSay = ayGelirler.length;
 
   // ── KOMİSYON — KESİNLEŞEN ──
@@ -5886,7 +6067,7 @@ window.renderRapor = function() {
     document.getElementById('rapor-komisyon-body').innerHTML = gerceklesenKomisyonlar.map(k => {
       const odDurum = k.odemeDurum || '';
       return `<tr>
-        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${k.misafir||'—'}${String(k.kaynak||'').includes('no-show')?'<span class="badge badge-orange" style="font-size:8px;margin-left:5px">No-show Geliri</span>':''}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--gold2);font-weight:600">${k.araciAd?'🤝 '+k.araciAd:'—'}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border)">Oda ${k.odaNo}</td>
         <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;font-size:11px">${k.gece||'—'}</td>
