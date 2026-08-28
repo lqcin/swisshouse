@@ -1074,6 +1074,22 @@ function komisyonKaydiCariUygun(k) {
   return bek>0&&Math.abs((Number(k.toplamKomisyon)||0)-bek)<=0.02;
 }
 
+// Eski komisyon kaydı rezervasyonId taşımıyorsa, aynı rezervasyonu ikinci kez hakediş
+// olarak eklememek için komisyoncu + oda + misafir + giriş tarihiyle güçlü eşleştir.
+function legacyKomisyonRezervasyonBul(k) {
+  if(!k) return null;
+  if(k.rezervasyonId){const r=(_R||[]).find(x=>String(x.id||'')===String(k.rezervasyonId));if(r)return r;}
+  const oda=String(k.odaNo||''), mis=araciAnahtar(k.misafir||''), tarih=String(k.giris||k.tarih||'').slice(0,10);
+  const kKey=kayitKomisyoncuKey(k);
+  if(!oda||!mis||!kKey)return null;
+  const aday=(_R||[]).filter(r=>String(r.odaNo||'')===oda && araciAnahtar(r.misafir||'')===mis && kayitKomisyoncuKey(r)===kKey && (!tarih||!r.giris||String(r.giris).slice(0,10)===tarih));
+  return aday.length===1?aday[0]:null;
+}
+function legacyKomisyonRezervasyonMotorundaMi(k,hesaplananIds){
+  if(k?.rezervasyonId&&hesaplananIds.has(String(k.rezervasyonId)))return true;
+  const r=legacyKomisyonRezervasyonBul(k);return !!(r?.id&&hesaplananIds.has(String(r.id)));
+}
+
 function sozlesmeKomisyonlarim() {
   const kesin=[], beklenen=[];
   (_R||[]).forEach(r=>{ const h=rezervasyonKomisyonum(r); if(!h)return; (h.beklenen?beklenen:kesin).push(h); });
@@ -1090,8 +1106,8 @@ function renderKazancim() {
   const {kesin,beklenen}=sozlesmeKomisyonlarim();
   const hesaplananIds=new Set([...kesin,...beklenen].map(x=>x.r?.id).filter(Boolean));
   // Otomatik sözleşme hesabına bağlanmayan doğrulanmış manuel/legacy kayıtları koru.
-  const legacy=_komTumu.filter(kk=>kayitBenimMi(kk)&&komisyonKaydiCariUygun(kk)&&!(kk.rezervasyonId&&hesaplananIds.has(kk.rezervasyonId)));
-  const kontrolDisi=_komTumu.filter(kk=>kayitBenimMi(kk)&&!komisyonKaydiCariUygun(kk)&&!(kk.rezervasyonId&&hesaplananIds.has(kk.rezervasyonId)));
+  const legacy=_komTumu.filter(kk=>kayitBenimMi(kk)&&komisyonKaydiCariUygun(kk)&&!legacyKomisyonRezervasyonMotorundaMi(kk,hesaplananIds));
+  const kontrolDisi=_komTumu.filter(kk=>kayitBenimMi(kk)&&!komisyonKaydiCariUygun(kk)&&!legacyKomisyonRezervasyonMotorundaMi(kk,hesaplananIds));
   const odemeler=_komOdemeTumu.filter(p=>kayitBenimMi(p));
   const toplamKesin=kesin.reduce((a,b)=>a+b.tutar,0)+legacy.reduce((a,b)=>a+(Number(b.toplamKomisyon)||0),0);
   const toplamBeklenen=beklenen.reduce((a,b)=>a+b.tutar,0);
