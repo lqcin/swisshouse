@@ -1442,7 +1442,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="td_grid"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('takvimDetayModal')">Kapat</button>
-      <button class="btn btn-success" id="td_checkin_btn" style="display:none" onclick="closeModal('takvimDetayModal');openCheckin(window._tdOda)">Check-in</button>
+      <button class="btn btn-success" id="td_checkin_btn" style="display:none" onclick="takvimDetayCheckin()">Check-in</button>
       <button class="btn btn-warning" id="td_checkout_btn" style="display:none" onclick="closeModal('takvimDetayModal');openCheckoutMenu(window._tdOda)">Check-out</button>
     </div>
   </div>
@@ -2401,11 +2401,7 @@ function rezervasyonTakvimdeGorunur(r){
   const bagliTalep = talepler.find(t =>
     (r.kaynakTalepId && t.id===r.kaynakTalepId) ||
     (t.rezervasyonId && r.id && t.rezervasyonId===r.id) ||
-    (!r.kaynakTalepId && !t.rezervasyonId &&
-      Number(t.odaNo)===Number(r.odaNo) &&
-      takvimIsoTarih(t.giris)===takvimIsoTarih(r.giris) &&
-      takvimIsoTarih(t.cikis)===takvimIsoTarih(r.cikis) &&
-      String(t.misafir||'').trim().toLocaleLowerCase('tr-TR')===String(r.misafir||'').trim().toLocaleLowerCase('tr-TR'))
+    (r.id && takvimTalepBagliRezervasyonBul(t)?.id===r.id)
   );
   if(bagliTalep && takvimTerminalDurum(bagliTalep.durum)) return false;
 
@@ -2425,6 +2421,48 @@ function takvimRezervasyonBul(odaNo, gun, liste){
   });
   return aday[0]||null;
 }
+function takvimMisafirAnahtar(v){
+  return String(v||'').trim().toLocaleLowerCase('tr-TR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[ıİ]/g,'i').replace(/[^a-z0-9]+/g,'');
+}
+function takvimTarihGunFarki(a,b){
+  const aa=takvimIsoTarih(a), bb=takvimIsoTarih(b);
+  if(!aa||!bb) return 9999;
+  const [ay,am,ad]=aa.split('-').map(Number), [by,bm,bd]=bb.split('-').map(Number);
+  return Math.abs((Date.UTC(ay,am-1,ad)-Date.UTC(by,bm-1,bd))/86400000);
+}
+// Bir komisyoncu talebinin onaydan sonra üretilen gerçek rezervasyonunu TEK noktadan bulur.
+// Yeni kayıtlarda rezervasyonId/kaynakTalepId kesin bağdır. Eski kayıtlarda ise onay zamanı,
+// aynı oda+misafir+komisyoncu ve çok küçük tarih revizyonu güvenli legacy bağı olarak kullanılır.
+function takvimTalepBagliRezervasyonBul(t){
+  if(!t) return null;
+  const liste=window._R||[];
+  let r=liste.find(x => (t.rezervasyonId && x.id===t.rezervasyonId) || (x.kaynakTalepId && x.kaynakTalepId===t.id));
+  if(r) return r;
+  const oda=Number(t.odaNo), mis=takvimMisafirAnahtar(t.misafir), kom=String(t.komisyoncu||'').toLocaleLowerCase('tr-TR');
+  if(!oda||!mis) return null;
+  const aday=liste.filter(x=>Number(x.odaNo)===oda && takvimMisafirAnahtar(x.misafir)===mis && (!kom || !x.komisyoncu || String(x.komisyoncu).toLocaleLowerCase('tr-TR')===kom));
+  if(!aday.length) return null;
+  // Aynı tarih aralığı her zaman güçlü eşleşmedir.
+  r=aday.find(x=>takvimIsoTarih(x.giris)===takvimIsoTarih(t.giris) && takvimIsoTarih(x.cikis)===takvimIsoTarih(t.cikis));
+  if(r) return r;
+  // Eski onay akışında talep->rezervasyon ID bağı yazılmıyordu. Rezervasyon kaydı ile talebin
+  // onay/islem zamanı birkaç dakika içindeyse aynı iş akışıdır; tarih onay sırasında değişmiş olabilir.
+  const tms=raporKomZamanMs?.(t.islemTarih||t.guncelleme||'') || 0;
+  if(tms){
+    r=aday.find(x=>{ const rms=raporKomZamanMs?.(x.kayitTarih||x.guncelleme||'')||0; return rms && Math.abs(rms-tms)<=10*60*1000; });
+    if(r) return r;
+  }
+  // Son güvenli legacy kuralı: aynı gece sayısı ve giriş/çıkış yalnız 1 gün kaymışsa tek rezervasyon say.
+  const tg=Math.max(0,geceSayisi(t.giris,t.cikis)||Number(t.gece)||0);
+  if(tg>0){
+    r=aday.find(x=>Math.max(0,geceSayisi(x.giris,x.cikis)||Number(x.gece)||0)===tg && takvimTarihGunFarki(x.giris,t.giris)<=1 && takvimTarihGunFarki(x.cikis,t.cikis)<=1);
+    if(r) return r;
+  }
+  return null;
+}
+
 function takvimOnayliTalepBul(odaNo, gun){
   const g=takvimIsoTarih(gun);
   if(!g) return null;
@@ -2435,14 +2473,10 @@ function takvimOnayliTalepBul(odaNo, gun){
     if(Number(t.odaNo)!==Number(odaNo) || !(takvimIsoTarih(t.giris)<=g && takvimIsoTarih(t.cikis)>g)) return false;
     // Talebe bağlı rezervasyon sonradan iptal/no-show/tamamlandı ise eski onaylı talep
     // takvime rezervasyonu geri getiremez.
-    const bagli=(window._R||[]).find(r =>
-      (t.rezervasyonId && r.id===t.rezervasyonId) ||
-      (r.kaynakTalepId && r.kaynakTalepId===t.id) ||
-      (!t.rezervasyonId && !r.kaynakTalepId && Number(r.odaNo)===Number(t.odaNo) &&
-       takvimIsoTarih(r.giris)===takvimIsoTarih(t.giris) && takvimIsoTarih(r.cikis)===takvimIsoTarih(t.cikis) &&
-       String(r.misafir||'').trim().toLocaleLowerCase('tr-TR')===String(t.misafir||'').trim().toLocaleLowerCase('tr-TR'))
-    );
-    return !bagli || !takvimTerminalDurum(bagli.durum || bagli._durum);
+    const bagli=takvimTalepBagliRezervasyonBul(t);
+    // Talep bir rezervasyona dönüştüyse takvim için kaynak artık SADECE rezervasyon kaydıdır.
+    // Rezervasyonun tarihi onay sırasında değişmiş olsa bile eski talep ikinci bir blok olarak çizilemez.
+    return !bagli;
   });
   aday.sort((a,b)=>String(b.islemTarih||b.guncelleme||b.kayitTarih||'').localeCompare(String(a.islemTarih||a.guncelleme||a.kayitTarih||'')));
   const t=aday[0];
@@ -3794,7 +3828,7 @@ window.talepOnayla = function(id) {
       ? `[Acenta: ${t.komisyoncuAd||t.komisyoncu}]`
       : `[Instagram talebi]`;
     document.getElementById('rev_not').value = (t.not ? t.not + ' ' : '') + kaynakNot;
-    document.getElementById('rev_kaynak').value = 'diger';
+    document.getElementById('rev_kaynak').value = t.kaynak === 'komisyoncu' ? 'komisyoncu' : (t.kaynak || 'diger');
     if(t.sozlesmeFiyat) {
       const rsf = document.getElementById('rev_sozlesme_fiyat');
       if(rsf) { rsf.value = t.sozlesmeFiyat; sozlesmeToplam('rev'); }
@@ -6191,7 +6225,11 @@ window.saveRezervasyon = async function(mod = '') {
   await logAktivite('rezervasyon', `${misafirKayit} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · ${fmt(gece*fiyat)}`, odaNo);
   // Bu rezervasyon bir Instagram/komisyoncu talebinden onaylandıysa, talebin durumunu güncelle
   if(window._onaylananTalepId) {
-    await updateDoc(doc(db,'rezervasyon_talepleri', window._onaylananTalepId), {durum:'onaylandi', islemTarih: nowISO()});
+    await updateDoc(doc(db,'rezervasyon_talepleri', window._onaylananTalepId), {
+      durum:'onaylandi', islemTarih: nowISO(), rezervasyonId:revRef.id,
+      onaylananOdaNo:Number(odaNo), onaylananGiris:giris, onaylananCikis:cikis, onaylananGece:gece,
+      onaylananMisafir:misafirKayit
+    });
     window._onaylananTalepId = null;
     window._onaylananKomisyoncu = null;
     window._onaylananKomisyoncuAd = null;
@@ -6437,8 +6475,9 @@ async function talepIptalGuncelle(rev, yeniDurum, not) {
       where('durum','==','onaylandi')
     ));
     const eslesen = snap.docs.find(d => {
-      const t = d.data();
-      return t.misafir === rev.misafir && Number(t.odaNo) === Number(rev.odaNo);
+      const t = {id:d.id,...d.data()};
+      const bagli = takvimTalepBagliRezervasyonBul(t);
+      return bagli?.id === rev.id;
     });
     if(eslesen) {
       await updateDoc(doc(db,'rezervasyon_talepleri', eslesen.id), {
@@ -6997,7 +7036,7 @@ function raporKomKayitMi(x){
 }
 function raporKomBagliKayitlar(t){
   const R=window._R||[], G=(window._G||[]).filter(x=>x.kaynak!=='oda-masrafi'&&x.kaynak!=='no-show'), O=window._O||{};
-  const r=R.find(x => x.kaynakTalepId===t.id || (t.rezervasyonId && x.id===t.rezervasyonId) || (t._rezervasyonId && x.id===t._rezervasyonId)) || null;
+  const r=R.find(x => x.kaynakTalepId===t.id || (t.rezervasyonId && x.id===t.rezervasyonId) || (t._rezervasyonId && x.id===t._rezervasyonId)) || (t._kaynakTip==='rezervasyon'?null:takvimTalepBagliRezervasyonBul(t)) || null;
   const hedefOda=String(r?.odaNo||t.odaNo||'');
   const hedefMisafir=temizAnahtar(r?.misafir||t.misafir||'');
   const hedefGiris=String(r?.giris||t.giris||'');
@@ -7684,7 +7723,7 @@ function renderTakvimAyHafta(grid, todayStr) {
         const tamamenGecmis = g < todayStr && (rev.cikis||'') <= todayStr;
         bgStyle = `background:${takvimRenkTonu(anahtarRev, tamamenGecmis ? 'gecmis' : 'rezerve')};`;
         tooltip=`title="${(rev.misafir||'').replace(/"/g,"'")} · ${rev.giris}→${rev.cikis}${kararBekliyor?' · Check-in kararı bekliyor':tamamenGecmis?' · Geçmiş rezervasyon':''}"`;
-        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:rev.fiyat,kaynak:rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
+        onclick=`onclick="takvimDetay(${JSON.stringify({tip:'rezerv',rezervasyonId:rev.id||null,misafir:rev.misafir,giris:rev.giris,cikis:rev.cikis,odaNo:i,gece:geceSayisi(rev.giris,rev.cikis),fiyat:rev.fiyat,kaynak:(rev.komisyoncu||rev.araciAd||rev.komisyoncuAd)?'Komisyoncu':rev.kaynak,odemeDurum:rev.odemeDurum||''}).replace(/"/g,'&quot;')})"`;
       }
       else if(fiiliDolu||bugunDolu) {
         cls='t-dolu';
@@ -8235,6 +8274,7 @@ window.renderHatirlatma = function renderHatirlatma() {
 window.takvimDetay = function(data) {
   if(typeof data === 'string') { try { data = JSON.parse(data); } catch(e) { return; } }
   window._tdOda = data.odaNo;
+  window._tdRezId = data.rezervasyonId || null;
 
   const isDolu = data.tip === 'dolu';
   const hdr = document.getElementById('td_header');
@@ -8264,10 +8304,24 @@ window.takvimDetay = function(data) {
       <div style="font-size:13px;font-weight:600;color:var(--dark)">${v}</div>
     </div>`).join('');
 
-  document.getElementById('td_checkin_btn').style.display  = isDolu ? 'none' : '';
+  const checkinBtn=document.getElementById('td_checkin_btn');
+  const bugun=today();
+  const rezervasyonBugunGecerli = !isDolu && !!data.rezervasyonId && !!data.giris && !!data.cikis && data.giris<=bugun && data.cikis>bugun;
+  const checkinAcik = rezervasyonBugunGecerli && checkinSaatineGeldiMi(data.giris,14);
+  checkinBtn.style.display = checkinAcik ? '' : 'none';
+  if(checkinBtn) checkinBtn.textContent = 'CHECK-IN';
   document.getElementById('td_checkout_btn').style.display = isDolu ? '' : 'none';
 
   openModal('takvimDetayModal');
+};
+
+window.takvimDetayCheckin = function(){
+  const id=window._tdRezId;
+  const r=(window._R||[]).find(x=>x.id===id);
+  closeModal('takvimDetayModal');
+  if(!r){ toast('Bağlı rezervasyon bulunamadı; talep kaydı doğrudan check-in yapılamaz.','error'); return; }
+  if(!checkinSaatineGeldiMi(r.giris,14)){ toast(`Check-in ${r.giris} günü saat 14:00'ten itibaren yapılabilir.`,'error'); return; }
+  checkindenRezervasyon(r);
 };
 
 window.sozlesmeToplam = function(prefix) {
