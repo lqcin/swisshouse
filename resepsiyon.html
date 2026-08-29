@@ -3576,15 +3576,23 @@ async function otomatikCheckoutKaydet(no) {
     if(kaynakRev?.id) {
       await updateDoc(doc(db,'rezervasyonlar',kaynakRev.id), {
         durum:'tamamlandi',cikis:o.cikis,gece,checkoutTarih:o.cikis,otomatikCheckout:true,
-        odemeToplam:state.fiyatModel.misafirToplam,otelNetToplam:state.fiyatModel.otelNetToplam,
-        komisyonToplam:state.fiyatModel.komisyonToplam,kalanTahsilat:kalan,iadeBekleyen,guncelleme:now
+        odemeDurum, odemeTuru:o.odemeTuru||'',
+        odemeToplam:state.fiyatModel.misafirToplam, tahsilEdilen:konaklamaTahsil,
+        kalanTahsilat:kalan, kismiKalan:kalan,
+        kismiTutar:(konaklamaTahsil>0 && kalan>0) ? konaklamaTahsil : null,
+        odemeTamamlanmaTarih:odemeDurum==='odendi'?now:null,
+        otelNetToplam:state.fiyatModel.otelNetToplam,
+        komisyonToplam:state.fiyatModel.komisyonToplam,iadeBekleyen,guncelleme:now
       });
       if(kaynakRev.kaynakTalepId) {
         try { await updateDoc(doc(db,'rezervasyon_talepleri',kaynakRev.kaynakTalepId), {
           durum:'tamamlandi',rezervasyonId:kaynakRev.id,cikis:o.cikis,gece,checkoutTarih:o.cikis,
-          otomatikCheckout:true,odemeToplam:state.fiyatModel.misafirToplam,
+          otomatikCheckout:true,odemeDurum,odemeTuru:o.odemeTuru||'',
+          odemeToplam:state.fiyatModel.misafirToplam,tahsilEdilen:konaklamaTahsil,
+          kalanTahsilat:kalan,kismiKalan:kalan,
+          odemeTamamlanmaTarih:odemeDurum==='odendi'?now:null,
           otelNetToplam:state.fiyatModel.otelNetToplam,komisyonToplam:state.fiyatModel.komisyonToplam,
-          kalanTahsilat:kalan,iadeBekleyen,islemTarih:now
+          iadeBekleyen,islemTarih:now
         }); } catch(e) { console.warn('Otomatik checkout talep senkronu:',e); }
       }
     }
@@ -5023,16 +5031,25 @@ window.saveCheckin = async function() {
       giris, cikis,
       fiyat: fiyat,
       sozlesmeFiyat: sozlesmeFiyatVal || aktifRevDoc.sozlesmeFiyat || null,
-      odemeDurum: odDurumVal2,
+      odemeDurum: odaOdemeDurum,
       odemeTuru: odeme,
-      kismiTutar: kismiTutarVal2,
-      kismiKalan: kismiTutarVal2!=null ? Math.max(0,((sozlesmeFiyatVal||fiyat)*gece)-kismiTutarVal2) : null,
+      odemeToplam: odaOdemeToplam,
+      tahsilEdilen: odaTahsilEdilen,
+      kalanTahsilat: odaKalanTutar,
+      kismiTutar: (odaTahsilEdilen>0 && odaKalanTutar>0) ? odaTahsilEdilen : null,
+      kismiKalan: odaKalanTutar,
+      odemeHareketleri,
+      guncelleme: now
     });
     if(aktifRevDoc.kaynakTalepId) {
       try {
         await updateDoc(doc(db,'rezervasyon_talepleri',aktifRevDoc.kaynakTalepId), {
           durum:'aktif', rezervasyonId:aktifRevDoc.id, giris, cikis, gece,
           fiyat, sozlesmeFiyat:sozlesmeFiyatVal||null,
+          odemeDurum:odaOdemeDurum, odemeTuru:odeme,
+          odemeToplam:odaOdemeToplam, tahsilEdilen:odaTahsilEdilen,
+          kalanTahsilat:odaKalanTutar, kismiKalan:odaKalanTutar,
+          odemeHareketleri,
           checkinTarih:today(), islemTarih:nowISO()
         });
       } catch(e) { console.warn('Komisyoncu talebi check-in durumuna geçirilemedi:',e); }
@@ -5591,8 +5608,17 @@ window.saveCheckoutFromOzet = async function() {
   if(kaynakRev?.id) {
     try {
       await updateDoc(doc(db,'rezervasyonlar',kaynakRev.id), {
-        durum: 'tamamlandi', cikis: gercekCikis, gece,
-        odemeToplam:state.fiyatModel.misafirToplam, otelNetToplam:state.fiyatModel.otelNetToplam,
+        durum: 'tamamlandi', cikis: gercekCikis, gece, checkoutTarih:gercekCikis,
+        odemeDurum:konaklamaOdemeDurum,
+        odemeTuru:konaklamaTahsilSimdi>0 ? odeme : (o.odemeTuru||odeme),
+        odemeToplam:sozlesmeToplam,
+        tahsilEdilen:konaklamaTahsilToplam,
+        kalanTahsilat:Math.max(0,sozlesmeToplam-konaklamaTahsilToplam),
+        kismiTutar:(konaklamaTahsilToplam>0 && konaklamaTahsilToplam<sozlesmeToplam-0.009) ? konaklamaTahsilToplam : null,
+        kismiKalan:Math.max(0,sozlesmeToplam-konaklamaTahsilToplam),
+        odemeHareketleri:checkoutHareketleri,
+        odemeTamamlanmaTarih:konaklamaOdemeDurum==='odendi'?now:null,
+        otelNetToplam:state.fiyatModel.otelNetToplam,
         komisyonToplam:state.fiyatModel.komisyonToplam, iadeTutar:iadeSimdi,
         guncelleme: now
       });
@@ -5600,7 +5626,14 @@ window.saveCheckoutFromOzet = async function() {
         try {
           await updateDoc(doc(db,'rezervasyon_talepleri',kaynakRev.kaynakTalepId), {
             durum:'tamamlandi', rezervasyonId:kaynakRev.id, cikis:gercekCikis, gece,
-            odemeToplam:state.fiyatModel.misafirToplam, otelNetToplam:state.fiyatModel.otelNetToplam,
+            odemeDurum:konaklamaOdemeDurum,
+            odemeTuru:konaklamaTahsilSimdi>0 ? odeme : (o.odemeTuru||odeme),
+            odemeToplam:sozlesmeToplam, tahsilEdilen:konaklamaTahsilToplam,
+            kalanTahsilat:Math.max(0,sozlesmeToplam-konaklamaTahsilToplam),
+            kismiKalan:Math.max(0,sozlesmeToplam-konaklamaTahsilToplam),
+            odemeHareketleri:checkoutHareketleri,
+            odemeTamamlanmaTarih:konaklamaOdemeDurum==='odendi'?now:null,
+            otelNetToplam:state.fiyatModel.otelNetToplam,
             komisyonToplam:state.fiyatModel.komisyonToplam, iadeTutar:iadeSimdi,
             checkoutTarih:gercekCikis, islemTarih:nowISO()
           });
@@ -6945,6 +6978,21 @@ window.renderRapor = function() {
 function shEsc(v) {
   return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
+function finansalOdemeDurumu(kayit={}) {
+  const toplam=Math.max(0,Number(kayit.odemeToplam)||0);
+  const tahsil=Math.max(0,Number(kayit.tahsilEdilen ?? kayit.kismiTutar)||0);
+  const kalanRaw=Number(kayit.kalanTahsilat ?? kayit.kalanTutar ?? kayit.kismiKalan);
+  const kalan=Number.isFinite(kalanRaw) ? Math.max(0,kalanRaw) : Math.max(0,toplam-tahsil);
+  const eskiDurum=String(kayit.odemeDurum||'').toLowerCase();
+  // Yalnız finansal kanıt varsa "ödendi" türet: tahsil toplamı kapatmış olmalı,
+  // ya da kayıt zaten ödendi ve kalan sıfır olmalı. Eski bozuk kalan=0 alanı tek başına yeterli değildir.
+  if(toplam>0 && tahsil>=toplam-0.009) return {durum:'odendi',kalan:0,tahsil:Math.max(tahsil,toplam)};
+  if(eskiDurum==='odendi' && kalan<=0.009) return {durum:'odendi',kalan:0,tahsil:Math.max(tahsil,toplam)};
+  if(tahsil>0 && kalan<=0.009 && toplam>0) return {durum:'odendi',kalan:0,tahsil:Math.max(tahsil,toplam)};
+  if(tahsil>0) return {durum:'kismi',kalan:Math.max(kalan,Math.max(0,toplam-tahsil)),tahsil};
+  return {durum:eskiDurum||'odenmedi',kalan:toplam>0?Math.max(kalan,toplam):kalan,tahsil};
+}
+
 function raporTarihKaydiOlustur(tarih) {
   const R = window._R || [], G = (window._G || []).filter(g => g.kaynak !== 'oda-masrafi' && g.kaynak !== 'no-show');
   const O = window._O || {};
@@ -6998,8 +7046,10 @@ function raporTarihKaydiOlustur(tarih) {
   sonuc.forEach(x => {
     if(!x.odemeToplam) x.odemeToplam=(x.sozlesmeFiyat||x.fiyat||0)*Math.max(0,geceSayisi(x.giris,x.cikis));
     if(!Number.isFinite(x.tahsilEdilen)) x.tahsilEdilen=0;
-    if(x.odemeDurum!=='odendi' && !(x.kalanTahsilat>0)) x.kalanTahsilat=Math.max(0,(x.odemeToplam||0)-(x.tahsilEdilen||0));
-    if(x.odemeDurum==='odendi') x.kalanTahsilat=0;
+    const fin=finansalOdemeDurumu(x);
+    x.odemeDurum=fin.durum;
+    x.tahsilEdilen=fin.tahsil;
+    x.kalanTahsilat=fin.kalan;
   });
   return sonuc.sort((a,b)=>Number(a.odaNo)-Number(b.odaNo) || String(a.misafir).localeCompare(String(b.misafir),'tr'));
 }
