@@ -63,7 +63,8 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-nav button:hover{background:var(--parchment);}
 .takvim-table{width:100%;border-collapse:collapse;font-size:11px;overflow-x:auto;display:block;}
 .takvim-table th{padding:6px 4px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;min-width:32px;}
-.takvim-table th.bugun-col{background:#fffbf0;color:var(--gold);}
+.takvim-table th.bugun-col{background:#fff2b8;color:#7a4b00;border-left:3px solid #c58b00 !important;border-right:3px solid #c58b00 !important;border-top:3px solid #c58b00 !important;box-shadow:inset 0 -3px 0 #c58b00;position:relative;}
+.takvim-table th.bugun-col::after{content:'BUGÜN';display:block;margin-top:2px;font-size:7px;font-weight:800;letter-spacing:1px;color:#9a6700;}
 .takvim-table td{padding:3px 2px;text-align:center;border:1px solid #f0f0f0;height:32px;position:relative;white-space:nowrap;font-size:10px;}
 .takvim-table td.t-bos{background:#fff;cursor:pointer;}
 .takvim-table td.t-bos:hover{background:#e8f5e9;}
@@ -75,7 +76,9 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
 .takvim-table td.t-kontrol{background:repeating-linear-gradient(135deg,#fffdf5,#fffdf5 6px,#f7efd9 6px,#f7efd9 12px);cursor:pointer;}
 .takvim-table td.t-gecmis{background:repeating-linear-gradient(135deg,#f5f5f5,#f5f5f5 6px,#e8e8e8 6px,#e8e8e8 12px);cursor:not-allowed;}
 .takvim-table td.t-kontrol:hover{background:#fff3cd;}
-.takvim-table td.t-bugun{background:#fffbf0;border:1px solid var(--gold2);}
+.takvim-table td.t-bugun{background:#fff9df;}
+.takvim-table td.bugun-hucre{border-left:3px solid #c58b00 !important;border-right:3px solid #c58b00 !important;box-shadow:inset 0 0 0 1px rgba(197,139,0,.12);}
+.takvim-table tbody tr:last-child td.bugun-hucre{border-bottom:3px solid #c58b00 !important;}
 /* "Benim rezervasyonum" — yeni bir renk DEĞİL; aynı komisyoncu (turkuaz) rengi üstüne
    sadece ✓ işareti ve koyu kenarlık eklenir, böylece toplam renk sayısı 4'te kalır. */
 .takvim-table td.t-komisyoncu.benim-isaret{border:2px solid #00332c !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
@@ -1349,7 +1352,7 @@ function takvimTablosuCiz(gunList, today) {
         : _veriDurumu.rezervasyon
         ? `Oda ${odaNo} · ${iso}`
         : `Oda ${odaNo} · ${iso} · Müsaitlik yönetici onayında kesinleşir`;
-      html += `<td class="${cls}" ${onclick} ${misafirHover} title="${misafirOzet ? '' : hucreBaslik}"></td>`;
+      html += `<td class="${cls}${isToday?' bugun-hucre':''}" ${onclick} ${misafirHover} title="${misafirOzet ? '' : hucreBaslik}"></td>`;
     });
 
     html += '</tr>';

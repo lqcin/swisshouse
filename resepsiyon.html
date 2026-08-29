@@ -314,7 +314,11 @@ tbody td{padding:12px 16px;font-size:13px;}
 .takvim-table td.t-bos{background:var(--white);}
 .takvim-table td.t-dolu{background:#c8dfc8;}
 .takvim-table td.t-rezerve{background:#d4c4e8;cursor:pointer;}
-.takvim-table td.t-bugun{background:#f0f7ff;border-left:1px solid #1d4ed8 !important;border-right:1px solid #1d4ed8 !important;}
+.takvim-table th.t-bugun-head{background:#fff2b8 !important;color:#7a4b00 !important;border-left:3px solid #c58b00 !important;border-right:3px solid #c58b00 !important;border-top:3px solid #c58b00 !important;box-shadow:inset 0 -3px 0 #c58b00;position:relative;}
+.takvim-table th.t-bugun-head::after{content:'BUGÜN';display:block;margin-top:2px;font-size:7px;line-height:1;font-weight:800;letter-spacing:1px;color:#9a6700;}
+.takvim-table td.t-bugun-col{border-left:3px solid #c58b00 !important;border-right:3px solid #c58b00 !important;box-shadow:inset 0 0 0 1px rgba(197,139,0,.12);}
+.takvim-table tbody tr:last-child td.t-bugun-col{border-bottom:3px solid #c58b00 !important;}
+.takvim-table td.t-bugun{background:#fff9df;}
 .takvim-table td.t-temizlik{background:#fde8c0;}
 .takvim-table td.t-arizali{background:#e8d4c0;}
 .takvim-blok{position:absolute;inset:2px;display:flex;align-items:center;padding:0 4px;font-size:10px;font-weight:600;color:#3a3530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:2px;}
@@ -1022,12 +1026,11 @@ input[type="number"], input[type="date"], input[type="password"] {
       </div>
     </div>
     <div id="rd_carpısma" style="display:none;color:var(--red);background:var(--red-bg);padding:10px 14px;font-size:13px;margin-bottom:10px">⚠ Bu oda seçilen tarihlerde dolu!</div>
+    <input type="hidden" id="rd_fiyat_tip" value="0">
     <div class="form-row">
-      <div class="form-group"><label>Fiyat Tipi *</label>
-        <select id="rd_fiyat_tip" onchange="rdFiyatGuncelle()"></select>
-      </div>
-      <div class="form-group"><label>Otel Net Gecelik Ücret *</label>
-        <input type="number" id="rd_fiyat" min="0" oninput="rdFiyatGuncelle()">
+      <div class="form-group" style="grid-column:1/-1"><label>Otel Gecelik Ücret *</label>
+        <input type="number" id="rd_fiyat" min="0" step="0.01" oninput="rdFiyatGuncelle()">
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Fiyat tipi kullanılmaz; mevcut rezervasyondaki gecelik ücret doğrudan düzenlenir.</div>
       </div>
     </div>
     <div class="form-row">
@@ -1349,38 +1352,51 @@ input[type="number"], input[type="date"], input[type="password"] {
             </div>
           </div>
 
+          <input type="hidden" id="rev_fiyat_tip" value="0">
           <div class="form-row" style="margin-top:12px">
-            <div class="form-group" style="margin-bottom:0">
-              <label>Fiyat Tipi *</label>
-              <select id="rev_fiyat_tip" onchange="document.getElementById('rev_fiyat').dataset.manuelDegisim='';revFiyatGuncelle()"></select>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label>Otel Net Gecelik Ücret *</label>
-              <input type="number" id="rev_fiyat" min="0" placeholder="0" oninput="this.dataset.manuelDegisim='1';revFiyatGuncelle()">
+            <div class="form-group" style="margin-bottom:0;grid-column:1/-1">
+              <label>Otel Gecelik Ücret *</label>
+              <input type="number" id="rev_fiyat" min="0" step="0.01" placeholder="Gecelik otel ücretini elle girin" oninput="revFiyatGuncelle()">
+              <div style="font-size:10px;color:var(--muted);margin-top:4px">Fiyat tipi kullanılmaz. Bu alan her rezervasyonda resepsiyon tarafından elle girilir.</div>
             </div>
           </div>
 
-          <div class="form-row" style="margin-top:12px;margin-bottom:0;padding-top:12px;border-top:1px solid var(--border)">
-            <div class="form-group" style="margin-bottom:0">
-              <label>Sözleşme Fiyatı <span style="font-weight:400;text-transform:none;font-size:9px">(Gecelik)</span></label>
-              <input type="number" id="rev_sozlesme_fiyat" min="0" placeholder="Komisyon dahil gecelik..." oninput="sozlesmeToplam('rev')">
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label>Komisyon Tutarı</label>
-              <div id="rev_sozlesme_toplam" style="font-size:14px;font-weight:700;color:var(--gold2);padding:10px 13px;background:var(--cream);border:1px solid var(--border)">0,00 ₺</div>
-            </div>
-          </div>
           <div class="form-row" style="margin-top:12px;margin-bottom:0">
             <div class="form-group" style="margin-bottom:0">
-              <label>Komisyoncu / Acente <span style="font-weight:400;text-transform:none;font-size:9px">(Varsa)</span></label>
-              <select id="rev_komisyoncu" onchange="revKomisyoncuDegisti()">
-                <option value="">Komisyoncu yok / doğrudan rezervasyon</option>
+              <label>Komisyoncu var mı? *</label>
+              <select id="rev_komisyon_var" onchange="revKomisyonVarDegisti()">
+                <option value="yok">Hayır — doğrudan rezervasyon</option>
+                <option value="var">Evet — komisyoncu / acente üzerinden</option>
               </select>
-              <div id="rev_komisyoncu_uyari" style="font-size:10px;color:var(--muted);margin-top:4px">Komisyoncu yalnız tanımlı listeden seçilir; serbest isim kaydı yapılamaz.</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:4px">Önce rezervasyonun komisyonculu olup olmadığını seçin.</div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Not</label>
               <input type="text" id="rev_not" placeholder="Özel istek...">
+            </div>
+          </div>
+
+          <div id="rev_komisyon_secim_wrap" style="display:none;margin-top:12px;padding:12px;background:var(--parchment);border:1px solid var(--border)">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Komisyoncu / Acente *</label>
+              <div style="display:flex;gap:8px;align-items:stretch">
+                <select id="rev_komisyoncu" onchange="revKomisyoncuDegisti()" style="flex:1">
+                  <option value="">— Mevcut komisyoncuyu seç —</option>
+                </select>
+                <button type="button" class="btn btn-ghost" onclick="revYeniKomisyoncuAc()" style="white-space:nowrap">+ Yeni Komisyoncu</button>
+              </div>
+              <div id="rev_komisyoncu_uyari" style="font-size:10px;color:var(--muted);margin-top:5px">Listede yoksa “Yeni Komisyoncu” ile kaydedin. Serbest isim yazılmaz.</div>
+            </div>
+          </div>
+
+          <div id="rev_sozlesme_wrap" class="form-row" style="display:none;margin-top:12px;margin-bottom:0;padding-top:12px;border-top:1px solid var(--border)">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Müşteri / Sözleşme Gecelik Ücreti *</label>
+              <input type="number" id="rev_sozlesme_fiyat" min="0" step="0.01" placeholder="Müşteriye uygulanacak gecelik ücret" oninput="sozlesmeToplam('rev')">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Komisyon Tutarı</label>
+              <div id="rev_sozlesme_toplam" style="font-size:14px;font-weight:700;color:var(--gold2);padding:10px 13px;background:var(--cream);border:1px solid var(--border)">0,00 ₺</div>
             </div>
           </div>
           <div class="mxl-info-note">ℹ️ <span>Ücretler bilgilendirme amaçlıdır.</span></div>
@@ -1615,6 +1631,48 @@ input[type="number"], input[type="date"], input[type="password"] {
 <div class="content">
 
 <!-- ODALAR SAYFASI -->
+  <!-- Komisyoncu Ekle/Düzenle Modal -->
+<div class="modal-overlay" id="komisyoncuYonetimModal">
+    <div class="modal" style="max-width:440px">
+      <div class="modal-title" id="kyModalBaslik">Yeni Komisyoncu Ekle</div>
+      <input type="hidden" id="ky_eski_key">
+      <div class="form-group">
+        <label>Giriş Adı <span style="font-size:10px;color:var(--muted);font-weight:400">(sadece harf/rakam, örn: ahmet)</span></label>
+        <input type="text" id="ky_key" placeholder="ahmet">
+      </div>
+      <div class="form-group">
+        <label>Görünen Ad *</label>
+        <input type="text" id="ky_ad" placeholder="Ahmet Aracı">
+      </div>
+      <div class="form-group">
+        <label>Şifre *</label>
+        <input type="text" id="ky_sifre" placeholder="şifre123">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Komisyon Tipi</label>
+          <select id="ky_tip" onchange="document.getElementById('ky_deger_wrap').style.display=this.value==='manuel'?'none':'block'">
+            <option value="manuel">Manuel — fiyatı bölme</option>
+            <option value="oran">Sabit Oran (%)</option>
+            <option value="sabit">Sabit Tutar (₺ / gece)</option>
+          </select>
+        </div>
+        <div class="form-group" id="ky_deger_wrap" style="display:none">
+          <label>Değer</label>
+          <input type="number" id="ky_deger" min="0" step="0.01" placeholder="0">
+        </div>
+      </div>
+      <div id="ky_link" style="display:none;background:var(--parchment);border:1px solid var(--border);padding:10px 12px;font-size:11px;color:var(--muted);margin-bottom:16px">
+        Portal linki: <span id="ky_link_url" style="font-family:monospace;color:var(--dark)"></span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="komisyoncuYonetimIptal()">Vazgeç</button>
+        <button class="btn btn-primary" onclick="komisyoncuKaydet()">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+
 <div class="page active" id="page-odalar">
   <div class="section-head">
     <h2>Oda <em>Durumları</em></h2>
@@ -1978,7 +2036,7 @@ input[type="number"], input[type="date"], input[type="password"] {
           <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Tamamlanma</th>
           <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)">Gerçek Konaklama</th>
           <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Müşteri</th>
-          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Otel Net</th>
+          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Planlanan Otel Payı</th>
           <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">Komisyon</th>
           <th style="text-align:center;padding:7px 8px;border-bottom:1px solid var(--border)">İşlem</th>
         </tr></thead>
@@ -2009,47 +2067,6 @@ input[type="number"], input[type="date"], input[type="password"] {
       </thead>
       <tbody id="komisyoncuYonetimBody"></tbody>
     </table>
-  </div>
-
-  <!-- Komisyoncu Ekle/Düzenle Modal -->
-  <div class="modal-overlay" id="komisyoncuYonetimModal">
-    <div class="modal" style="max-width:440px">
-      <div class="modal-title" id="kyModalBaslik">Yeni Komisyoncu Ekle</div>
-      <input type="hidden" id="ky_eski_key">
-      <div class="form-group">
-        <label>Giriş Adı <span style="font-size:10px;color:var(--muted);font-weight:400">(sadece harf/rakam, örn: ahmet)</span></label>
-        <input type="text" id="ky_key" placeholder="ahmet">
-      </div>
-      <div class="form-group">
-        <label>Görünen Ad *</label>
-        <input type="text" id="ky_ad" placeholder="Ahmet Aracı">
-      </div>
-      <div class="form-group">
-        <label>Şifre *</label>
-        <input type="text" id="ky_sifre" placeholder="şifre123">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Komisyon Tipi</label>
-          <select id="ky_tip" onchange="document.getElementById('ky_deger_wrap').style.display=this.value==='manuel'?'none':'block'">
-            <option value="manuel">Manuel — fiyatı bölme</option>
-            <option value="oran">Sabit Oran (%)</option>
-            <option value="sabit">Sabit Tutar (₺ / gece)</option>
-          </select>
-        </div>
-        <div class="form-group" id="ky_deger_wrap" style="display:none">
-          <label>Değer</label>
-          <input type="number" id="ky_deger" min="0" step="0.01" placeholder="0">
-        </div>
-      </div>
-      <div id="ky_link" style="display:none;background:var(--parchment);border:1px solid var(--border);padding:10px 12px;font-size:11px;color:var(--muted);margin-bottom:16px">
-        Portal linki: <span id="ky_link_url" style="font-family:monospace;color:var(--dark)"></span>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('komisyoncuYonetimModal')">Vazgeç</button>
-        <button class="btn btn-primary" onclick="komisyoncuKaydet()">Kaydet</button>
-      </div>
-    </div>
   </div>
 
   <!-- Komisyoncu sabit oran / tutar ayarları -->
@@ -2685,8 +2702,18 @@ window.komisyoncuKaydet = async function() {
     window.KOMISYONCULAR = guncel;
     renderKomisyoncuYonetimi();
     renderRaporKomisyonRez();
+    rezervasyonKomisyoncuSecenekleriniGuncelle('rev_komisyoncu', yeniKey);
+    rezervasyonKomisyoncuSecenekleriniGuncelle('rd_komisyoncu');
+    const rezervasyondanEklendi = !!window._revKomisyoncuEkleme;
+    if(rezervasyondanEklendi) {
+      const varEl=document.getElementById('rev_komisyon_var'); if(varEl) varEl.value='var';
+      revKomisyonVarDegisti();
+      const sel=document.getElementById('rev_komisyoncu'); if(sel) sel.value=yeniKey;
+      revKomisyoncuDegisti();
+      window._revKomisyoncuEkleme=false;
+    }
     closeModal('komisyoncuYonetimModal');
-    toast(`${ad} kaydedildi ✓ — link: komisyoncu.html?k=${yeniKey}`, 'success');
+    toast(rezervasyondanEklendi ? `${ad} kaydedildi ✓ — rezervasyonda seçildi` : `${ad} kaydedildi ✓ — link: komisyoncu.html?k=${yeniKey}`, 'success');
   } catch(e) {
     toast('Kaydedilemedi: '+(e?.message||'Bilinmeyen hata'), 'error');
   }
@@ -2974,7 +3001,7 @@ function rezervasyonKomisyoncuSecenekleriniGuncelle(selectId, seciliKey='', lega
   if(!el) return;
   const keyNorm = String(seciliKey||'').trim();
   const entries = Object.entries(window.KOMISYONCULAR||{});
-  el.innerHTML = '<option value="">Komisyoncu yok / doğrudan rezervasyon</option>' +
+  el.innerHTML = '<option value="">— Mevcut komisyoncuyu seç —</option>' +
     entries.map(([key,k])=>`<option value="${key}">${k.ad||key}</option>`).join('');
   if(keyNorm && window.KOMISYONCULAR?.[keyNorm]) el.value = keyNorm;
   else if(legacyAd) {
@@ -2988,11 +3015,47 @@ function rezervasyonKomisyoncuSecenekleriniGuncelle(selectId, seciliKey='', lega
   }
 }
 
+window.revKomisyonVarDegisti = function() {
+  const durum = document.getElementById('rev_komisyon_var')?.value || 'yok';
+  const wrap = document.getElementById('rev_komisyon_secim_wrap');
+  const sozWrap = document.getElementById('rev_sozlesme_wrap');
+  const sel = document.getElementById('rev_komisyoncu');
+  const soz = document.getElementById('rev_sozlesme_fiyat');
+  const varMi = durum === 'var';
+  if(wrap) wrap.style.display = varMi ? 'block' : 'none';
+  if(sozWrap) sozWrap.style.display = varMi ? 'grid' : 'none';
+  if(!varMi) {
+    if(sel) sel.value = '';
+    if(soz) soz.value = '';
+    const toplam = document.getElementById('rev_sozlesme_toplam');
+    if(toplam) { toplam.textContent='0,00 ₺'; toplam.style.color='var(--gold2)'; }
+  }
+  revKomisyoncuDegisti();
+  revFiyatGuncelle();
+};
+
+window.revYeniKomisyoncuAc = function() {
+  window._revKomisyoncuEkleme = true;
+  komisyoncuEkleAc();
+};
+
+window.komisyoncuYonetimIptal = function() {
+  window._revKomisyoncuEkleme = false;
+  closeModal('komisyoncuYonetimModal');
+};
+
 window.revKomisyoncuDegisti = function() {
   const el=document.getElementById('rev_komisyoncu');
   const key=el?.value||'';
+  const komisyonVar = document.getElementById('rev_komisyon_var')?.value === 'var';
   const uyari=document.getElementById('rev_komisyoncu_uyari');
-  if(uyari) { const ay=window._KOM_AYAR?.[key]||window.KOMISYONCULAR?.[key]||{}; const tip=ay.tip||ay.komisyonTip||'manuel'; const deg=Number(ay.deger??ay.komisyonDeger)||0; uyari.textContent = key ? (tip==='sabit'?`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Komisyon: ${fmt(deg)} ₺ × gece; fiyatlardan bağımsız.`:tip==='oran'?`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Komisyon: toplam müşteri bedeli × %${deg}.`:`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Manuel/fiyat farkı modeli.`) : 'Komisyoncu yoksa komisyon hakedişi oluşmaz.'; }
+  if(uyari) {
+    const ay=window._KOM_AYAR?.[key]||window.KOMISYONCULAR?.[key]||{};
+    const tip=ay.tip||ay.komisyonTip||'manuel'; const deg=Number(ay.deger??ay.komisyonDeger)||0;
+    uyari.textContent = !komisyonVar ? 'Doğrudan rezervasyon: komisyoncu hakedişi oluşmaz.'
+      : key ? (tip==='sabit'?`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Komisyon: ${fmt(deg)} ₺ × gece; giriş/oda fiyatından bağımsız.`:tip==='oran'?`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Komisyon: toplam müşteri bedeli × %${deg}.`:`Seçili: ${window.KOMISYONCULAR?.[key]?.ad||key}. Manuel/fiyat farkı modeli.`)
+      : 'Komisyoncu var seçildi. Listeden bir komisyoncu seçin veya yeni komisyoncu kaydedin.';
+  }
   sozlesmeToplam('rev');
 };
 window.rdKomisyoncuDegisti = function() {
@@ -3847,7 +3910,9 @@ window.talepOnayla = function(id) {
         if(rf) { rf.value = gercekFiyat; rf.dataset.manuelDegisim='1'; }
       }
     }
-    if(t.komisyoncu) {
+    if(t.komisyoncu || t.komisyoncuAd) {
+      const kv=document.getElementById('rev_komisyon_var'); if(kv) kv.value='var';
+      revKomisyonVarDegisti();
       const rk = document.getElementById('rev_komisyoncu');
       if(rk) { rezervasyonKomisyoncuSecenekleriniGuncelle('rev_komisyoncu', t.komisyoncu||'', t.komisyoncuAd||''); rk.value = t.komisyoncu || komisyoncuKeyBul(t.komisyoncuAd||'') || ''; revKomisyoncuDegisti(); }
     }
@@ -5991,6 +6056,8 @@ window.openRezervModalForOda = function(odaNo, kaynakTalepId = null) {
   // Bugünü giriş tarihi olarak set et
   document.getElementById('rev_giris').value = today();
   rezervasyonKomisyoncuSecenekleriniGuncelle('rev_komisyoncu');
+  const komVarEl=document.getElementById('rev_komisyon_var'); if(komVarEl) komVarEl.value='yok';
+  revKomisyonVarDegisti();
   document.getElementById('rev_odeme_durum').value = 'odenmedi';
   odemeDurumAlanGuncelle('rev');
 
@@ -6094,25 +6161,19 @@ window.revOdaSecildi = function() {
   const ozOdaEl = document.getElementById('rev_ozet_oda'); if(ozOdaEl) ozOdaEl.textContent = odaNo;
   const ozOdaTipEl = document.getElementById('rev_ozet_oda_tip');
   if(ozOdaTipEl) { const oz = window._OZ?.['oda'+odaNo] || {}; ozOdaTipEl.textContent = oz.tip || ''; }
-  const sel = document.getElementById('rev_fiyat_tip');
-  sel.innerHTML = '<option value="">— Fiyat tipi seçin —</option>' + [1,2,3,4].map(t=>`<option value="${t}">${getTipAd(t)} — ${getOdaFiyat(odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  // Rezervasyonda fiyat tipi kullanılmaz; gecelik ücret resepsiyon tarafından elle girilir.
   revFiyatGuncelle();
   revCarpısmaKontrol();
 };
 
 window.revFiyatGuncelle = function() {
-  const odaNo = document.getElementById('rev_oda').value;
-  const tipVal = document.getElementById('rev_fiyat_tip').value;
-  const tip   = tipVal ? Number(tipVal) : 0;
   const gece  = parseInt(document.getElementById('rev_gece').value)||1;
   const fiyatEl = document.getElementById('rev_fiyat');
-  // Manuel değişim yoksa otomatik doldur
-  if(!fiyatEl.dataset.manuelDegisim) {
-    const fiyat = tip>0 ? getOdaFiyat(odaNo, tip) : 0;
-    fiyatEl.value = fiyat || '';
-  }
-  const fiyat = Number(fiyatEl.value)||0;
-  const toplam = gece*fiyat;
+  const fiyat = Number(fiyatEl?.value)||0;
+  const komisyonVar = document.getElementById('rev_komisyon_var')?.value === 'var';
+  const sozFiyat = komisyonVar ? (Number(document.getElementById('rev_sozlesme_fiyat')?.value)||0) : 0;
+  const musteriGecelik = sozFiyat>0 ? sozFiyat : fiyat;
+  const toplam = gece*musteriGecelik;
   const subEl = document.getElementById('rev_fiyat_toplam_sub');
   if(subEl) subEl.textContent = toplam > 0 ? fmt(toplam) : '—';
   const ozTutarEl = document.getElementById('rev_ozet_toplam');
@@ -6167,16 +6228,17 @@ window.saveRezervasyon = async function(mod = '') {
   const yetiskin= parseInt(document.getElementById('rev_yetiskin').value)||1;
   const cocuk   = parseInt(document.getElementById('rev_cocuk').value)||0;
   const kaynak  = document.getElementById('rev_kaynak').value;
-  const fiyatTipHam = document.getElementById('rev_fiyat_tip').value;
-  const fiyatTip= fiyatTipHam ? Number(fiyatTipHam) : 0;
+  const fiyatTip = 0; // Rezervasyonda fiyat tipi kullanılmıyor; gecelik ücret manuel.
   const fiyat   = Number(document.getElementById('rev_fiyat').value)||0;
   const odemeDurum = document.getElementById('rev_odeme_durum').value;
   const odemeTipHam = document.getElementById('rev_odeme_tip').value;
   const odemeTip   = odemeDurum==='odenmedi' ? null : (odemeTipHam||'nakit');
   const not_    = document.getElementById('rev_not').value;
   const misafirBilgisiBekleniyor = document.getElementById('rev_araci')?.checked || false;
-  const komisyoncuSecim = document.getElementById('rev_komisyoncu')?.value || window._onaylananKomisyoncu || '';
+  const komisyonVar = document.getElementById('rev_komisyon_var')?.value === 'var' || !!window._onaylananKomisyoncu;
+  const komisyoncuSecim = komisyonVar ? (document.getElementById('rev_komisyoncu')?.value || window._onaylananKomisyoncu || '') : '';
   if(komisyoncuSecim === '__legacy__') { toast('Eski komisyoncu kaydı doğrulanmadan rezervasyon kaydedilemez','error'); return; }
+  if(komisyonVar && !komisyoncuSecim) { toast('Komisyoncu var seçildi. Mevcut komisyoncuyu seçin veya yeni komisyoncu kaydedin.','error'); return; }
   const komisyoncuKey = String(komisyoncuSecim||'');
   const komisyoncuAdi = komisyoncuKey ? (window.KOMISYONCULAR?.[komisyoncuKey]?.ad || '') : '';
   const misafirKayit = ad || (misafirBilgisiBekleniyor ? 'Misafir bilgisi check-in’de alınacak' : '');
@@ -6184,8 +6246,7 @@ window.saveRezervasyon = async function(mod = '') {
 
   if(!giris||!cikis||!odaNo||!misafirKayit) { toast('Zorunlu alanları doldurun','error'); return; }
   if(misafirBilgisiBekleniyor && !komisyoncuAdi && !komisyoncuKey) { toast('Misafir bilgileri sonra alınacaksa Komisyoncu / Acente seçimi zorunludur','error'); return; }
-  if(!fiyatTip) { toast('Fiyat tipi seçilmeden rezervasyon kaydedilemez','error'); return; }
-  if(!fiyat || fiyat <= 0) { toast('Otel net gecelik fiyat 0 olamaz — Oda ve fiyat tipini kontrol edin','error'); return; }
+  if(!fiyat || fiyat <= 0) { toast('Otel gecelik ücretini elle girin. Tutar 0 olamaz.','error'); return; }
 
   // ÇAKIŞMA KONTROLÜ — hem rezervasyonlar hem dolu odanın konaklaması
   const kontrol = odaCakismaKontrol(odaNo, giris, cikis);
@@ -6209,7 +6270,7 @@ window.saveRezervasyon = async function(mod = '') {
   const komSnapshot = komisyonSnapshotAl(komisyoncuKey, komisyoncuAdi, kaynakTalep);
   const revRef = await addDoc(collection(db,'rezervasyonlar'),{
     giris,cikis,gece,odaNo:Number(odaNo),tc,misafir:misafirKayit,tel,
-    yetiskin,cocuk,kaynak,fiyatTip,fiyatTipAd:getTipAd(fiyatTip),
+    yetiskin,cocuk,kaynak:(komisyoncuKey?'komisyoncu':kaynak),fiyatTip,fiyatTipAd:'Manuel',
     fiyat,sozlesmeFiyat,durum:'bekliyor',odemeDurum,odemeTuru:odemeTip,not:not_,
     kismiTutar, kismiKalan: kismiTutar!=null ? Math.max(0,((sozlesmeFiyat||fiyat)*gece)-kismiTutar) : null,
     aracirez:misafirBilgisiBekleniyor,
@@ -6246,7 +6307,8 @@ window.saveRezervasyon = async function(mod = '') {
     document.getElementById('rev_cikis_goster').value='';
     document.getElementById('rev_carpısma').style.display='none';
     document.getElementById('rev_kismi_wrap').style.display='none';
-    const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+    const rfEl = document.getElementById('rev_fiyat');
+    const kvEl = document.getElementById('rev_komisyon_var'); if(kvEl) kvEl.value='yok'; revKomisyonVarDegisti();
     const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.textContent='0,00 ₺';
     const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
     ['rev_ozet_giris','rev_ozet_gece','rev_ozet_cikis','rev_ozet_oda','rev_ozet_toplam','rev_ozet_giris_gun','rev_ozet_cikis_gun','rev_ozet_oda_tip'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
@@ -6263,7 +6325,8 @@ window.saveRezervasyon = async function(mod = '') {
     document.getElementById('rev_carpısma').style.display='none';
     document.getElementById('rev_kismi_wrap').style.display='none';
     clearRefakatciler('revRefakatciListesi');
-    const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+    const rfEl = document.getElementById('rev_fiyat');
+    const kvEl = document.getElementById('rev_komisyon_var'); if(kvEl) kvEl.value='yok'; revKomisyonVarDegisti();
     const arEl = document.getElementById('rev_araci'); if(arEl) arEl.checked=false;
     const rstEl = document.getElementById('rev_sozlesme_toplam'); if(rstEl) rstEl.textContent='0,00 ₺';
     const rftEl = document.getElementById('rev_fiyat_toplam_sub'); if(rftEl) rftEl.textContent='';
@@ -6605,7 +6668,7 @@ window.openModal = function(id) {
   });
 };
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
-document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('active');}));
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el){el.classList.remove('active');if(el.id==='komisyoncuYonetimModal')window._revKomisyoncuEkleme=false;}}));
 
 const RAPOR_PIN_HASH = 'a8c42a5a10da46f05265436854dc4e59d412d694214bbe67d22c656e481d97bf';
 let _raporKilitli = true;
@@ -7266,7 +7329,7 @@ window.renderRaporKomisyonRez=function(){
     <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center"><button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="raporKomTalepDetayAc(${i})">Detay</button></td>
   </tr>`).join('');
   const musteri=liste.reduce((a,x)=>a+x.musteriToplam,0), net=liste.reduce((a,x)=>a+x.otelToplam,0), kom=liste.reduce((a,x)=>a+x.komisyon,0);
-  document.getElementById('rapor-kom-toplam').textContent=`${liste.length} kayıt · Müşteri: ${fmt(musteri)} · Otel net: ${fmt(net)} · Komisyon: ${fmt(kom)}`;
+  document.getElementById('rapor-kom-toplam').textContent=`${liste.length} kayıt · Müşteri: ${fmt(musteri)} · Planlanan otel payı: ${fmt(net)} · Komisyon: ${fmt(kom)}`;
   } catch(e) {
     console.error('Komisyoncu rezervasyon raporu:',e);
     body.innerHTML='<tr class="empty-row"><td colspan="11">Rapor verisi işlenirken bir eski kayıt atlandı. Veriler yenileniyor…</td></tr>';
@@ -7298,7 +7361,7 @@ window.raporKomTalepDetayAc=function(i){
       <div>${row('Komisyoncu',shEsc(x.araciAd))}${row('Misafir',shEsc(x.misafir))}${row('TC / Pasaport',shEsc(tc))}${row('Telefon',shEsc(tel))}${row('E-posta',shEsc(email))}${row('Plaka',shEsc(plaka))}${row('Kişi',`${yetiskin||'—'} yetişkin${cocuk?` · ${cocuk} çocuk`:''}`)}${row('Oda','Oda '+shEsc(x.odaNo))}${row('Konaklama',`${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')} · ${x.gece} gece`)}</div>
       <div>${row('Kayıt Kaynağı',kaynakMetni)}${row('Tamamlanma',`<b style="color:${x.grup.renk}">${shEsc(x.grup.etiket)}</b>`)}${row('Gerçek Konaklama',`<b style="color:${x.k.renk}">${shEsc(x.k.etiket)}</b>`)}${row('Talep / Rezervasyon Durumu',shEsc(x.talepDurum||'—'))}${row('Talep / Kayıt Tarihi',shEsc(raporKomTarihMetni(x.kayitTarih)))}${row('Onay / İşlem',shEsc(raporKomTarihMetni(t.islemTarih||t.guncelleme||r.guncelleme)))}${row('Check-in / Check-out',`${shEsc(g.giris||o.giris||r.checkinTarih||'Yok')} / ${shEsc(g.checkoutTarih||r.checkoutTarih||t.checkoutTarih||'Yok')}`)}${row('Ödeme Durumu',shEsc(odemeDurum))}${row('Tahsil / Kalan',`${fmt(tahsil)} / ${fmt(kalan)}`)}</div>
     </div>
-    <div style="margin-top:16px;background:var(--parchment);border:1px solid var(--border);padding:12px 14px">${row('Müşteri Gecelik',x.musteriGecelik?fmt(x.musteriGecelik):'—')}${row('Müşteri Toplam',x.musteriToplam?fmt(x.musteriToplam):'—')}${row('Otel Net Gecelik',x.otelGecelik?fmt(x.otelGecelik):'—')}${row('Otel Net Toplam',x.otelToplam?fmt(x.otelToplam):'—')}${row('Komisyon Kuralı',shEsc(komKural))}${row('Komisyon',x.komisyon?fmt(x.komisyon):'—')}</div>${x.finansUyari?`<div style="margin-top:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px"><b>⚠ Finans Kontrolü:</b> ${shEsc(x.finansUyari)}</div>`:''}
+    <div style="margin-top:16px;background:var(--parchment);border:1px solid var(--border);padding:12px 14px">${row('Müşteri Gecelik',x.musteriGecelik?fmt(x.musteriGecelik):'—')}${row('Müşteri Toplam',x.musteriToplam?fmt(x.musteriToplam):'—')}${row('Planlanan Otel Payı / Gecelik',x.otelGecelik?fmt(x.otelGecelik):'—')}${row('Planlanan Otel Payı / Toplam',x.otelToplam?fmt(x.otelToplam):'—')}${row('Komisyon Kuralı',shEsc(komKural))}${row('Komisyon',x.komisyon?fmt(x.komisyon):'—')}</div>${x.finansUyari?`<div style="margin-top:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px"><b>⚠ Finans Kontrolü:</b> ${shEsc(x.finansUyari)}</div>`:''}
     <div style="margin-top:16px">${row('Talep Bağı',t.id&&!String(t.id).startsWith('rev:')&&!String(t.id).startsWith('gelir:')?'Talep kaydı bulundu':'Ayrı talep kaydı yok')}${row('Rezervasyon Kaydı',r.id?'Bağlı rezervasyon bulundu':'Bağlı rezervasyon yok')}${row('Konaklama / Gelir Kaydı',g.id?'Check-in/gelir kaydı bulundu':'Kayıt yok')}${row('Not',`<span style="white-space:pre-wrap">${shEsc(sec(t.degisiklikNot,t.iptalNot,t.not,r.not,g.not))}</span>`)}</div>`;
   openModal('raporKayitDetayModal');
 };
@@ -7306,7 +7369,7 @@ window.raporKomisyonRezPdf=function(){
   const liste=window._raporKomListe||[]; if(!liste.length){toast('Döküm alınacak kayıt yok','error');return;}
   const rows=liste.map(x=>`<tr><td>${shEsc(x.araciAd)}</td><td>${shEsc(x.misafir)}</td><td>${shEsc(x.odaNo)}</td><td>${shEsc(x.giris||'—')} → ${shEsc(x.cikis||'—')}</td><td>${shEsc(raporKomTarihMetni(x.kayitTarih))}</td><td>${shEsc(x.grup.etiket)}</td><td>${shEsc(x.k.etiket)}</td><td class="num">${x.musteriToplam?fmt(x.musteriToplam):'—'}</td><td class="num">${x.otelToplam?fmt(x.otelToplam):'—'}</td><td class="num">${x.komisyon?fmt(x.komisyon):'—'}</td></tr>`).join('');
   const kriter=`Komisyoncu: ${document.getElementById('rapor-kom-araci')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tamamlanma: ${document.getElementById('rapor-kom-tamamlanma')?.selectedOptions?.[0]?.textContent||'Tümü'} · Konaklama durumu: ${document.getElementById('rapor-kom-konaklama')?.selectedOptions?.[0]?.textContent||'Tümü'} · Konaklama tarihi: ${document.getElementById('rapor-kom-kon-bas')?.value||'—'} → ${document.getElementById('rapor-kom-kon-bit')?.value||'—'} · Talep tarihi: ${document.getElementById('rapor-kom-talep-bas')?.value||'—'} → ${document.getElementById('rapor-kom-talep-bit')?.value||'—'} · Sıralama: ${document.getElementById('rapor-kom-sirala')?.selectedOptions?.[0]?.textContent||'—'}${document.getElementById('rapor-kom-sirala2')?.value!=='yok'?' / '+document.getElementById('rapor-kom-sirala2')?.selectedOptions?.[0]?.textContent:''} · ${document.getElementById('rapor-kom-yon')?.selectedOptions?.[0]?.textContent||''}`;
-  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Komisyoncu Rezervasyon Raporu</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:8.5px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:8.5px;color:#555;margin-top:4px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Komisyoncu Rezervasyon Raporu</h1><div><b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${shEsc(kriter)}</div></div><table><thead><tr><th>Komisyoncu</th><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep/Kayıt Tarihi</th><th>Tamamlanma</th><th>Gerçek Konaklama</th><th>Müşteri</th><th>Otel Net</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'swiss-house-komisyoncu-rezervasyon-raporu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
+  const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Komisyoncu Rezervasyon Raporu</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:8.5px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:8.5px;color:#555;margin-top:4px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Komisyoncu Rezervasyon Raporu</h1><div><b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${shEsc(kriter)}</div></div><table><thead><tr><th>Komisyoncu</th><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep/Kayıt Tarihi</th><th>Tamamlanma</th><th>Gerçek Konaklama</th><th>Müşteri</th><th>Planlanan Otel Payı</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'swiss-house-komisyoncu-rezervasyon-raporu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
   const w=window.open('','_blank'); if(w){w.document.write(html);w.document.close();}
 };
 
@@ -7951,7 +8014,7 @@ function renderTakvimAyHafta(grid, todayStr) {
     const d2 = new Date(+yy, +mm-1, +dd);
     const ad = gunAdlari[d2.getDay()===0?6:d2.getDay()-1];
     const isToday = g===todayStr;
-    html += `<th style="${isToday?'color:var(--gold);border-bottom:2px solid var(--gold2)':''}">${ad}<br><span style="font-size:12px;font-weight:700">${d2.getDate()}</span></th>`;
+    html += `<th class="${isToday?'t-bugun-head':''}">${ad}<br><span style="font-size:12px;font-weight:700">${d2.getDate()}</span></th>`;
   });
   html += `</tr></thead><tbody>`;
 
@@ -8008,7 +8071,7 @@ function renderTakvimAyHafta(grid, todayStr) {
       }
       else if(isToday) { cls='t-bugun'; }
 
-      html += `<td class="${cls}" ${tooltip} ${onclick} style="${bgStyle}${onclick?'cursor:pointer':''}">`;
+      html += `<td class="${cls}${isToday?' t-bugun-col':''}" ${tooltip} ${onclick} style="${bgStyle}${onclick?'cursor:pointer':''}">`;
 
       if(label) {
         const prevG = gIdx>0?gunler[gIdx-1]:'';
@@ -8604,11 +8667,25 @@ window.sozlesmeToplam = function(prefix) {
 
   const komEl = document.getElementById(prefix + '_komisyoncu');
   const komisyoncuSecili = komEl && komEl.value && komEl.value !== '__legacy__';
-  // Komisyon sadece doğrulanmış bir komisyoncu seçiliyse oluşur.
-  const komisyon = komisyoncuSecili && sozFiyat > gercekFiyat && gercekFiyat>0 ? (sozFiyat - gercekFiyat) * gece : 0;
+  let komisyon = 0;
+  let hesap = null;
+  if(komisyoncuSecili) {
+    const key=komEl.value;
+    const ad=window.KOMISYONCULAR?.[key]?.ad||'';
+    const ay=window._KOM_AYAR?.[key]||window.KOMISYONCULAR?.[key]||{};
+    hesap=komisyonToplamHesapla({
+      otelFiyat:gercekFiyat, sozlesmeFiyat:sozFiyat, gece,
+      araciAd:ad, komisyoncuKey:key,
+      komisyonTipSnapshot:ay.tip||ay.komisyonTip||'',
+      komisyonDegerSnapshot:Number(ay.deger??ay.komisyonDeger)||0,
+      ayarFallback:true
+    });
+    komisyon=Math.max(0,Number(hesap?.toplam)||0);
+  }
   toplamEl.textContent = fmt(komisyon);
-  toplamEl.style.color = (komisyoncuSecili && sozFiyat>0 && gercekFiyat>0 && sozFiyat<gercekFiyat) ? 'var(--red)' : 'var(--gold2)';
-  if(komisyoncuSecili && sozFiyat>0 && gercekFiyat>0 && sozFiyat<gercekFiyat) toplamEl.textContent = '⚠ Fiyat ilişkisi hatalı';
+  toplamEl.style.color = 'var(--gold2)';
+  if(komisyoncuSecili && hesap?.tip==='oran' && sozFiyat<=0) { toplamEl.textContent='⚠ Müşteri fiyatı gerekli'; toplamEl.style.color='var(--red)'; }
+  if(komisyoncuSecili && hesap?.tip==='manuel' && (sozFiyat<=0 || gercekFiyat<=0 || sozFiyat<gercekFiyat)) { toplamEl.textContent='⚠ Fiyatları kontrol edin'; toplamEl.style.color='var(--red)'; }
 
   // Kısmi ödeme hesabı sözleşme (komisyonlu) fiyat varsa onun üzerinden yapılır
   const kismiToplam = (sozFiyat > 0 ? sozFiyat : gercekFiyat) * gece;
@@ -8698,8 +8775,7 @@ window.revDuzenleAc = function(rev) {
   document.getElementById('rd_kismi_wrap').style.display = (rev.odemeDurum === 'kismi' || rev.odemeDurum === 'depozito') ? 'block' : 'none';
   document.getElementById('rd_kismi_tutar').value = rev.kismiTutar ?? '';
 
-  const sel = document.getElementById('rd_fiyat_tip');
-  sel.innerHTML = '<option value="">— Fiyat tipi seçin —</option>' + [1,2,3,4].map(t=>`<option value="${t}"${t==rev.fiyatTip?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(rev.odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
+  const tipEl=document.getElementById('rd_fiyat_tip'); if(tipEl) tipEl.value='0';
   document.getElementById('rd_fiyat').value = rev.fiyat || '';
 
   // Sözleşme fiyatı — sadece gerçek komisyon varsa göster (eşitse boş bırak)
@@ -8735,9 +8811,6 @@ window.rdOdaDegisti = function() {
     document.getElementById('rd_oda').value = window._rdOrijinalOdaNo;
     return;
   }
-  const sel = document.getElementById('rd_fiyat_tip');
-  const mevcutTip = sel.value || 1;
-  sel.innerHTML = '<option value="">— Fiyat tipi seçin —</option>' + [1,2,3,4].map(t=>`<option value="${t}"${t==mevcutTip?' selected':''}>${getTipAd(t)} — ${getOdaFiyat(odaNo,t).toLocaleString('tr-TR')} ₺</option>`).join('');
   rdCarpısmaKontrol();
 };
 
@@ -8802,8 +8875,7 @@ window.revDuzenleKaydet = async function() {
   const cikis  = document.getElementById('rd_cikis').value;
   const gece   = parseInt(document.getElementById('rd_gece').value)||1;
   const fiyat  = Number(document.getElementById('rd_fiyat').value)||0;
-  const fiyatTipHam = document.getElementById('rd_fiyat_tip').value;
-  const fiyatTip = fiyatTipHam ? Number(fiyatTipHam) : 0;
+  const fiyatTip = 0;
   const sozlesmeFiyatVal = document.getElementById('rd_sozlesme_fiyat')?.value ? Number(document.getElementById('rd_sozlesme_fiyat').value) : null;
   const odemeDurum = document.getElementById('rd_odeme_durum').value;
   const odemeTuruHam = document.getElementById('rd_odeme_tip').value;
@@ -8820,8 +8892,7 @@ window.revDuzenleKaydet = async function() {
   if(!odaNo) { toast('Oda seçimi zorunlu','error'); return; }
   if(!ad) { toast('Misafir adı zorunlu','error'); return; }
   if(!giris||!cikis) { toast('Tarih zorunlu','error'); return; }
-  if(!fiyatTip) { toast('Fiyat tipi seçimi zorunlu','error'); return; }
-  if(!fiyat || fiyat<=0) { toast('Otel net gecelik fiyat 0 olamaz','error'); return; }
+  if(!fiyat || fiyat<=0) { toast('Otel gecelik ücretini elle girin. Tutar 0 olamaz.','error'); return; }
   if(komisyoncuKey && (!sozlesmeFiyatVal || sozlesmeFiyatVal<=0)) { toast('Komisyoncu seçiliyse Sözleşme Fiyatı zorunludur','error'); return; }
   if(tc && /^\d{11}$/.test(tc) && !tcDogrula(tc)) { toast('TC Kimlik No geçersiz','error'); return; }
   if(window._O['oda'+odaNo]?.durum === 'arizali') { toast(`Oda ${odaNo} arızalı/bakımda — rezervasyon taşınamaz.`,'error'); return; }
@@ -8845,7 +8916,7 @@ window.revDuzenleKaydet = async function() {
     odaNo: Number(odaNo),
     misafir: ad, tc, tel, dt,
     giris, cikis, gece, fiyat, fiyatTip,
-    fiyatTipAd: getTipAd(fiyatTip),
+    fiyatTipAd: 'Manuel',
     sozlesmeFiyat: sozlesmeFiyatVal,
     araciAd: komisyoncuAdi || null,
     komisyoncu: komisyoncuKey || duzenlenenRev?.komisyoncu || null,
