@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v30-payment-sync'; // belirgin bugün + güvenli rezervasyon fiyat/komisyoncu akışı
+const CACHE_ADI = 'swisshouse-v31-past-reservation-reconcile'; // belirgin bugün + güvenli rezervasyon fiyat/komisyoncu akışı
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',

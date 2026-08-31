@@ -1798,7 +1798,8 @@ input[type="number"], input[type="date"], input[type="password"] {
         <option value="bekleyenler">Bekleyenler (Check-in Yapılmamış)</option>
         <option value="">Tüm Durumlar</option>
         <option value="bekliyor">Bekliyor (Gelecek)</option>
-        <option value="karar_bekliyor">Check-in Kararı Bekliyor</option>
+        <option value="karar_bekliyor">Bugün Check-in Kararı Bekliyor</option>
+        <option value="gecmis_karar">Geçmiş Karar Bekleyen</option>
         <option value="aktif">Aktif (Check-in Yapılmış)</option>
         <option value="tamamlandi">Tamamlandı</option>
         <option value="iptal">İptal</option>
@@ -1807,6 +1808,7 @@ input[type="number"], input[type="date"], input[type="password"] {
       <select id="rev-filter-oda" onchange="renderRezervasyonlar()">
         <option value="">Tüm Odalar</option>
       </select>
+      <button class="btn btn-warning btn-sm" id="rev-gecmis-btn" onclick="document.getElementById('rev-filter-durum').value='gecmis_karar';renderRezervasyonlar()" style="display:none">⚠ Geçmiş Karar Bekleyen: 0</button>
     </div>
     <div style="overflow-x:auto">
       <table>
@@ -5073,7 +5075,15 @@ window.saveCheckin = async function() {
   closeModal('checkinModal');
   vardiyaIstatistikGuncelle('checkin');
   await logAktivite('checkin', `${ad} · ${gece} gece · ${getTipAd(fiyatTip)} · ${fmt(toplam)}`, no);
-  toast(`Oda ${no} — Check-in ✓ ${toplam>0?fmt(toplam)+' gelir kaydedildi':''}`, 'success');
+  // Geçmiş rezervasyon mutabakatından açılan check-in, çıkış tarihi zaten geçmişse
+  // yaşam döngüsünü aynı işlemde kapat. Böylece oda birkaç dakika yapay olarak dolu kalmaz.
+  if(cikis && vadeGeldiMi(cikis,12)) {
+    const kapandi = await otomatikCheckoutKaydet(no);
+    if(kapandi) toast(`Oda ${no} — geçmiş konaklama işlendi ve check-out tamamlandı ✓`, 'success');
+    else toast(`Oda ${no} — geçmiş check-in işlendi; check-out kaydı yaşam döngüsü kontrolünde tamamlanacak.`, 'info');
+  } else {
+    toast(`Oda ${no} — Check-in ✓ ${toplam>0?fmt(toplam)+' gelir kaydedildi':''}`, 'success');
+  }
   } catch(e) {
     console.error('Check-in kayıt hatası:', e);
     const msg = String(e?.message||'');
@@ -6378,11 +6388,22 @@ window.renderRezervasyonlar = function() {
     if(['iptal','noshow'].includes(durum)) return {...r,_durum:durum};
     if(durum==='tamamlandi' || r.checkoutTarih) return {...r,_durum:'tamamlandi'};
     if(durum==='aktif' || rezervasyonCheckinOlmus(r)) return {...r,_durum:'aktif'};
+    // Çıkış tarihi geçmiş ama check-in izi olmayan kayıt bugünkü check-in kuyruğuna giremez.
+    // Bunlar ayrı mutabakat grubunda insan kararı bekler.
+    if(r.cikis && r.cikis<=todayStr) return {...r,_durum:'gecmis_karar'};
     if(r.giris && r.giris<=todayStr) return {...r,_durum:'karar_bekliyor'};
     return {...r,_durum:'bekliyor'};
   });
 
+  const gecmisAdet = withDurum.filter(r=>r._durum==='gecmis_karar').length;
+  const gecmisBtn = document.getElementById('rev-gecmis-btn');
+  if(gecmisBtn){
+    gecmisBtn.style.display = gecmisAdet ? 'inline-flex' : 'none';
+    gecmisBtn.textContent = `⚠ Geçmiş Karar Bekleyen: ${gecmisAdet}`;
+  }
+
   let d = withDurum;
+  // Bekleyenler günlük operasyon kuyruğudur; tarihi geçmiş kayıtlar burada gösterilmez.
   if(fd === 'bekleyenler') d = d.filter(r => r._durum==='bekliyor' || r._durum==='karar_bekliyor');
   else if(fd) d = d.filter(r=>r._durum===fd);
   if(fo) d=d.filter(r=>String(r.odaNo)===String(fo));
@@ -6390,8 +6411,8 @@ window.renderRezervasyonlar = function() {
   const odaSel = document.getElementById('rev-filter-oda');
   if(odaSel&&odaSel.children.length<=1) for(const i of HOTEL_ODALAR) odaSel.innerHTML+=`<option value="${i}">Oda ${i}</option>`;
 
-  const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red',noshow:'badge-red',karar_bekliyor:'badge-orange'};
-  const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal',noshow:'No-show',karar_bekliyor:'⚠ Check-in Kararı Bekliyor'};
+  const dc={bekliyor:'badge-blue',aktif:'badge-green',tamamlandi:'badge-gray',iptal:'badge-red',noshow:'badge-red',karar_bekliyor:'badge-orange',gecmis_karar:'badge-orange'};
+  const dt={bekliyor:'Bekliyor',aktif:'Aktif',tamamlandi:'Tamamlandı',iptal:'İptal',noshow:'No-show',karar_bekliyor:'⚠ Check-in Kararı Bekliyor',gecmis_karar:'⚠ Geçmiş Rezervasyon · Karar Bekliyor'};
 
   const odDurumMap = {odendi:'✓ Ödendi', odenmedi:'Ödenmedi', depozito:'Depozito', kismi:'Kısmi'};
   const odDurumCls = {odendi:'badge-green', odenmedi:'badge-red', depozito:'badge-gold', kismi:'badge-orange'};
@@ -6412,15 +6433,25 @@ window.renderRezervasyonlar = function() {
       </td>
       <td><span class="badge ${dc[r._durum]||'badge-gray'}">${dt[r._durum]||r._durum}</span></td>
       <td style="display:flex;gap:4px;padding:6px;flex-wrap:wrap">
-        ${['bekliyor','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}
+        ${['bekliyor','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-success btn-sm" onclick="checkindenRezervasyon(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">Check-in</button>`:''}${r._durum==='gecmis_karar'?`<button class="btn btn-success btn-sm" onclick="gecmisRezervasyonKonaklamaIsle('${r.id}')">✓ Geçmiş Konaklamayı İşle</button>`:''}
         ${['bekliyor','aktif','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-ghost btn-sm" onclick="sozlesmeOnaysiziGonder('${r.odaNo}','${r.id}')">📄 Sözleşme</button>`:''}
         ${['bekliyor','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-ghost btn-sm" onclick="revDuzenleAc(${JSON.stringify({...r,id:r.id}).replace(/"/g,'&quot;')})">✏ Düzenle</button>`:''}
-        ${['bekliyor','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
-        ${['bekliyor','karar_bekliyor'].includes(r._durum)?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
+        ${['bekliyor','karar_bekliyor','gecmis_karar'].includes(r._durum)?`<button class="btn btn-warning btn-sm" onclick="noShowModal('${r.id}','${r.misafir||''}',${r.fiyat||0},'${r.odaNo}')">No-show</button>`:''}
+        ${['bekliyor','karar_bekliyor','gecmis_karar'].includes(r._durum)?`<button class="btn btn-danger btn-sm" onclick="iptalRezervasyon('${r.id}')">İptal</button>`:''}
         ${r._durum==='aktif'?`<span class="badge badge-green" style="align-self:center">Aktif konaklama · oda kartından yönetilir</span>`:''}
       </td>
     </tr>`).join('')
   : '<tr class="empty-row"><td colspan="11">Rezervasyon bulunamadı</td></tr>';
+};
+
+window.gecmisRezervasyonKonaklamaIsle = function(id) {
+  const r=(window._R||[]).find(x=>x.id===id);
+  if(!r){ toast('Rezervasyon bulunamadı','error'); return; }
+  if(['iptal','noshow','tamamlandi'].includes(String(r.durum||''))){ toast('Bu kayıt zaten sonuçlandırılmış.','error'); return; }
+  if(!r.cikis || r.cikis>today()){ toast('Bu rezervasyon henüz geçmiş kayıt değil.','error'); return; }
+  const ok=confirm(`${r.misafir||'Misafir'} · Oda ${r.odaNo} · ${r.giris||'—'} → ${r.cikis||'—'}\n\nBu müşteri gerçekten konakladıysa geçmiş check-in ekranı açılacak. Ödeme ve fiyat bilgilerini kontrol edip kaydı tamamlayın. Konaklamadıysa İptal veya No-show kullanın.`);
+  if(!ok) return;
+  checkindenRezervasyon(r);
 };
 
 window.noShowModal = function(id, misafir, fiyat, odaNo) {
