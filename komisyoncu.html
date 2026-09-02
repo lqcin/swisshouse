@@ -424,9 +424,9 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
           <input type="number" id="f_gece" min="1" value="1" oninput="hesaplaOzet()">
         </div>
         <div class="form-group">
-          <label id="lbl_fiyat">Sözleşme Fiyatı — Gecelik (₺) *</label>
-          <input type="number" id="f_fiyat" min="0" placeholder="0" oninput="hesaplaOzet()">
-          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="lbl_fiyat_aciklama">Komisyon dahil gecelik fiyat (misafire yansıtılan tutar)</div>
+          <label id="lbl_fiyat">Müşteri Gecelik Ücreti (₺) *</label>
+          <input type="number" id="f_fiyat" min="0" step="0.01" placeholder="Müşteriye uygulanacak gecelik fiyat" oninput="hesaplaOzet()">
+          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="lbl_fiyat_aciklama">Bu fiyatı komisyoncu belirler ve müşteriye yansır. Otel net gecelik ücreti resepsiyon onayında ayrıca girilir.</div>
         </div>
       </div>
 
@@ -650,7 +650,7 @@ const M = {
     giris_btn:'Giriş Yap', giris_hata:'Kullanıcı adı veya şifre hatalı.',
     takvim_baslik:'Oda Takvimi', talepler_baslik:'Taleplerim',
     sec_odeme:'Ödeme Bilgileri', sec_misafir:'Misafir Bilgileri',
-    lbl_gece:'Kaç Gece *', lbl_fiyat:'Sözleşme Fiyatı — Gecelik (₺) *',
+    lbl_gece:'Kaç Gece *', lbl_fiyat:'Müşteri Gecelik Ücreti (₺) *',
     lbl_odeme_durum:'Ödeme Durumu', lbl_odeme_tur:'Ödeme Türü',
     lbl_kismi_tutar:'Alınan Tutar (₺)',
     lbl_misafir:'Misafir Adı Soyadı *', lbl_tc:'TC Kimlik / Pasaport No',
@@ -680,7 +680,7 @@ const M = {
     giris_btn:'Sign In', giris_hata:'Invalid username or password.',
     takvim_baslik:'Room Calendar', talepler_baslik:'My Requests',
     sec_odeme:'Payment Details', sec_misafir:'Guest Information',
-    lbl_gece:'Nights *', lbl_fiyat:'Contract Price — Per Night (₺) *',
+    lbl_gece:'Nights *', lbl_fiyat:'Customer Price — Per Night (₺) *',
     lbl_odeme_durum:'Payment Status', lbl_odeme_tur:'Payment Type',
     lbl_kismi_tutar:'Amount Received (₺)',
     lbl_misafir:'Guest Full Name *', lbl_tc:'ID / Passport No',
@@ -710,7 +710,7 @@ const M = {
     giris_btn:'ورود', giris_hata:'نام کاربری یا رمز عبور اشتباه است.',
     takvim_baslik:'تقویم اتاق‌ها', talepler_baslik:'درخواست‌های من',
     sec_odeme:'اطلاعات پرداخت', sec_misafir:'اطلاعات مهمان',
-    lbl_gece:'تعداد شب *', lbl_fiyat:'قیمت قرارداد — هر شب (₺) *',
+    lbl_gece:'تعداد شب *', lbl_fiyat:'قیمت مهمان — هر شب (₺) *',
     lbl_odeme_durum:'وضعیت پرداخت', lbl_odeme_tur:'نوع پرداخت',
     lbl_kismi_tutar:'مبلغ دریافتی (₺)',
     lbl_misafir:'نام و نام خانوادگی مهمان *', lbl_tc:'کد ملی / شماره پاسپورت',
@@ -797,10 +797,10 @@ window.setLang = function(d) {
   const fiyatAciklama = document.getElementById('lbl_fiyat_aciklama');
   if(fiyatAciklama) {
     fiyatAciklama.textContent = d === 'fa'
-      ? 'قیمت شامل کمیسیون (مبلغی که به مهمان تعلق می‌گیرد)'
+      ? 'این قیمت توسط کمیسیون‌کار تعیین می‌شود و برای مهمان است؛ قیمت خالص هتل در پذیرش جداگانه ثبت می‌شود.'
       : d === 'en'
-      ? 'Contract price incl. commission (amount charged to guest)'
-      : 'Komisyon dahil gecelik fiyat (misafire yansıtılan tutar)';
+      ? 'You enter the customer-facing nightly price. Reception records the hotel net nightly price separately.'
+      : 'Bu fiyatı komisyoncu belirler ve müşteriye yansır. Otel net gecelik ücreti resepsiyon onayında ayrıca girilir.';
   }
   // Placeholder
   const pfld = {f_misafir:m.ph_misafir, f_tel:m.ph_tel, f_tc:m.ph_tc};
@@ -1706,8 +1706,9 @@ window.talepGonder = async function() {
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
-      fiyat: null, // Otel neti komisyon anlaşmasından türetilmez.
-      sozlesmeFiyat: fiyat,  // komisyoncunun girdiği = sözleşme/komisyon dahil fiyat
+      fiyat: null, otelGecelik:null, // Otel netini komisyoncu belirlemez; resepsiyon onayında girilir.
+      sozlesmeFiyat: fiyat, musteriGecelik:fiyat, musteriToplam:toplamSozlesme,
+      // Komisyoncunun girdiği tutar müşteriye uygulanacak fiyatın kendisidir.
       komisyonTip: kom.tip, komisyonDeger: kom.deger,
       komisyonTipSnapshot: kom.tip, komisyonDegerSnapshot: kom.deger,
       komisyonTutarGecelik: kom.gecelik,

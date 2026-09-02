@@ -539,7 +539,7 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
       <table>
         <thead><tr>
           <th>Tarih</th><th>Saat</th><th>Oda</th><th>Misafir</th><th>TC</th>
-          <th>Kaynak</th><th>Fiyat Tipi</th><th>Ödeme</th><th>Tutar</th><th></th>
+          <th>Kaynak</th><th>Eski/Referans Tarife</th><th>Ödeme</th><th>Tutar</th><th></th>
         </tr></thead>
         <tbody id="gelirBody"><tr class="empty-row"><td colspan="10">Yükleniyor...</td></tr></tbody>
       </table>
@@ -760,11 +760,16 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
 <!-- FİYATLANDIRMA -->
 <div class="page" id="page-fiyatlar">
   <div class="section-head">
-    <h2>Oda <em>Fiyatlandırması</em></h2>
-    <div style="font-size:13px;color:var(--muted)">Resepsiyoncu check-in sırasında bu 4 tipten birini seçer · Fiyatlar gecelik ücret olarak girilmeli</div>
+    <h2>Oda <em>Referans Fiyatları</em></h2>
+    <div style="font-size:13px;color:var(--muted)">Bu alan yalnız fiyat rehberidir. Rezervasyon ve check-in sırasında otel gecelik ücreti elle girilir; komisyoncu müşteriye uygulayacağı gecelik fiyatı kendi portalından girer.</div>
   </div>
 
-  <!-- Fiyat tipleri açıklama kartları -->
+  <div style="background:#eef6ff;border:1px solid #cfe4fb;padding:14px 18px;margin-bottom:18px;font-size:12px;line-height:1.7;color:#1a4d7a">
+    <b>Yeni fiyat politikası:</b> Yönetici fiyatları referans olarak belirler. Resepsiyon rezervasyon/check-in sırasında <b>Otel Gecelik Ücret</b> alanını elle girer.
+    Komisyoncu portalında ise komisyoncu <b>Müşteri Gecelik Ücreti</b> girer. Sabit komisyon gece × tutar, yüzdeli komisyon müşteri toplamı × yüzde olarak hesaplanır.
+  </div>
+
+  <!-- Referans tarife kartları -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px">
     <div style="background:var(--white);border:1px solid var(--border);border-top:3px solid var(--green);padding:16px 18px;box-shadow:var(--shadow)">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:6px">Tip 1</div>
@@ -790,7 +795,7 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
 
   <!-- Toplu uygulama -->
   <div style="background:var(--white);border:1px solid var(--border);padding:18px 22px;box-shadow:var(--shadow);margin-bottom:22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Toplu Uygula — Tüm Odalar:</span>
+    <span style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Referans Tarifeyi Tüm Odalara Uygula:</span>
     <select id="toplu-tip" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;background:var(--cream)">
       <option value="1">Hafta İçi (Tip 1)</option>
       <option value="2">Hafta Sonu (Tip 2)</option>
@@ -798,13 +803,13 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
       <option value="4">İndirimli (Tip 4)</option>
     </select>
     <input type="number" id="toplu-fiyat" placeholder="Gecelik ücret (₺)" style="border:1px solid var(--border);padding:8px 12px;font-family:'Jost',sans-serif;font-size:13px;outline:none;width:180px;background:var(--cream)">
-    <button class="btn btn-primary" onclick="topluFiyatUygula()">Tüm Odalara Uygula</button>
+    <button class="btn btn-primary" onclick="topluFiyatUygula()">Referans Fiyatı Uygula</button>
   </div>
 
   <!-- Fiyat tablosu -->
   <div class="table-card">
     <div class="table-header">
-      <div class="table-title">Oda Bazlı Fiyatlar <span style="font-size:12px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— gecelik ₺</span></div>
+      <div class="table-title">Oda Bazlı Referans Fiyatlar <span style="font-size:12px;color:var(--muted);font-family:'Jost',sans-serif;font-weight:400">— rezervasyonda otomatik zorunlu değildir</span></div>
       <div style="font-size:11px;color:var(--muted)">Değeri değiştir → otomatik kaydeder</div>
     </div>
     <div style="overflow-x:auto">
@@ -887,7 +892,7 @@ input[type="text"],input[type="email"],input[type="tel"],input[type="number"],in
     </div>
     <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Konaklama Geçmişi</div>
     <div style="overflow-x:auto"><table>
-      <thead><tr><th>Tarih</th><th>Oda</th><th>Gece</th><th>Fiyat Tipi</th><th>Ödeme</th><th>Tutar</th></tr></thead>
+      <thead><tr><th>Tarih</th><th>Oda</th><th>Gece</th><th>Eski/Referans Tarife</th><th>Ödeme</th><th>Tutar</th></tr></thead>
       <tbody id="md_gecmis"></tbody>
     </table></div>
     <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('musteriDetayModal')">Kapat</button></div>

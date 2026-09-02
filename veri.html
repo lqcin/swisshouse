@@ -364,10 +364,10 @@ window.filtreTemizle = function(yenile = true) {
 
 // ── TABLO RENDER ──
 const BASLIKLAR = {
-  rezervasyonlar: ['Oda','Misafir','TC/Pasaport','Giriş','Çıkış','Gece','Fiyat','Sözleşme','Durum','Ödeme','Kaynak','Kayıt Tarihi',''],
+  rezervasyonlar: ['Oda','Misafir','TC/Pasaport','Giriş','Çıkış','Gece','Otel Gecelik','Müşteri Gecelik','Durum','Ödeme','Kaynak','Kayıt Tarihi',''],
   gelirler:       ['Tarih','Oda','Misafir','Tutar','Ödeme Türü','Kaynak','Açıklama','Kayıt Tarihi',''],
   masraflar:      ['Tarih','Tutar','Kategori','Oda','Ödeme Durumu','Açıklama',''],
-  talepler:       ['Misafir','TC','Telefon','Oda','Giriş','Çıkış','Gece','Fiyat/Gece','Ödeme Durumu','Kısmi Tutar','Kaynak','Durum','Kayıt Tarihi',''],
+  talepler:       ['Misafir','TC','Telefon','Oda','Giriş','Çıkış','Gece','Müşteri Gecelik','Ödeme Durumu','Kısmi Tutar','Kaynak','Durum','Kayıt Tarihi',''],
 };
 
 function fmt(n) { return n ? Number(n).toLocaleString('tr-TR') + ' ₺' : '—'; }
@@ -406,8 +406,8 @@ function renderTablo() {
         <td>${fmtTarih(r.giris)}</td>
         <td>${fmtTarih(r.cikis)}</td>
         <td>${r.gece||'—'}</td>
-        <td>${fmt(r.fiyat)}</td>
-        <td>${fmt(r.sozlesmeFiyat)}</td>
+        <td>${fmt(r.otelGecelik ?? r.fiyat)}</td>
+        <td>${fmt(r.musteriGecelik ?? r.sozlesmeFiyat ?? r.fiyat)}</td>
         <td>${durumBadge(r.durum)}</td>
         <td>${durumBadge(r.odemeDurum)}</td>
         <td style="font-size:11px">${r.kaynak||'—'}</td>
@@ -439,7 +439,7 @@ function renderTablo() {
         <td>${fmtTarih(r.giris)}</td>
         <td>${fmtTarih(r.cikis)}</td>
         <td>${r.gece||'—'}</td>
-        <td>${fmt(r.sozlesmeFiyat||r.fiyat)}</td>
+        <td>${fmt(r.musteriGecelik ?? r.sozlesmeFiyat ?? r.fiyat)}</td>
         <td>${durumBadge(r.odemeDurum)}</td>
         <td style="font-size:11px">${r.kismiTutar ? Number(r.kismiTutar).toLocaleString('tr-TR')+' ₺' : '—'}</td>
         <td style="font-size:11px">${r.kaynak||'—'} ${r.komisyoncuAd?'('+r.komisyoncuAd+')':''}</td>
@@ -734,6 +734,26 @@ async function silinenKayitIcinKomisyonSil(kayit) {
 let _yetimListe = [];
 let _yetimRevListe = [];
 let _yetimCikisListe = [];
+// Yeni fiyat/komisyon politikasına göre güvenli finans hesabı.
+// Admin düzeltme aracı bugünkü anlaşmayı geçmişe tahmin etmez; snapshot veya mevcut
+// doğrulanmış komisyon hareketi yoksa hakediş uydurmaz.
+function veriKomisyonHesapla(r, gece, mevcut=null) {
+  const n = Math.max(0,Number(gece)||0);
+  const musteri = Math.max(0,Number(r?.musteriGecelik ?? r?.sozlesmeFiyat)||0);
+  const otel = Math.max(0,Number(r?.otelGecelik ?? r?.fiyat)||0);
+  const tip = String(r?.komisyonTipSnapshot || mevcut?.komisyonTipSnapshot || r?.komisyonTip || '').toLowerCase();
+  const deger = Math.max(0,Number(r?.komisyonDegerSnapshot ?? mevcut?.komisyonDegerSnapshot ?? r?.komisyonDeger)||0);
+  let toplam = 0;
+  if(tip==='sabit' && deger>0) toplam = deger*n;
+  else if(tip==='oran' && deger>0 && musteri>0) toplam = musteri*n*Math.min(deger,100)/100;
+  else if((tip==='manuel' || !tip) && musteri>0 && otel>0 && musteri>otel) toplam = (musteri-otel)*n;
+  else if(mevcut && Number(mevcut.toplamKomisyon||mevcut.komisyonFark)>0) {
+    const eskiGece=Math.max(1,Number(mevcut.gece)||n||1);
+    toplam=(Number(mevcut.toplamKomisyon||mevcut.komisyonFark)||0)/eskiGece*n;
+  } else return null;
+  return Math.round(Math.max(0,toplam)*100)/100;
+}
+
 let _gecmisMaliListe = [];
 window.yetimKomisyonTara = async function() {
   document.getElementById('yetimModal').classList.add('aktif');
@@ -772,13 +792,13 @@ window.yetimKomisyonTara = async function() {
         continue;
       }
       const gece = Math.max(0, Math.round((new Date(rev.cikis+'T00:00:00')-new Date(rev.giris+'T00:00:00'))/864e5));
-      const tutar = Math.round((Number(rev.fiyat)||0)*gece*100)/100;
+      const tutar = Math.round((Number(rev.otelGecelik ?? rev.fiyat)||0)*gece*100)/100;
       const uyusmaz = String(ana.odaNo)!==String(rev.odaNo) || ana.giris!==rev.giris || ana.cikis!==rev.cikis || Number(ana.gece)!==gece || Math.abs(Number(ana.tutar||0)-tutar)>.01;
       if(uyusmaz) _gecmisMaliListe.push({tip:'guncelle', neden:'Oda/tarih/gece/tutar rezervasyonla uyuşmuyor', gelir:ana, rev, gece, tutar});
     }
-    rezervasyonlar.filter(r => (r.durum==='aktif'||r.durum==='tamamlandi') && r.durum!=='iptal' && r.durum!=='noshow' && !gelirGruplari.has(String(r.id)) && Number(r.fiyat)>0).forEach(rev => {
+    rezervasyonlar.filter(r => (r.durum==='aktif'||r.durum==='tamamlandi') && r.durum!=='iptal' && r.durum!=='noshow' && !gelirGruplari.has(String(r.id)) && Number(r.otelGecelik ?? r.fiyat)>0).forEach(rev => {
       const gece = Math.max(0, Math.round((new Date(rev.cikis+'T00:00:00')-new Date(rev.giris+'T00:00:00'))/864e5));
-      if(gece>0) _gecmisMaliListe.push({tip:'olustur', neden:'Gerçekleşmiş konaklamanın gelir kaydı eksik', gelir:null, rev, gece, tutar:Math.round(Number(rev.fiyat)*gece*100)/100});
+      if(gece>0) _gecmisMaliListe.push({tip:'olustur', neden:'Gerçekleşmiş konaklamanın gelir kaydı eksik', gelir:null, rev, gece, tutar:Math.round(Number(rev.otelGecelik ?? rev.fiyat)*gece*100)/100});
     });
 
     _yetimListe = komSnap.docs
@@ -901,26 +921,37 @@ window.yetimKomisyonSilHepsi = async function() {
       if(!r) continue;
       const gelirId = islem.gelir?.id || `konaklama_${r.id}`;
       const gece = islem.gece || Math.max(0,Math.round((new Date(r.cikis+'T00:00:00')-new Date(r.giris+'T00:00:00'))/864e5));
-      const tutar = islem.tutar ?? Math.round((Number(r.fiyat)||0)*gece*100)/100;
+      const otelGecelik = Number(r.otelGecelik ?? r.fiyat)||0;
+      const musteriGecelik = Number(r.musteriGecelik ?? r.sozlesmeFiyat ?? r.fiyat)||0;
+      const tutar = islem.tutar ?? Math.round(otelGecelik*gece*100)/100;
       await setDoc(doc(db,'gelirler',gelirId), {
         kayitTip:'konaklama', gelirDocId:gelirId, rezervasyonId:r.id,
         giris:r.giris, cikis:r.cikis, tarih:r.giris, odaNo:String(r.odaNo),
         misafir:r.misafir||'', tc:r.tc||'', kaynak:r.kaynak||'rezervasyon',
-        gece, fiyat:Number(r.fiyat)||0, tutar,
-        sozlesmeFiyat:r.sozlesmeFiyat||null, araciAd:r.araciAd||null,
+        gece, fiyat:otelGecelik, otelGecelik, tutar,
+        sozlesmeFiyat:(r.sozlesmeFiyat??musteriGecelik)||null, musteriGecelik,
+        musteriToplam:Math.round(musteriGecelik*gece*100)/100, araciAd:r.araciAd||null,
         odemeDurum:r.odemeDurum||islem.gelir?.odemeDurum||'odenmedi',
         guncelleme:new Date().toISOString()
       },{merge:true});
       const komRef=doc(db,'komisyonlar','komisyon_'+gelirId);
       const komSnap=await getDoc(komRef);
-      if(komSnap.exists()) {
-        const k=komSnap.data(), eskiGece=Number(k.gece)||Number(islem.gelir?.gece)||1;
-        const yeniKom=Math.round(((Number(k.toplamKomisyon)||Number(k.komisyonFark)||0)/eskiGece)*gece*100)/100;
-        await setDoc(komRef,{odaNo:String(r.odaNo),tarih:r.giris,gece,gercekFiyat:Number(r.fiyat)||0,sozlesmeFiyat:r.sozlesmeFiyat||null,toplamKomisyon:yeniKom,komisyonFark:yeniKom,guncelleme:new Date().toISOString()},{merge:true});
-      } else if(r.araciAd && Number(r.sozlesmeFiyat)>Number(r.fiyat)) {
-        const komisyon=Math.round((Number(r.sozlesmeFiyat)-Number(r.fiyat))*gece*100)/100;
-        await setDoc(komRef,{gelirDocId:gelirId,tarih:r.giris,odaNo:String(r.odaNo),misafir:r.misafir||'',gece,gercekFiyat:Number(r.fiyat)||0,sozlesmeFiyat:Number(r.sozlesmeFiyat),toplamKomisyon:komisyon,komisyonFark:komisyon,araciAd:r.araciAd,guncelleme:new Date().toISOString()},{merge:true});
+      const eskiKom = komSnap.exists() ? komSnap.data() : null;
+      const yeniKom = veriKomisyonHesapla(r,gece,eskiKom);
+      if(yeniKom != null && yeniKom > 0 && (r.araciAd||r.komisyoncu||r.komisyoncuAd)) {
+        await setDoc(komRef,{
+          gelirDocId:gelirId,odaNo:String(r.odaNo),tarih:r.giris,misafir:r.misafir||'',gece,
+          gercekFiyat:otelGecelik,sozlesmeFiyat:musteriGecelik,
+          komisyonTipSnapshot:r.komisyonTipSnapshot||eskiKom?.komisyonTipSnapshot||null,
+          komisyonDegerSnapshot:r.komisyonDegerSnapshot??eskiKom?.komisyonDegerSnapshot??null,
+          toplamKomisyon:yeniKom,komisyonFark:yeniKom,
+          araciAd:r.araciAd||r.komisyoncuAd||eskiKom?.araciAd||null,
+          komisyoncu:r.komisyoncu||eskiKom?.komisyoncu||null,
+          guncelleme:new Date().toISOString()
+        },{merge:true});
       }
+      // Snapshot/fiyat kanıtı yoksa admin aracı yeni komisyon UYDURMAZ.
+      // Kayıt Komisyon Mutabakatı ekranında insan kontrolüne bırakılır.
     }
     toast(`${toplamAdet} kayıt düzeltildi ✓`, 'success');
     document.getElementById('yetimModal').classList.remove('aktif');
