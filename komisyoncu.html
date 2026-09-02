@@ -1518,6 +1518,30 @@ function rezervasyonKomisyonum(r) {
   return {r,gece,tutar:toplam,toplam,gecelik,tip,deger,beklenen};
 }
 
+// Talep / rezervasyon detayları ve PDF için tek komisyon hesabı.
+// Sabit ve yüzdeli anlaşmalarda fiyat farkı fallback'i kullanılmaz.
+function talepKomisyonTutar(t) {
+  if(!t || komisyonRezIptalMi(t)) return 0;
+  const k=talepKonaklamaDurumu(t);
+  const r=k?.r||null;
+  if(r) {
+    const h=rezervasyonKomisyonum(r);
+    if(h) return h.tutar;
+  }
+  const gece=t.giris&&t.cikis?Math.max(0,Math.round((new Date(t.cikis)-new Date(t.giris))/864e5)):Math.max(0,Number(t.gece)||0);
+  if(!gece) return 0;
+  const tip=String(t.komisyonTipSnapshot||t.komisyonTip||aktifKomAyar?.tip||'manuel').toLowerCase();
+  const deger=Math.max(0,Number((t.komisyonTipSnapshot||t.komisyonTip)?t.komisyonDegerSnapshot??t.komisyonDeger:aktifKomAyar?.deger)||0);
+  const musteri=Math.max(0,Number(t.sozlesmeFiyat||t.musteriGecelik)||0);
+  const otel=Math.max(0,Number(t.fiyat||t.otelGecelik)||0);
+  let toplam=0;
+  if(tip==='sabit'&&deger>0) toplam=deger*gece;
+  else if(tip==='oran'&&deger>0&&musteri>0) toplam=musteri*gece*Math.min(deger,100)/100;
+  else if(tip==='manuel'&&musteri>0&&otel>0&&musteri>otel) toplam=(musteri-otel)*gece;
+  else if(tip==='manuel'&&Number(t.komisyonToplam)>0) toplam=Number(t.komisyonToplam)||0;
+  return Math.round(Math.max(0,toplam)*100)/100;
+}
+
 window.hesaplaOzet = function() {
   const odaNo = Number(document.getElementById('f_oda').value);
   const giris = document.getElementById('f_giris').value;
@@ -1847,7 +1871,7 @@ function renderTalepler(talepler) {
     <td>${komEsc(t.giris||'?')} → ${komEsc(t.cikis||'?')}</td>
     <td style="font-size:10px">${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td>
     <td>${t.gece||'?'}</td>
-    <td>${t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺${t.fiyat&&Number(t.sozlesmeFiyat)>Number(t.fiyat)?`<br><span style="font-size:9px;color:var(--muted)">net ${fmt(t.fiyat)} · kom. ${fmt(Number(t.sozlesmeFiyat)-Number(t.fiyat))}</span>`:''}`:(t.fiyat?fmt(t.fiyat)+' ₺':'—')}</td>
+    <td>${t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺<br><span style="font-size:9px;color:var(--muted)">müşteri / gece</span>`:(t.fiyat?fmt(t.fiyat)+' ₺':'—')}</td>
     <td style="font-size:10px;font-weight:800;color:${k && talepTamamlanmaGrubu(t,k).renk}">${komEsc(talepTamamlanmaGrubu(t,k).etiket)}</td>
     <td><span class="durum-badge ${durumKls[t.durum]||''}">${durumMap[t.durum]||komEsc(t.durum||'—')}</span></td>
     <td style="font-size:10px;font-weight:700;color:${k.renk}">${k.etiket}</td>
@@ -1860,7 +1884,7 @@ function renderTalepler(talepler) {
 window.talepDetayGoster=function(id){
   const t=_beniimTalepler.find(x=>x.id===id);if(!t)return;const k=talepKonaklamaDurumu(t),r=k.r||{},g=k.g||{},o=k.o||{};
   const gece=Number(t.gece)||Math.max(0,Math.round((new Date(t.cikis)-new Date(t.giris))/864e5));
-  const musteriToplam=(Number(t.sozlesmeFiyat)||0)*gece, otelToplam=(Number(t.fiyat)||0)*gece, komisyon=Number(t.komisyonToplam)||Math.max(0,musteriToplam-otelToplam);
+  const musteriToplam=(Number(t.sozlesmeFiyat||t.musteriGecelik)||0)*gece, otelToplam=(Number(t.fiyat||t.otelGecelik)||0)*gece, komisyon=talepKomisyonTutar(t);
   const sat=(a,b)=>`<div style="display:grid;grid-template-columns:170px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="color:var(--muted)">${a}</b><span>${b}</span></div>`;
   document.getElementById('talepDetayBaslik').textContent=`Oda ${t.odaNo} · ${t.misafir||'Rezervasyon'}`;
   const grup=talepTamamlanmaGrubu(t,k);
@@ -1870,7 +1894,7 @@ window.talepDetayGoster=function(id){
 
 window.taleplerDokumanIndir=function(){
   const liste=_sonFiltreliTalepler||[];if(!liste.length){alert('Döküm alınacak kayıt yok.');return;}
-  const rows=liste.map(({t,k})=>{const gece=Number(t.gece)||0;const kom=Number(t.komisyonToplam)||Math.max(0,((Number(t.sozlesmeFiyat)||0)-(Number(t.fiyat)||0))*gece);return `<tr><td>${komEsc(t.misafir||'—')}</td><td>${komEsc(t.odaNo||'—')}</td><td>${komEsc(t.giris||'—')} → ${komEsc(t.cikis||'—')}</td><td>${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td><td>${komEsc(talepTamamlanmaGrubu(t,k).etiket)}</td><td>${komEsc(t.durum||'—')}</td><td>${komEsc(k.etiket)}</td><td class="num">${t.sozlesmeFiyat?fmt(t.sozlesmeFiyat)+' ₺':'—'}</td><td class="num">${kom?fmt(kom)+' ₺':'—'}</td></tr>`}).join('');
+  const rows=liste.map(({t,k})=>{const kom=talepKomisyonTutar(t);return `<tr><td>${komEsc(t.misafir||'—')}</td><td>${komEsc(t.odaNo||'—')}</td><td>${komEsc(t.giris||'—')} → ${komEsc(t.cikis||'—')}</td><td>${komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,16))}</td><td>${komEsc(talepTamamlanmaGrubu(t,k).etiket)}</td><td>${komEsc(t.durum||'—')}</td><td>${komEsc(k.etiket)}</td><td class="num">${t.sozlesmeFiyat?fmt(t.sozlesmeFiyat)+' ₺':'—'}</td><td class="num">${kom?fmt(kom)+' ₺':'—'}</td></tr>`}).join('');
   const ad=aktifKom?.ad||aktifKom?.key||'Acenta';
   const kriter=`Tamamlanma: ${document.getElementById('taleplerTamamlanmaFiltre')?.selectedOptions?.[0]?.textContent||'Tümü'} · Alt durum: ${document.getElementById('taleplerDurumFiltre')?.selectedOptions?.[0]?.textContent||'Tümü'} · Tarih kriteri: ${document.getElementById('taleplerTarihAlani')?.selectedOptions?.[0]?.textContent||'—'} · ${document.getElementById('taleplerTarihBas')?.value||'başlangıç yok'} → ${document.getElementById('taleplerTarihBit')?.value||'bitiş yok'} · Sıralama: ${document.getElementById('taleplerSirala')?.selectedOptions?.[0]?.textContent||'—'}`;
   const html=`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Acenta Rezervasyon Dökümü</title><style>@page{size:A4 landscape;margin:9mm}body{font-family:Arial;color:#222;font-size:9px}.head{border-bottom:3px solid #c8102e;padding-bottom:10px;margin-bottom:12px}h1{font-size:17px;margin:0 0 5px}.meta{font-size:9px;color:#555}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px}th{background:#eee;text-align:left}.num{text-align:right}</style></head><body><div class="head"><h1>SWISS HOUSE · Acenta Rezervasyon Dökümü</h1><div><b>Acenta:</b> ${komEsc(ad)} · <b>Kayıt:</b> ${liste.length} · <b>Rapor:</b> ${new Date().toLocaleString('tr-TR')}</div><div class="meta">${komEsc(kriter)}</div></div><table><thead><tr><th>Misafir</th><th>Oda</th><th>Konaklama</th><th>Talep Tarihi</th><th>Tamamlanma</th><th>Talep Durumu</th><th>Konaklama Durumu</th><th>Fiyat/Gece</th><th>Komisyon</th></tr></thead><tbody>${rows}</tbody></table><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script><script>window.onload=()=>html2pdf().set({filename:'acenta-rezervasyon-dokumu.pdf',html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(document.body).save();<\/script></body></html>`;
