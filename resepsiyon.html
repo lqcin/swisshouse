@@ -4161,7 +4161,11 @@ window.renderOdalar = function() {
       icerik += `<div class="room-status-text">${durum==='dolu'?'Dolu':durum==='temizlik'?'Temizlik':durum==='arizali'?'Arızalı / Bakımda':revDurumTxt}</div>`;
       if(o.misafir&&durum==='dolu') icerik+=`<div class="room-guest">${o.misafir}</div>`;
       if(o.cikis&&durum==='dolu') icerik+=`<div class="room-info">↑ ${o.cikis}</div>`;
-      if(o.fiyat&&durum==='dolu') icerik+=`<div class="room-price">${(o.fiyat||0).toLocaleString('tr-TR')}₺/gece</div>`;
+      if(durum==='dolu') {
+        const kartFiyatModeli = konaklamaFiyatModeli(o);
+        const kartMusteriGecelik = Math.max(0, Number(kartFiyatModeli?.misafirGecelik ?? o.musteriGecelik ?? o.sozlesmeFiyat ?? o.fiyat) || 0);
+        if(kartMusteriGecelik>0) icerik+=`<div class="room-price">${kartMusteriGecelik.toLocaleString('tr-TR')}₺/gece <span style="font-size:8px;color:var(--muted);font-weight:600">MÜŞTERİ</span></div>`;
+      }
       if(kalanBorc>0) icerik+=`<div class="room-borc-rozet">KALAN: ${kalanBorc.toLocaleString('tr-TR')} ₺</div>`;
       else if(durum==='dolu' && o.odemeDurum==='odendi') icerik+=`<div class="room-borc-rozet" style="background:#16a34a;color:#fff">✓ ÖDENDİ</div>`;
       if(bugunAcikRev&&durum!=='dolu') icerik+=`<div class="room-guest">${bugunAcikRev.misafir||'—'}</div><div class="room-info">${bugunAcikRev.giris} → ${bugunAcikRev.cikis}</div>`;
