@@ -426,7 +426,7 @@ body{background:var(--cream);color:var(--text);font-family:'Jost',sans-serif;fon
         <div class="form-group">
           <label id="lbl_fiyat">Müşteri Gecelik Ücreti (₺) *</label>
           <input type="number" id="f_fiyat" min="0" step="0.01" placeholder="Müşteriye uygulanacak gecelik fiyat" oninput="hesaplaOzet()">
-          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="lbl_fiyat_aciklama">Bu fiyatı komisyoncu belirler ve müşteriye yansır. Otel net gecelik ücreti resepsiyon onayında ayrıca girilir.</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px" id="lbl_fiyat_aciklama">Bu fiyatı komisyoncu belirler ve müşteriye yansır. Resepsiyon talebi kabul eder veya reddeder; ikinci fiyat girmez. Otel payı komisyon kuralından otomatik hesaplanır.</div>
         </div>
       </div>
 
@@ -800,7 +800,7 @@ window.setLang = function(d) {
       ? 'این قیمت توسط کمیسیون‌کار تعیین می‌شود و برای مهمان است؛ قیمت خالص هتل در پذیرش جداگانه ثبت می‌شود.'
       : d === 'en'
       ? 'You enter the customer-facing nightly price. Reception records the hotel net nightly price separately.'
-      : 'Bu fiyatı komisyoncu belirler ve müşteriye yansır. Otel net gecelik ücreti resepsiyon onayında ayrıca girilir.';
+      : 'Bu fiyatı komisyoncu belirler ve müşteriye yansır. Resepsiyon talebi kabul eder veya reddeder; ikinci fiyat girmez. Otel payı komisyon kuralından otomatik hesaplanır.';
   }
   // Placeholder
   const pfld = {f_misafir:m.ph_misafir, f_tel:m.ph_tel, f_tc:m.ph_tc};
@@ -1562,7 +1562,7 @@ window.hesaplaOzet = function() {
   document.getElementById('oz_otel_satir').style.display = otomatikKomisyon ? 'flex' : 'none';
   if(otomatikKomisyon) {
     document.getElementById('oz_komisyon').textContent = `${fmt(kom.toplam)} ₺ (${kom.tip==='oran'?('toplam × %'+kom.deger):(fmt(kom.deger)+' ₺ × '+gece+' gece')})`;
-    document.getElementById('oz_otel').textContent = 'Resepsiyon / otel fiyat kaydı ayrı tutulur';
+    document.getElementById('oz_otel').textContent = `${fmt(Math.max(0, fiyat*gece-kom.toplam))} ₺ toplam · ${fmt(Math.max(0, fiyat-(kom.toplam/gece)))} ₺/gece`;
   }
   ozetKutu.style.display = 'block';
 
@@ -1706,6 +1706,11 @@ window.talepGonder = async function() {
 
   const cikis = addDays(giris, gece);
   const toplamSozlesme = fiyat * gece;
+  const komisyonOnizleme = komisyonHesapla(fiyat, gece);
+  if(komisyonOnizleme.tip !== 'manuel' && komisyonOnizleme.toplam >= toplamSozlesme) {
+    errEl.textContent = dil==='fa' ? 'قیمت مهمان باید بیشتر از کمیسیون قراردادی باشد.' : dil==='en' ? 'Customer price must be greater than the contractual commission.' : 'Müşteri fiyatı sözleşmesel komisyondan büyük olmalıdır.';
+    errEl.style.display = 'block'; return;
+  }
   if(tutarliOdeme && (kismiTutar <= 0 || kismiTutar > toplamSozlesme)) {
     errEl.textContent = `Alınan tutar 0'dan büyük ve toplam tutardan (${fmt(toplamSozlesme)} ₺) fazla olmamalıdır.`;
     errEl.style.display = 'block'; return;
@@ -1730,7 +1735,9 @@ window.talepGonder = async function() {
     await addDoc(collection(db,'rezervasyon_talepleri'), {
       misafir, tc: tc||null, tel: tel||null,
       odaNo, giris, cikis, gece,
-      fiyat: null, otelGecelik:null, // Otel netini komisyoncu belirlemez; resepsiyon onayında girilir.
+      fiyat: (kom.tip!=='manuel' ? Math.max(0,Math.round((fiyat-(kom.toplam/gece))*100)/100) : null),
+      otelGecelik: (kom.tip!=='manuel' ? Math.max(0,Math.round((fiyat-(kom.toplam/gece))*100)/100) : null),
+      otelToplam: (kom.tip!=='manuel' ? Math.max(0,Math.round((toplamSozlesme-kom.toplam)*100)/100) : null),
       sozlesmeFiyat: fiyat, musteriGecelik:fiyat, musteriToplam:toplamSozlesme,
       // Komisyoncunun girdiği tutar müşteriye uygulanacak fiyatın kendisidir.
       komisyonTip: kom.tip, komisyonDeger: kom.deger,
@@ -1888,7 +1895,7 @@ window.talepDetayGoster=function(id){
   const sat=(a,b)=>`<div style="display:grid;grid-template-columns:170px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="color:var(--muted)">${a}</b><span>${b}</span></div>`;
   document.getElementById('talepDetayBaslik').textContent=`Oda ${t.odaNo} · ${t.misafir||'Rezervasyon'}`;
   const grup=talepTamamlanmaGrubu(t,k);
-  document.getElementById('talepDetayIcerik').innerHTML=`${sat('Tamamlanma Durumu',`<b style="color:${grup.renk}">${grup.etiket}</b>`)}${sat('Konaklama Durumu',`<b style="color:${k.renk}">${k.etiket}</b>`)}${sat('Talep Durumu',komEsc(t.durum||'—'))}${sat('Talep Gönderme',komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,19)))}${sat('Onay / İşlem',komEsc((t.islemTarih||'—').replace('T',' ').slice(0,19)))}${sat('Konaklama',`${komEsc(t.giris)} → ${komEsc(t.cikis)} · ${gece} gece`)}${sat('Oda','Oda '+komEsc(t.odaNo))}${sat('Misafir',komEsc(t.misafir||'—'))}${sat('Kişi',`${Number(t.yetiskin||1)} yetişkin · ${Number(t.cocuk||0)} çocuk`)}${sat('Müşteri Fiyatı',t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺/gece · ${fmt(musteriToplam)} ₺ toplam`:'—')}${sat('Otel Net',t.fiyat?`${fmt(t.fiyat)} ₺/gece · ${fmt(otelToplam)} ₺ toplam`:'—')}${sat('Komisyon',komisyon?fmt(komisyon)+' ₺':'—')}${sat('Check-in Kaydı',g?.giris||o?.giris?komEsc(g.giris||o.giris):'Yok')}${sat('Check-out Kaydı',komEsc(g?.checkoutTarih||t.checkoutTarih||'Yok'))}${sat('Not',`<span style="white-space:pre-wrap">${komEsc(t.degisiklikNot||t.iptalNot||t.not||'—')}</span>`)} `;
+  document.getElementById('talepDetayIcerik').innerHTML=`${sat('Tamamlanma Durumu',`<b style="color:${grup.renk}">${grup.etiket}</b>`)}${sat('Konaklama Durumu',`<b style="color:${k.renk}">${k.etiket}</b>`)}${sat('Talep Durumu',komEsc(t.durum||'—'))}${sat('Talep Gönderme',komEsc((t.kayitTarih||'—').replace('T',' ').slice(0,19)))}${sat('Onay / İşlem',komEsc((t.islemTarih||'—').replace('T',' ').slice(0,19)))}${sat('Konaklama',`${komEsc(t.giris)} → ${komEsc(t.cikis)} · ${gece} gece`)}${sat('Oda','Oda '+komEsc(t.odaNo))}${sat('Misafir',komEsc(t.misafir||'—'))}${sat('Kişi',`${Number(t.yetiskin||1)} yetişkin · ${Number(t.cocuk||0)} çocuk`)}${sat('Müşteri Fiyatı',t.sozlesmeFiyat?`${fmt(t.sozlesmeFiyat)} ₺/gece · ${fmt(musteriToplam)} ₺ toplam`:'—')}${sat('Otel Payı',t.fiyat?`${fmt(t.fiyat)} ₺/gece · ${fmt(otelToplam)} ₺ toplam`:'—')}${sat('Komisyon',komisyon?fmt(komisyon)+' ₺':'—')}${sat('Check-in Kaydı',g?.giris||o?.giris?komEsc(g.giris||o.giris):'Yok')}${sat('Check-out Kaydı',komEsc(g?.checkoutTarih||t.checkoutTarih||'Yok'))}${sat('Not',`<span style="white-space:pre-wrap">${komEsc(t.degisiklikNot||t.iptalNot||t.not||'—')}</span>`)} `;
   document.getElementById('talepDetayModal').classList.add('aktif');
 };
 

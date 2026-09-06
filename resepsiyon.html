@@ -1367,9 +1367,9 @@ input[type="number"], input[type="date"], input[type="password"] {
           <input type="hidden" id="rev_fiyat_tip" value="0">
           <div class="form-row" style="margin-top:12px">
             <div class="form-group" style="margin-bottom:0;grid-column:1/-1">
-              <label>Otel Gecelik Ücret *</label>
+              <label id="rev_fiyat_label">Otel Gecelik Ücret *</label>
               <input type="number" id="rev_fiyat" min="0" step="0.01" placeholder="Gecelik otel ücretini elle girin" oninput="revFiyatGuncelle()">
-              <div style="font-size:10px;color:var(--muted);margin-top:4px">Fiyat tipi kullanılmaz. Bu alan her rezervasyonda resepsiyon tarafından elle girilir.</div>
+              <div id="rev_fiyat_aciklama" style="font-size:10px;color:var(--muted);margin-top:4px">Doğrudan rezervasyonda otel gecelik ücreti resepsiyon tarafından girilir.</div>
             </div>
           </div>
 
@@ -2088,7 +2088,7 @@ input[type="number"], input[type="date"], input[type="password"] {
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Komisyoncu Ayarları</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Komisyoncunun girdiği sözleşme fiyatından otel payı otomatik ayrılır. Yüzde, misafire girilen toplam gecelik fiyat üzerinden hesaplanır.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Komisyoncu müşteri fiyatını serbestçe girer. Resepsiyon talebi kabul eder veya reddeder; ikinci fiyat girmez. Otel payı, müşteri bedelinden sözleşmesel komisyon düşülerek otomatik hesaplanır.</div>
       </div>
       <div id="kom_ayar_durum" style="font-size:11px;color:var(--muted)"></div>
     </div>
@@ -3104,6 +3104,54 @@ window.ciKomisyoncuDegisti = function() {
   ciFiyatGuncelle();
 };
 
+
+function komisyoncuTalepOnayFiyatModeli(t) {
+  const gece = Math.max(1, geceSayisi(t?.giris,t?.cikis) || Number(t?.gece) || 1);
+  const musteriGecelik = Math.max(0, Number(t?.musteriGecelik ?? t?.sozlesmeFiyat) || 0);
+  const key = String(t?.komisyoncu || komisyoncuKeyBul(t?.komisyoncuAd||'') || '');
+  const ad = t?.komisyoncuAd || window.KOMISYONCULAR?.[key]?.ad || key;
+  const snap = komisyonSnapshotAl(key, ad, t||null);
+  const manuelKayitli = Math.max(0, Number(t?.komisyonToplam)||0);
+  const h = komisyonToplamHesapla({
+    otelFiyat:0, sozlesmeFiyat:musteriGecelik, gece,
+    araciAd:ad, komisyoncuKey:key,
+    komisyonTipSnapshot:snap.tip, komisyonDegerSnapshot:snap.deger,
+    ayarFallback:true,
+    manuelToplam:(String(snap.tip||'').toLowerCase()==='manuel' && manuelKayitli>0 ? manuelKayitli : null)
+  });
+  const musteriToplam = Math.round(musteriGecelik*gece*100)/100;
+  const komisyonToplam = Math.round(Math.max(0,Number(h.toplam)||0)*100)/100;
+  const otelToplam = Math.round(Math.max(0,musteriToplam-komisyonToplam)*100)/100;
+  const otelGecelik = gece>0 ? Math.round((otelToplam/gece)*100)/100 : 0;
+  return {gece,musteriGecelik,musteriToplam,komisyonToplam,otelToplam,otelGecelik,snap,h,key,ad};
+}
+
+function revTalepFiyatKilidiUygula(aktif, model=null) {
+  window._revTalepFiyatKilitli = !!aktif;
+  const fiyat = document.getElementById('rev_fiyat');
+  const label = document.getElementById('rev_fiyat_label');
+  const aciklama = document.getElementById('rev_fiyat_aciklama');
+  const soz = document.getElementById('rev_sozlesme_fiyat');
+  if(aktif) {
+    if(fiyat) {
+      fiyat.readOnly = true;
+      fiyat.dataset.manuelDegisim='0';
+      if(model) fiyat.value = model.otelGecelik || 0;
+      fiyat.style.background = 'var(--parchment)';
+    }
+    if(soz) { soz.readOnly = true; soz.style.background='var(--parchment)'; }
+    if(label) label.textContent = 'Otel Payı / Gecelik (otomatik)';
+    if(aciklama) aciklama.textContent = model
+      ? `Komisyoncu fiyatı onaylanır veya reddedilir. Otel payı otomatik: müşteri ${fmt(model.musteriGecelik)} ₺ − komisyon ${fmt(model.komisyonToplam/model.gece)} ₺/gece = ${fmt(model.otelGecelik)} ₺/gece.`
+      : 'Komisyoncu talebinde ikinci fiyat girilmez; otel payı anlaşma kuralından otomatik hesaplanır.';
+  } else {
+    if(fiyat) { fiyat.readOnly=false; fiyat.style.background=''; }
+    if(soz) { soz.readOnly=false; soz.style.background=''; }
+    if(label) label.textContent = 'Otel Gecelik Ücret *';
+    if(aciklama) aciklama.textContent = 'Doğrudan rezervasyonda otel gecelik ücreti resepsiyon tarafından girilir.';
+  }
+}
+
 window.revKomisyonVarDegisti = function() {
   const durum = document.getElementById('rev_komisyon_var')?.value || 'yok';
   const wrap = document.getElementById('rev_komisyon_secim_wrap');
@@ -4022,7 +4070,18 @@ window.renderInstagramTalepleri = function() {
 window.talepOnayla = function(id) {
   const t = (window._TALEP||[]).find(x => x.id === id);
   if(!t) return;
-  // Talebi rezervasyon formuna taşı — kullanıcı kontrol edip onaylasın
+  const komisyoncuTalebi = t.kaynak === 'komisyoncu';
+  const talepFiyatModeli = komisyoncuTalebi ? komisyoncuTalepOnayFiyatModeli(t) : null;
+  if(komisyoncuTalebi && (!talepFiyatModeli?.musteriGecelik || talepFiyatModeli.musteriGecelik<=0)) {
+    toast('Komisyoncu talebinde müşteri gecelik fiyatı yok. Talep fiyatı olmadan onaylanamaz.','error'); return;
+  }
+  if(komisyoncuTalebi && String(talepFiyatModeli?.snap?.tip||'').toLowerCase()==='manuel' && talepFiyatModeli.komisyonToplam<=0) {
+    toast('Bu komisyoncu manuel/fiyat farkı anlaşmasında. İkinci fiyat istemeden onaylamak için komisyon kuralını Sabit veya Yüzdeli olarak tanımlayın.','error'); return;
+  }
+  if(komisyoncuTalebi && talepFiyatModeli?.otelToplam <= 0) {
+    toast('Komisyoncu fiyatı sözleşmesel komisyonu karşılamıyor. Talebi reddedin veya yeni fiyat isteyin.','error'); return;
+  }
+  // Talebi rezervasyon formuna taşı — kullanıcı fiyatı değiştirmez, kabul veya reddeder
   window._onaylananTalepId = id; // ÖNCE set et, openRezervModalForOda sıfırlamasın
   window._onaylananKomisyoncu = t.kaynak === 'komisyoncu' ? (t.komisyoncu||null) : null;
   window._onaylananKomisyoncuAd = t.kaynak === 'komisyoncu' ? (t.komisyoncuAd||t.komisyoncu||null) : null;
@@ -4044,15 +4103,10 @@ window.talepOnayla = function(id) {
       const rsf = document.getElementById('rev_sozlesme_fiyat');
       if(rsf) { rsf.value = talepMusteriGecelik; sozlesmeToplam('rev'); }
     }
-    {
-      const kayitliAyar = window._KOM_AYAR?.[t.komisyoncu] || null;
-      const talepAyari = t.komisyonTip ? {tip:t.komisyonTip,deger:Number(t.komisyonDeger)||0} : kayitliAyar;
-      const hesap = komisyonKuraliHesapla(talepMusteriGecelik, talepAyari);
-      const gercekFiyat = Number(t.fiyat)||0; // Otel neti komisyon kuralından türetilmez; oda tarifesi/resepsiyon belirler.
-      if(gercekFiyat > 0) {
-        const rf = document.getElementById('rev_fiyat');
-        if(rf) { rf.value = gercekFiyat; rf.dataset.manuelDegisim='1'; }
-      }
+    if(komisyoncuTalebi && talepFiyatModeli) {
+      // Komisyoncunun girdiği müşteri fiyatı tek satış fiyatıdır. Resepsiyon ikinci fiyat girmez.
+      // Otel payı = müşteri toplamı - sözleşmesel komisyon.
+      revTalepFiyatKilidiUygula(true, talepFiyatModeli);
     }
     if(t.komisyoncu || t.komisyoncuAd) {
       const kv=document.getElementById('rev_komisyon_var'); if(kv) kv.value='var';
@@ -6306,6 +6360,7 @@ window.openRezervModalForOda = function(odaNo, kaynakTalepId = null) {
   document.getElementById('rev_carpısma').style.display = 'none';
   document.getElementById('rev_kismi_wrap').style.display = 'none';
   const rfEl = document.getElementById('rev_fiyat'); if(rfEl) rfEl.dataset.manuelDegisim='';
+  revTalepFiyatKilidiUygula(false);
   const arEl = document.getElementById('rev_araci'); if(arEl) arEl.checked=false;
   clearRefakatciler('revRefakatciListesi');
   ['rev_ozet_giris','rev_ozet_gece','rev_ozet_cikis','rev_ozet_oda','rev_ozet_toplam','rev_ozet_giris_gun','rev_ozet_cikis_gun','rev_ozet_oda_tip'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
@@ -6486,7 +6541,7 @@ window.saveRezervasyon = async function(mod = '') {
   const cocuk   = parseInt(document.getElementById('rev_cocuk').value)||0;
   const kaynak  = document.getElementById('rev_kaynak').value;
   const fiyatTip = 0; // Rezervasyonda fiyat tipi kullanılmıyor; gecelik ücret manuel.
-  const fiyat   = Number(document.getElementById('rev_fiyat').value)||0;
+  let fiyat   = Number(document.getElementById('rev_fiyat').value)||0;
   const odemeDurum = document.getElementById('rev_odeme_durum').value;
   const odemeTipHam = document.getElementById('rev_odeme_tip').value;
   const odemeTip   = odemeDurum==='odenmedi' ? null : (odemeTipHam||'nakit');
@@ -6503,7 +6558,23 @@ window.saveRezervasyon = async function(mod = '') {
 
   if(!giris||!cikis||!odaNo||!misafirKayit) { toast('Zorunlu alanları doldurun','error'); return; }
   if(misafirBilgisiBekleniyor && !komisyoncuAdi && !komisyoncuKey) { toast('Misafir bilgileri sonra alınacaksa Komisyoncu / Acente seçimi zorunludur','error'); return; }
-  if(!fiyat || fiyat <= 0) { toast('Otel gecelik ücretini elle girin. Tutar 0 olamaz.','error'); return; }
+
+  const kaynakTalep = window._onaylananTalepId ? (window._TALEP||[]).find(t=>t.id===window._onaylananTalepId) : null;
+  const komisyoncuPortalTalebi = !!(kaynakTalep && kaynakTalep.kaynak==='komisyoncu');
+  let portalFiyatModeli = null;
+  if(komisyoncuPortalTalebi) {
+    portalFiyatModeli = komisyoncuTalepOnayFiyatModeli({...kaynakTalep,giris,cikis,gece,komisyoncu:komisyoncuKey||kaynakTalep.komisyoncu,komisyoncuAd:komisyoncuAdi||kaynakTalep.komisyoncuAd});
+    if(String(portalFiyatModeli.snap.tip||'').toLowerCase()==='manuel' && portalFiyatModeli.komisyonToplam<=0) {
+      toast('Komisyoncu talebi manuel/fiyat farkı anlaşmasıyla otomatik onaylanamaz. Komisyon kuralını Sabit veya Yüzdeli tanımlayın.','error'); return;
+    }
+    if(portalFiyatModeli.otelToplam <= 0) {
+      toast('Komisyoncu fiyatı, sözleşmesel komisyonu karşılamıyor. Talebi reddedin veya komisyoncudan yeni fiyat isteyin.','error'); return;
+    }
+    fiyat = portalFiyatModeli.otelGecelik;
+    const rf=document.getElementById('rev_fiyat'); if(rf) rf.value=fiyat;
+  } else if(!fiyat || fiyat <= 0) {
+    toast('Otel gecelik ücretini elle girin. Tutar 0 olamaz.','error'); return;
+  }
 
   // ÇAKIŞMA KONTROLÜ — hem rezervasyonlar hem dolu odanın konaklaması
   const kontrol = odaCakismaKontrol(odaNo, giris, cikis);
@@ -6512,7 +6583,8 @@ window.saveRezervasyon = async function(mod = '') {
     return;
   }
 
-  const sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
+  let sozlesmeFiyat = document.getElementById('rev_sozlesme_fiyat')?.value ? Number(document.getElementById('rev_sozlesme_fiyat').value) : null;
+  if(komisyoncuPortalTalebi && portalFiyatModeli) sozlesmeFiyat = portalFiyatModeli.musteriGecelik;
   if(komisyoncuKey && (!sozlesmeFiyat || sozlesmeFiyat<=0)) { toast('Komisyoncu seçiliyse müşteriye uygulanacak Sözleşme Fiyatı zorunludur','error'); return; }
   const revFiyatKontrol = komisyonFiyatDogrula(fiyat, sozlesmeFiyat, komisyoncuAdi, komisyoncuKey);
   if(!revFiyatKontrol.ok) { toast('⚠ '+revFiyatKontrol.mesaj,'error'); return; }
@@ -6523,7 +6595,6 @@ window.saveRezervasyon = async function(mod = '') {
     toast(`Alınan/depozito tutarı 0'dan büyük ve toplamdan (${fmt(odemeToplamBaz)}) fazla olmamalı`,'error'); return;
   }
 
-  const kaynakTalep = window._onaylananTalepId ? (window._TALEP||[]).find(t=>t.id===window._onaylananTalepId) : null;
   const komSnapshot = komisyonSnapshotAl(komisyoncuKey, komisyoncuAdi, kaynakTalep);
   const tahsilEdilen = odemeAlinanTutar(odemeDurum, odemeToplamBaz, kismiTutar);
   const kalanTahsilat = Math.max(0, Math.round((odemeToplamBaz - tahsilEdilen)*100)/100);
@@ -6557,7 +6628,7 @@ window.saveRezervasyon = async function(mod = '') {
     kayitTarih:now
   });
 
-  await logAktivite('rezervasyon', `${misafirKayit} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · Müşteri ${fmt(odemeToplamBaz)} · Otel ${fmt(gece*fiyat)}`, odaNo);
+  await logAktivite('rezervasyon', `${misafirKayit} · Oda ${odaNo} · ${giris}→${cikis} · ${gece} gece · Müşteri ${fmt(odemeToplamBaz)} · Otel payı ${fmt(gece*fiyat)}`, odaNo);
   // Bu rezervasyon bir Instagram/komisyoncu talebinden onaylandıysa, talebin durumunu güncelle
   if(window._onaylananTalepId) {
     await updateDoc(doc(db,'rezervasyon_talepleri', window._onaylananTalepId), {

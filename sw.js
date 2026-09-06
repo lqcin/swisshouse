@@ -3,7 +3,7 @@
 // Veri (Firebase/Firestore) zaten IndexedDB ile offline çalışıyor,
 // bu SW sadece sayfa dosyalarını (HTML, fontlar) önbelleğe alır.
 
-const CACHE_ADI = 'swisshouse-v35-customer-card-price'; // müşteri fiyatı/ödeme/komisyon tek kaynak senkronizasyonu
+const CACHE_ADI = 'swisshouse-v36-agent-single-price'; // komisyoncu tek fiyat onay akışı
 const ONBELLEKLENECEKLER = [
   '/swisshouse/resepsiyon.html',
   '/swisshouse/komisyoncu.html',
